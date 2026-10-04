@@ -1,8 +1,8 @@
-from ready import by_file, components, covers, likely_objects, line, parse_claims, ready, without_claims
+from ready import by_file, components, covers, likely_sources, line, parse_claims, ready, without_claims
 
 
-def row(va, calls='', owner='game', status='todo', size=10, name='', object=''):
-    return dict(va=f'{va:08x}', size=str(size), owner=owner, status=status, name=name, object=object,
+def row(va, calls='', owner='game', status='todo', size=10, source=''):
+    return dict(va=f'{va:08x}', size=str(size), owner=owner, status=status, source=source,
                 calls=' '.join(f'{c:08x}' for c in calls))
 
 
@@ -43,37 +43,37 @@ def test_ready_treats_recursion_as_one_unit():
 
 def _scene():
     return dict([
-        (0x10, row(0x10, object='a.obj', status='matched')),
-        (0x20, row(0x20, size=9)),                      # no object: after a.obj
-        (0x30, row(0x30, size=3, object='b.obj')),
-        (0x40, row(0x40, size=5)),                      # after b.obj
-        (0x50, row(0x50, size=4, object='a.obj')),
+        (0x10, row(0x10, source='src/a.cpp', status='matched')),
+        (0x20, row(0x20, size=9)),                      # after src/a.cpp
+        (0x30, row(0x30, size=3, source='src/b.cpp')),  # written, so not ready
+        (0x40, row(0x40, size=5)),                      # after src/b.cpp
+        (0x50, row(0x50, size=4)),                      # after src/b.cpp
     ])
 
 
-def test_likely_object_is_own_or_nearest_preceding():
+def test_likely_source_is_the_nearest_preceding_source_file():
     rows = _scene()
-    objects = likely_objects(rows, ready(rows))
-    assert objects == {0x20: '~a.obj', 0x30: 'b.obj', 0x40: '~b.obj', 0x50: 'a.obj'}
+    files = likely_sources(rows, ready(rows))
+    assert files == {0x20: '~src/a.cpp', 0x40: '~src/b.cpp', 0x50: '~src/b.cpp'}
 
 
-def test_likely_object_stops_at_a_section_start():
+def test_likely_source_stops_at_a_section_start():
     rows = _scene()
-    assert likely_objects(rows, ready(rows), boundaries=[0x18])[0x20] == ''
+    assert likely_sources(rows, ready(rows), boundaries=[0x18])[0x20] == ''
 
 
-def test_ready_line_has_object():
+def test_ready_line_has_the_file_and_no_name():
     rows = _scene()
-    objects = likely_objects(rows, ready(rows))
-    assert line(rows[0x20], objects) == '00000020 9 ~a.obj - -'
+    files = likely_sources(rows, ready(rows))
+    assert line(rows[0x20], files) == '00000020 9 ~src/a.cpp -'
 
 
 def test_by_file_groups_by_smallest_member_then_size():
     rows = _scene()
-    objects = likely_objects(rows, ready(rows))
-    groups = by_file(ready(rows), objects)
-    assert [(o, [r['va'] for r in g]) for o, g in groups] == [
-        ('b.obj', ['00000030', '00000040']), ('a.obj', ['00000050', '00000020'])]
+    files = likely_sources(rows, ready(rows))
+    groups = by_file(ready(rows), files)
+    assert [(f, [r['va'] for r in g]) for f, g in groups] == [
+        ('src/b.cpp', ['00000050', '00000040']), ('src/a.cpp', ['00000020'])]
 
 
 def test_ready_ignores_a_corrupt_xbe(tmp_path, monkeypatch, capsys):

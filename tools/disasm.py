@@ -58,7 +58,7 @@ def _note(rows, va):
     callee = rows.get(va)
     if not callee:
         return ''
-    return f"   ; {callee['name'] or callee['va']} [{callee['status']}]"
+    return f"   ; {callee['va']} [{callee['status']}]"
 
 
 def listing(data, va, rows):
@@ -132,7 +132,7 @@ def main():
     path = retail_xbe_path()
     check_retail(path)
     image = load(path)
-    print(f"{row['va']} size {row['size']} {row['owner']} {row['style']} ({row['evidence']}) {row['name'] or '-'}")
+    print(f"{row['va']} size {row['size']} {row['owner']} {row['style']} ({row['evidence']}) {row.get('source') or '-'}")
     for line in listing(image.read(va, int(row['size'])), va, rows):
         print(line)
 

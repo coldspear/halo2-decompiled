@@ -3,9 +3,9 @@ src/), and every function they call is decompiled already (matched or not: a
 real callee, unlike a stub, gets the register convention LTCG gives it in
 retail, so the caller can match), belongs to a library, or is part of the same
 mutual recursion. Smallest first, one line per function:
-va, size, likely object file, name, calls. An object with a "~" is a guess: the
-nearest object file named before the function (functions of one source file sit
-together). --by-file groups the functions by likely object instead.
+va, size, likely source file, calls. The file is a guess, marked "~": the
+source file of the nearest decompiled function before it (functions of one
+source file sit together). --by-file groups the functions by that file.
 
     python tools/ready.py [N] [--by-file] [--claims FILE]
 
@@ -175,36 +175,33 @@ def ready(rows):
     return sorted(result, key=_by_size)
 
 
-def likely_objects(rows, ready_rows, boundaries=()):
-    """{va: object} for the ready rows: the row's own object, else "~" and the
-    object of the nearest preceding row (not across a section start in
-    boundaries) that has one, else ''."""
-    named = sorted(va for va, r in rows.items() if r['object'])
+def likely_sources(rows, ready_rows, boundaries=()):
+    """{va: file} for the ready rows: "~" and the source file of the nearest
+    preceding function that has one (not across a section start in
+    boundaries), else ''. A ready function has no source of its own."""
+    placed = sorted(va for va, r in rows.items() if r.get('source'))
     cuts = sorted(boundaries)
     out = {}
     for r in ready_rows:
         va = int(r['va'], 16)
-        if r['object']:
-            out[va] = r['object']
-            continue
-        i = bisect.bisect_left(named, va)
+        i = bisect.bisect_left(placed, va)
         n = bisect.bisect_right(cuts, va)
         floor = cuts[n - 1] if n else 0
-        out[va] = '~' + rows[named[i - 1]]['object'] if i and named[i - 1] >= floor else ''
+        out[va] = '~' + rows[placed[i - 1]]['source'] if i and placed[i - 1] >= floor else ''
     return out
 
 
-def by_file(ready_rows, objects):
-    """[(object, rows)] (guessed and known objects of one name together), groups ordered by their smallest member, rows by size."""
+def by_file(ready_rows, files):
+    """[(file, rows)], groups ordered by their smallest member, rows by size."""
     groups = {}
     for r in ready_rows:
-        groups.setdefault(objects[int(r['va'], 16)].lstrip('~'), []).append(r)
+        groups.setdefault(files[int(r['va'], 16)].lstrip('~'), []).append(r)
     ordered = [(o, sorted(g, key=_by_size)) for o, g in groups.items()]
     return sorted(ordered, key=lambda g: _by_size(g[1][0]))
 
 
-def line(r, objects):
-    return ' '.join((r['va'], r['size'], objects[int(r['va'], 16)] or '-', r['name'] or '-', r['calls'] or '-'))
+def line(r, files):
+    return ' '.join((r['va'], r['size'], files[int(r['va'], 16)] or '-', r['calls'] or '-'))
 
 
 def main():
@@ -218,7 +215,7 @@ def main():
     retail = retail_xbe_path()
     boundaries = []
     if os.path.exists(retail):
-        # section starts only keep an object-file guess from crossing a section.
+        # section starts only keep a file guess from crossing a section.
         # a missing or corrupt XBE must not turn the ready list into a traceback.
         try:
             boundaries = [s.va for s in Xbe(retail).sections]
@@ -235,15 +232,15 @@ def main():
               f'in {len(claims)} claimed ranges', file=sys.stderr)
         found = kept
     shown = found[:args.count]
-    objects = likely_objects(rows, shown, boundaries)
+    files = likely_sources(rows, shown, boundaries)
     if args.by_file:
-        for obj, group in by_file(shown, objects):
-            print(f'{obj or "-"} ({len(group)})')
+        for name, group in by_file(shown, files):
+            print(f'{name or "-"} ({len(group)})')
             for r in group:
-                print('  ' + line(r, objects))
+                print('  ' + line(r, files))
     else:
         for r in shown:
-            print(line(r, objects))
+            print(line(r, files))
 
 
 if __name__ == '__main__':

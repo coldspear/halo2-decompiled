@@ -6,8 +6,8 @@ import pytest
 from disasm import listing, main
 
 
-def _row(va, name='', status='todo'):
-    return dict(va=f'{va:08x}', name=name, status=status)
+def _row(va, status='todo', source=''):
+    return dict(va=f'{va:08x}', status=status, source=source)
 
 
 def test_bound_check_keeps_a_following_label_out_of_the_table():
@@ -61,12 +61,12 @@ def test_two_level_switch_prints_both_tables_as_data():
     assert not any(line.split()[1] == 'add' for line in lines if '  0000102' in line)
 
 
-def test_direct_call_is_named_from_the_inventory():
+def test_direct_call_is_noted_with_its_status():
     # e8 0b000000 is call +0xb, landing at 0x1010; then ret; pad; xor eax, eax; ret
     code = bytes.fromhex('e80b000000c3') + b'\xcc' * 10 + bytes.fromhex('33c0c3')
-    rows = {0x1010: _row(0x1010, name='leaf', status='matched')}
+    rows = {0x1010: _row(0x1010, status='matched')}
     text = '\n'.join(listing(code, 0x1000, rows))
-    assert '  00001000  call 0x1010   ; leaf [matched]' in text
+    assert '  00001000  call 0x1010   ; 00001010 [matched]' in text
     assert '  00001010  xor eax, eax' in text
 
 
@@ -77,7 +77,7 @@ def test_function_without_a_switch_has_no_data_lines():
 
 def test_main_prints_the_inventory_row_and_the_listing(monkeypatch, capsys):
     row = dict(va='00001000', size='3', owner='game', style='size', evidence='packed',
-               name='', status='todo')
+               status='todo', source='src/a.cpp')
     monkeypatch.setattr('disasm.read_rows', lambda path: {0x1000: row})
     monkeypatch.setattr('disasm.check_retail', lambda path: None)
 
@@ -90,7 +90,7 @@ def test_main_prints_the_inventory_row_and_the_listing(monkeypatch, capsys):
     monkeypatch.setattr(sys, 'argv', ['disasm.py', '1000'])
     main()
     out = capsys.readouterr().out
-    assert out.splitlines()[0] == '00001000 size 3 game size (packed) -'
+    assert out.splitlines()[0] == '00001000 size 3 game size (packed) src/a.cpp'
     assert '  00001000  xor eax, eax' in out
     assert '  00001002  ret ' in out
 
