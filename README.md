@@ -152,6 +152,7 @@ So the work runs in stages:
 | `tools/permute.py` | Searches variants of a source function for ones that turn a near-miss into a match. |
 | `tools/near.py` | Counts the near-misses in the csv by source file (functions, bytes). No XBE. `--list` prints each function. |
 | `tools/masked.py` | Lists what `check.py` cannot see because it masks address fields: float constants one step away from the source's literals, strings, and script function definitions that differ from retail. Needs the retail XBE and capstone. |
+| `tools/bit_tests.py` | Lists retail's one-bit tests (`shr reg, N; test reg8, 1`) that a function's source writes as masks rather than as one-bit values (`TEST_FIELD_BIT`, `(bool)((x >> n) & 1)`). With no address, scans every unmatched function. Needs the retail XBE and capstone. |
 | `tools/disasm.py` | Disassembles retail code. |
 | `tools/match.py` | The spike's one-file matcher, kept for reference. Replaced by `check.py`. |
 
