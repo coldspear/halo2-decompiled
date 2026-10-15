@@ -152,6 +152,8 @@ So the work runs in stages:
 | `tools/permute.py` | Searches variants of a source function for ones that turn a near-miss into a match. |
 | `tools/near.py` | Counts the near-misses in the csv by source file (functions, bytes). No XBE. `--list` prints each function. |
 | `tools/masked.py` | Lists what `check.py` cannot see because it masks address fields: float constants one step away from the source's literals, strings, and script function definitions that differ from retail. Needs the retail XBE and capstone. |
+| `tools/globals.py` | Lists the absolute address fields in matched functions that reach a different global, or a different offset into one, than retail's: a function can match while loading the wrong global, because `check.py` masks those fields. Report only; needs the retail XBE and a full build. |
+| `tools/shadows.py` | Lists the globals that the sources view through more than one type (declared as one struct, cast to others, walked as bytes). Sources only; the work list for giving each record one definition. |
 | `tools/disasm.py` | Disassembles retail code. |
 | `tools/match.py` | The spike's one-file matcher, kept for reference. Replaced by `check.py`. |
 

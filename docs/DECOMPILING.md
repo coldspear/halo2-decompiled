@@ -277,7 +277,10 @@ a function retail reaches at an address some marker claims must reach that
 marker's function, unless ours is the compiler's own copy of the helper
 that marker recreates (`??_H` for `vector_constructor_iterator`); otherwise
 both sides' names (the map symbol, the `name` column) must agree when both
-are known. Globals are still checked by eye.
+are known. Which global an absolute field reaches is not compared: `python
+tools/globals.py` lists the matched functions whose fields reach a different
+global, or a different offset into one, than retail's, for the globals whose
+retail address the source names (`g_<address>`).
 
 ## What not to do
 
