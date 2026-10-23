@@ -42,11 +42,11 @@ static __int64 read_tsc(void)
 
 static __forceinline s_loop_allocator *compression_pool_allocate(long size)
 {
+    long retries = 0;
     s_loop_allocator *result = NULL;
     __int64 start = read_tsc();
     if (g_4e6464->page_count > 0)
     {
-        long retries = 0;
         do
         {
             result = (s_loop_allocator *)function_12d2f0(size, 0, 0, 0);
@@ -77,9 +77,10 @@ static __forceinline s_loop_allocator *compression_pool_allocate(long size)
 bool __stdcall function_199740(byte *buffer, long size, byte *destination, long *decompressed_size);
 
 // @retail 0x1995a0
-// score 19 (was 63): only the frame differs; retail keeps the high half of the
-// start time in the slot of the first time read, ours gives it a slot of its
-// own, so our frame is four bytes larger
+// score 13 (was 63): only stack slots differ; retail keeps the high half of
+// the start time in the slot of the first time read and sets the retry count
+// after the page check (with the count set there, ours gives the start time a
+// slot of its own and scores 19)
 bool function_1995a0(byte const *source, dword source_size, byte *destination, long *compressed_size, dword capacity, long level)
 {
     bool result = false;
