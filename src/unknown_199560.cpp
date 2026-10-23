@@ -32,7 +32,7 @@ void __stdcall loop_allocator_zfree(void *opaque, void *address);
 typedef void *(__stdcall *block_allocate)(void *, long, long);
 typedef void (__stdcall *block_free)(void *, void *);
 long __stdcall function_2cb5b0(byte *destination, long *destination_size, byte const *source, long source_size, block_allocate allocate, block_free release, void *opaque);
-long __stdcall function_2cb510(byte *destination, long *destination_size, byte const *source, long source_size, long level, block_allocate allocate, block_free release, void *opaque);
+long function_2cb510(byte *destination, long *destination_size, byte const *source, long source_size, long level, block_allocate allocate, block_free release, void *opaque);
 
 static __int64 read_tsc(void)
 {
@@ -77,9 +77,9 @@ static __forceinline s_loop_allocator *compression_pool_allocate(long size)
 bool __stdcall function_199740(byte *buffer, long size, byte *destination, long *decompressed_size);
 
 // @retail 0x1995a0
-// score 63 (was 63): retail hands the compressor the source and its size in
-// the first two registers and the destination and its size in the next two, so
-// its frame is four bytes smaller than ours
+// score 19 (was 63): only the frame differs; retail keeps the high half of the
+// start time in the slot of the first time read, ours gives it a slot of its
+// own, so our frame is four bytes larger
 bool function_1995a0(byte const *source, dword source_size, byte *destination, long *compressed_size, dword capacity, long level)
 {
     bool result = false;

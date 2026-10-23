@@ -45,8 +45,16 @@ long __stdcall function_2cb5b0(unsigned char *destination, long *destination_siz
     return -1;
 }
 
-// @stub 0x2cb510
-long __stdcall function_2cb510(unsigned char *destination, long *destination_size, unsigned char const *source, long source_size, long level, block_allocate allocate, block_free release, void *opaque)
+struct s_zlib_stream;
+
+// @stub 0x2cb640
+long __stdcall function_2cb640(s_zlib_stream *stream, long level, long method, long window_bits, long memory_level, long strategy, char const *version, long stream_size)
+{
+    return -1;
+}
+
+// @stub 0x2cb960
+long __stdcall function_2cb960(s_zlib_stream *stream, long flush)
 {
     return -1;
 }
