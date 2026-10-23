@@ -18,7 +18,7 @@ void *__stdcall loop_allocator_zalloc(void *opaque, long count, long size);
 void __stdcall loop_allocator_zfree(void *opaque, void *address);
 typedef void *(__stdcall *block_allocate)(void *, long, long);
 typedef void (__stdcall *block_free)(void *, void *);
-long __stdcall function_2cb5b0(byte *destination, long *destination_size, byte const *source, long source_size, block_allocate allocate, block_free release, void *opaque);
+long function_2cb5b0(byte *destination, long *destination_size, byte const *source, long source_size, block_allocate allocate, block_free release, void *opaque);
 
 static __int64 read_tsc(void)
 {
@@ -60,9 +60,9 @@ static __forceinline s_loop_allocator *compression_pool_allocate(long size)
     return result;
 }
 
-// score 52 (was 52): retail keeps the low half of the size in ebp and the high
-// half in edi, ours keeps them the other way round, and retail saves the third
-// argument after the push, so the stores and the subtraction differ.
+// score 3 (was 52): only scheduling differs; retail pushes edi before it
+// clears the result and the low half of the time read, ours clears that half
+// first
 // @retail 0x199740
 bool __stdcall function_199740(byte *buffer, long size, byte *destination, long *decompressed_size)
 {

@@ -31,7 +31,7 @@ void *__stdcall loop_allocator_zalloc(void *opaque, long count, long size);
 void __stdcall loop_allocator_zfree(void *opaque, void *address);
 typedef void *(__stdcall *block_allocate)(void *, long, long);
 typedef void (__stdcall *block_free)(void *, void *);
-long __stdcall function_2cb5b0(byte *destination, long *destination_size, byte const *source, long source_size, block_allocate allocate, block_free release, void *opaque);
+long function_2cb5b0(byte *destination, long *destination_size, byte const *source, long source_size, block_allocate allocate, block_free release, void *opaque);
 long function_2cb510(byte *destination, long *destination_size, byte const *source, long source_size, long level, block_allocate allocate, block_free release, void *opaque);
 
 static __int64 read_tsc(void)
