@@ -155,18 +155,6 @@ static inline void cross3f(vector3f const *a, vector3f const *b, vector3f *out)
 	out->k = k;
 }
 
-/* Dot product of two vectors, with the components summed in the order i, k, j. */
-static inline real dot3f_ikj(vector3f const *a, vector3f const *b)
-{
-	return a->i * b->i + a->k * b->k + a->j * b->j;
-}
-
-/* Squared length of a vector, with the components summed in the order i, k, j. */
-static inline real squared_length_ikj(vector3f const *v)
-{
-	return v->i * v->i + v->k * v->k + v->j * v->j;
-}
-
 // @retail 0x16bd10
 bool camera_velocity_profile_new(s_camera_velocity_profile *profile, real total_seconds, real acceleration_seconds,
 	real deceleration_seconds, real start_rate, real end_rate)
@@ -996,7 +984,7 @@ void __stdcall function_16c840(long user_index, long unused, s_observer_command 
 						command->object_matrix.left = *g_4687ac;
 						direction = &camera->point.left;
 						plane.n = *direction;
-						plane.d = dot3f_ikj((vector3f *)&command->object_matrix.position, &plane.n);
+						plane.d = dot3f((vector3f *)&command->object_matrix.position, &plane.n);
 						length_squared = (plane.n.k * direction->k + plane.n.j * direction->j) + plane.n.i * direction->i;
 						if (length_squared != 0.0f)
 						{
@@ -1028,7 +1016,7 @@ void __stdcall function_16c840(long user_index, long unused, s_observer_command 
 			if (camera_object_index != NONE)
 			{
 				real yaw = (real)atan2(command->forward.j, command->forward.i);
-				real distance = dot3f((vector3f *)&camera->position, &command->forward);
+				real distance = dot3f(&command->forward, (vector3f *)&camera->position);
 				real sine;
 				real cosine;
 				vector3f offset;
