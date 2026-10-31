@@ -298,6 +298,10 @@ void function_1fc660(s_tracked_point *tracked, s_tracking_state const *state, s_
 // pairs and all phases 100/43/80/115/102/80/107; all with a short ordinal 144.
 // Tick-only loop is identical code; original body restored. Rate/tick register
 // reuse, j-first prediction and limit/delta scheduling remain.
+// Round 20 (lane 15, fast): the prediction chains written into their own `displacement` vector and `velocity`
+// first assigned by the tick products: conversion after the chains 64 (retail's first 0x5a bytes, but the ticks
+// stay the copied left operand), at the top 43 (same code as now), through local_scale3d 64, `(real)ticks` in
+// each product 64; `short ticks` 43; the squared length summed j, k, i (diagnostic) 43, identical code.
 // @retail 0x1fc4b0
 void function_1fc4b0(s_tracked_point *tracked, s_tracking_state const *state, s_tracking_output *output)
 {

@@ -168,7 +168,7 @@ static inline real interpolate_linear(real a, real b, real t)
 
 // score 96 (was 96): the advance loop still rotates the direction, frame and flags through
 // EAX, ECX, EDX and EDI where retail keeps its own order; the else branch matches exactly.
-// score 96 (was 96): Frame 0x10 and timing setup agree; the advance loop is retail's with EAX, ECX and
+// Earlier note: Frame 0x10 and timing setup agree; the advance loop is retail's with EAX, ECX and
 // EDX rotated (direction EAX for ECX, frame/flags ECX for EDX, the flag-2 test EDX for EAX), and retail
 // divides the fraction before the key differences. Round 87: fraction before the keys/between keys and
 // delta with every loop-end order 205..207 (next time leaves its stack home for EBX, though the loop
@@ -233,6 +233,15 @@ static inline real interpolate_linear(real a, real b, real t)
 // Round 233: native full-width signed count/current/both/direction/count-direction/current-
 // direction/all three/all plus duration fields: 96/96/96/96/96/96/96/96. Original shared field
 // declarations and body retained; direction/frame and lookahead/fraction homes remain.
+// Round 11 (lane 2): with the fraction first (retail's after-loop registers and division schedule; in
+// the loop direction ECX and frame EDX as retail, but next time takes EBX, so valuea/mask swap EAX/EDI
+// and no zero register): one-file LTCG screens of all 6 timing declaration orders, 6 initialisation
+// orders, 6 loop-end orders, `next_time <= time`, long next time, the disposal reset dropped/declared
+// first/initialised, long next frame, `elapsed <= 0`, the clamp before the next-frame switch, one key
+// read, an uncast elapsed, a named const fraction, and 150 random combinations of these all keep next
+// time in EBX. Real: fraction first with the clamp before the next-frame switch 213 (659 bytes); with a
+// long next frame 206 (660 bytes); on the plain body, long next frame 211 (660 bytes), the clamp before
+// the next-frame switch 167 (656 bytes), `elapsed <= 0` 151 (658 bytes).
 // Round 105: the post-loop block is rotated the same way (retail zero EAX, next ECX, current EDX,
 // direction EDI). Per-pass direction local 96; current-frame local 98; both 98; direction-first
 // lookahead sum 96; direction-first sums in both places 96 (identical code).

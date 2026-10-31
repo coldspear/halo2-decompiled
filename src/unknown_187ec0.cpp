@@ -253,6 +253,12 @@ struct s_seat_animations
 // Round 44: native entry-index equality, reversed receiver, compared-entry result, count-first
 // unguarded result, per-arm entry, true entry cursor and promoted traversal with/without inner
 // result guard 55/55/61/71/78/64/80/66. Native type restored; result/animation allocation remains.
+// Round 93 (lane 8): without the inner guard, the entry as `&(first ? first_entries : second_entries)[i]`
+// 63 at 172 bytes: the body is retail's instruction for instruction but for the register permutation,
+// and LTCG then passes animation in EAX and type in ECX (ret 4; matched 0x188130 12). Without the guard
+// and the per-arm entry pointer 78 (0x188130 17); that with `!result &&` in the while test instead of
+// the break 78 (17); with the count read inside the outer loop 84 (0x188130 1); with `type == 0` at each
+// use 88 (0x188130 18). Retail's EBP for animation is what keeps it a stack argument.
 // @retail 0x187fe0
 s_seat_animation_entry *function_187fe0(long type, s_seat_animation const *animation, c_type_47f957 element_index)
 {

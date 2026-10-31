@@ -424,6 +424,9 @@ struct s_1f8a70_actor
 // each; all with unit phase scope 228; signed long 411, returned mode output 412; three-choice enum
 // 411/412, scoped enum 411/412. Round 215: route short/word/signed-byte/byte 420/366/416/336; each with
 // returned unit-output consumption 416/371/422/350.
+// Round 208: Scratch path receiver reuse with unit-output/source-settings/default-lifetime masks
+// 0..7: 228/232/228/232/258/262/258/262. Original receiver, scopes and defaults restored; frame 0x84
+// and result/output homes remain.
 // @retail 0x1f8a70
 bool __stdcall function_1f8a70(long actor_index, long unknown)
 {

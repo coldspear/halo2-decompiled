@@ -258,7 +258,7 @@ done:
 	parse_copy(buffer, g_55c2e4);
 }
 
-// score 49 (was 49): our size-optimized build hoists the buffer address 0x55c6e4 into EBX
+// score 32 (was 32): earlier, at 49: our size-optimized build hoists the buffer address 0x55c6e4 into EBX
 // (saved in the prologue) for its two uses, the translator's pushed argument and the copy's
 // EAX source; retail pushes it as an immediate and moves it into EAX again. VC7.1 /O1 always
 // keeps a twice-used address constant in a callee-saved register when one use is on every
@@ -488,9 +488,17 @@ done:
 // Round 317: Existing getter default-first/complete-result arms, crossed with case-9 priority
 // and direct tag consumption, 52/56/59/54/63/45/61/45. Four-count leads rejected;
 // all original getter statements, shared buffer and parser body restored.
-// score 32 (was 49): retail's case order (0, 1, 9, 2, 3, 4, 7, 8) with the copy repeated after the
+// Later (32, from 49): retail's case order (0, 1, 9, 2, 3, 4, 7, 8) with the copy repeated after the
 // translation; ours still keeps the switch's value in EDI from the entry and pushes the buffer address
 // in ESI where retail pushes it as an immediate, and the selector load lands in ECX.
+// Round 109 (lane 5, fast; parse_variant stays matched), on the 32 form: the tag read before the
+// variant call 44 (tag in EBX, buffer still cached in ESI); the tag read in the translator call 45
+// (globals in EBX, selector in EAX as retail); `if (!globals) goto done;` 32 (same code); numeric
+// case order 38; the variant read raw with the tag load before the fallback (getter written out,
+// diagnostic) 33 (tag load in retail's slot but in ECX, so ESI stays free to cache the buffer). A
+// speed-preference diagnostic inlines the definition getter and the copy (118 at 224 bytes), so a
+// speed setting alone does not give retail's immediates. Matched siblings parse_variant and
+// parse_mapname cache their buffer constant in ESI; here retail's ESI holds the tag.
 // @retail 0x22d456
 void __stdcall parse_gametype(long string_handle, word *buffer)
 {

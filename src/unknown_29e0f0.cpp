@@ -152,6 +152,9 @@ PRIVATE __forceinline real function_29e3b1(point3f const *arg_0, point3f const *
 // group table read before the link table 414; the group bitmap cleared before the marker call 413;
 // the three defaults as one chained assignment 398; the group index declared with its read 398; the
 // marker position declared at function scope 398. Restored.
+// Round 205: Consistent link-array base with outer/inner/both actual cursors 464/433/447; record cursor 433;
+// outer-record/inner-record/all cursors 500/455/436; all with shared bitmap operations 458.
+// All restored; selected-default, endpoint and bitmap homes and root-table roles remain.
 // @retail 0x29e0f0
 bool __stdcall function_29e0f0(point3f const *arg_0, long arg_1, s_reference arg_2,
     s_29de21 *arg_3, s_29e0f9 *arg_4)
