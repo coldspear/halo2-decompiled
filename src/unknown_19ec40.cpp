@@ -118,7 +118,7 @@ real distance_sq3f(point3f const *a, point3f const *b);
 // key_a is enregistered in BP (a preheader copy and a reload at the back edge) and the globals, point and
 // i rotate to EDI, EBX and ESI. The fast check needs distance_sq3f (0x24550) in the image (105 without
 // it). `distance_squared = 0.0f; if (*point_reference)` gives retail's block layout (102 positional,
-// score 65 (was 65): retail keeps the globals in EBX, point in EBP (so it stays a stack parameter), i
+// Earlier note: retail keeps the globals in EBX, point in EBP (so it stays a stack parameter), i
 // in EDI, entry in ESI (pushed after the count test) and reloads each key into CX; ours puts entry in
 // ECX, so key_a is enregistered in BP (a preheader copy and a reload at the back edge) and the
 // globals, point and i rotate to EDI, EBX and ESI: the same seven registers in another assignment.
@@ -188,6 +188,11 @@ real distance_sq3f(point3f const *a, point3f const *b);
 // One shared result-index store, initialized/deferred index ownership, optional-distance
 // initialization and read-only table/entry receivers 77/77/105/105/77/77/105/105. Key preheader
 // and global/point/index/entry homes remain; original body restored.
+// Round 34 (fast, with 0x24550): the entry taken from g_4e0350 (the globals local left for the
+// bound) 113; the globals local renamed to sort first/last 65/65 (names don't move registers);
+// every point read through point_reference 65 (same code); a long key temporary 116 (370 bytes);
+// keys compared without the temporary 65 again as a diagnostic (identical code: the first key
+// load is still placed in the preheader and on the back edge, in BP).
 // Round 3 (lane 18, plain listing: distance_sq3f is inlined here, so no callee clobber set is involved):
 // split result store 65; fabsf for the height test 65; the globals local declared in the loop body (bound
 // read from g_4e0350) 113 (334 bytes); capacity test inverted (full arm first) 73; best stored before

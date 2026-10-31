@@ -122,6 +122,11 @@ struct c_aggregate : c_child
 // their matches, so it needs a non-LTCG object of its own. Child cursor walked in loop 1 45; children
 // read without the pointer cast 45; source pointer copied first 45; get_info output at function
 // scope 45; produced declared at loop scope 143.
+// Round 22 (lane 13; aligned difflib count 38, nearly all the 4-byte frame offset, plus request/child
+// cursor EBP/EBX and the loop-2 cursor temp EDX/ECX): total declared before error 45; the starts
+// store before the child read 45; the dispatch gate as nested ifs 45; a const dispatch cursor 45;
+// the cleanup item read into its local before the test 89 (368 bytes). BLOCKED by the build flag:
+// the retail frame needs `produced` to share a slot, which only a non-LTCG object gives.
 // @retail 0x97d80
 long c_aggregate_450cf4::function_97d80(dword *source, s_request *request)
 {

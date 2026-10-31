@@ -149,6 +149,9 @@ static __forceinline long game_seconds_to_ticks_round(real seconds)
 	return ticks;
 }
 
+// score 110 (was 110): this round: no new form. Still BLOCKED-BY 0x21d110/0x221810 (held files):
+// retail homes the request in EBX and reloads the state flags after the first 0x221810 call,
+// ours forwards them across it and builds the flag word in EDX where retail builds it in EAX.
 // score 110 (was 110): Frame 0xa8 and incoming request agree; class-query expansion and state/flag/result homes remain.
 // Frame 0xa8 and request EAX agree; first class-query expansion and header homes differ.
 // BLOCKED-BY 0x21d110 and 0x221810 (their tag/state registers): retail homes the request in EBX and

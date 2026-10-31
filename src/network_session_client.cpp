@@ -668,6 +668,12 @@ static inline bool session_set_machine_limit(c_class_58d20 *session, long value)
 // read before the summary 131; summary fetched after the copy loop 76; the copy loop through a
 // members pointer 55. Harness-only: index declared at block top, the loop argument hoisted, the
 // player loop as a forceinline helper, all ESI.
+// Round 107: in the first-pass harness removing either in-loop session argument of the 0x6e910 call (the
+// 0x4db0 address or the 0x49c8 value), or the member count read, gives EBX/ESI/EDI; named copies of them
+// (inside the call block or before the loop) and a players array pointer are propagated back (ESI). Real
+// (fast with 0x58d20/0x6e500/0x72700/0x6e6b0): limit setter only when the 0x4994 setter succeeds 154 (421
+// bytes); players array pointer for the test and the call 55; dword player index 56; named argument
+// pointer inside the call block 55; mask/slot test as `continue` 55.
 // Lane 14 r19: diagnostics (reverted): without the three in-loop session uses the session is not
 // enregistered at all (152); without only the 0x49c8 read in the call block it takes EBX with retail's
 // index ESI and player pointer EDI (35, the rest is the constant), so the session outweighs the loop index
