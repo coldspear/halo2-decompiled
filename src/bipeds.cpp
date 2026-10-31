@@ -628,7 +628,13 @@ struct s_biped_flags_10a_view
 	word bit7 : 1;
 };
 
-// score 281 (was 281): frame 0x16c agrees; early EBX save, state/change homes and Boolean tail differ.
+// score 280 (was 281): frame 0x16c agrees; early EBX save, state/change homes and Boolean tail differ.
+// Logic walk (2026-10-31): every callee and its argument order, the names triple, the type-0 names[0] choice
+// (0xdd51f-0xdd524), each `changed` path, the signed compares (0xdd4ed) and the constants 0.55/0/0.01 agree with
+// retail. Retail computes the state pointer before the Havok test (0xdd3b7-0xdd3c0) and spills it to [esp+0x20];
+// any early state local takes EBX here. Tried: +0x10a/+0x348 bits through bitfield views at every use, the state at
+// its one use and `changed |= function_111650(...) | action` 297 (1106 bytes; changed in BL and the late EBX save as
+// retail, but the 0x111650 call takes names in EAX where retail pushes both arguments, 0xdd79d-0xdd7a2).
 // Array zero initialization 300; long parent type 286; native byte flags/Boolean shifts 283;
 // array/type 301; array/bits 299; type/bits 282; all 300; Boolean result 281;
 // all/result 300; entry array with all/result 307; guarded exit 295; all/guard 300;
@@ -3578,6 +3584,14 @@ PRIVATE inline void biped_rotate_about(vector3f *v, vector3f const *axis, real s
 // 204. Every reassociated sum runs in reverse of retail (function-global order): the length written i, j, k
 // gives retail's k, j, i x87 order 181 (j, k, i 187); the rotate helper's dot reversed 210 (214 alone);
 // sqrtf/fabsf/cosf+sinf 185/185/184, with the i, j, k length 182 (sqrtf) and 180 (cosf+sinf, 887 bytes).
+// Logic walk (2026-10-31), no behaviour difference: against retail 0xe3910-0xe3c86 the offsets (forward 0x70,
+// up 0x7c, angular velocity 0x94, game_time_globals rate +4), the constants (1.0, 1e-4, 0.0 at 0x45dbc0/dc/d8),
+// the near-zero test (0xe3986 `ja` to speed = 0 with the axis left unnormalized, 0xe39b6), cos/sin/(1 - cos)
+// homes, both Rodrigues rotations (0xe3a00-0xe3abe forward; 0xe3ade-0xe3bb2 up, signs and terms), the two
+// 0x30bf0 calls (eax = forward at 0xe3ac3, eax = up at 0xe3c44), up = forward x (up x forward) at
+// 0xe3bb6-0xe3c3f and the reset of both vectors only when the length == 0.0 (0xe3c49-0xe3c7e) all agree. Dot sum
+// order is i,k,j (forward) then k,j,i (up) in retail; any of i,k,j / k,i,j / k,j,i gives the same 184 and
+// i,j,k / j,i,k / j,k,i the same 220, also with a separate helper copy for the up rotation.
 // @retail 0xe3910
 void function_e3910(long arg_159e6d)
 {
