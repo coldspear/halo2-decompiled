@@ -365,6 +365,9 @@ PRIVATE inline bool append_save_entry_2164c0(s_save_list_2164c0 *list, s_save_en
 // the copy through an inline two-pointer copy helper 32; the list and entry typed as the shared
 // s_saved_game_location_table / s_saved_game_file_location (callers 0x12b450 and 0x215790 with it) 32
 // (same code); the permuter on the original body, 69 variants, best 32.
+// Round 177 (fast, append helper): the result declared `bool const` 32, as `char` 32, as `!(count ==
+// 4096)` 32 (all same code); the room test `4096 - list->count != 0` 51 (mov/sub before the setne);
+// `if (!result) return result;` before the copy 32 (same code).
 // @retail 0x2164c0
 void function_2164c0(long memory_unit, s_save_list_2164c0 *list)
 {

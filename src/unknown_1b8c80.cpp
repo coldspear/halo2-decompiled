@@ -1395,6 +1395,10 @@ struct s_1ba091
 // loop entry in EBX (home F+4) and re-reads the flags for the 0x40 test; ours keeps the flags (or the
 // byte mask) in BL and the entry in memory, entering the loop by a jump past a reload, which shifts
 // every later instruction by two.
+// Round 109 (lane 6, fast): the matched 0x1bead0's loop (a plain slot-entry iterator and a for loop over
+// the returned entry) 202; the joint index declared first 198 (same); the slot/selection pointers before
+// the actor 201; the radii through the selection 239 (861 bytes, frame 0x10), with that loop 239, plus
+// `byte specified = flags & 0x20` (retail's masked byte, spilled to F+3) 238.
 // @retail 0x1ba090
 long __stdcall function_1ba090(long actor_index, s_slot *slot)
 {

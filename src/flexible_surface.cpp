@@ -414,7 +414,8 @@ static inline dword surface_random()
 	return g_4e7408->seed >> 16;
 }
 
-// score 139 (round 28 reached 104, not kept: its gain needs the rotation's cross product as scalar terms, which is
+// score 139 (was 139): frame 0x28 versus 0x20; seed/time, rotation and tail scheduling remain.
+// Earlier (round 28 reached 104, not kept: its gain needs the rotation's cross product as scalar terms, which is
 // cross3f's body written inline and is kept only with a match; with cross3f the round's other changes give 163).
 // At 104: frame 0x1c versus 0x20 (retail spills cross j as well as k and keeps axis.i in memory, so its
 // rotation registers differ: axis j/k in xmm2/xmm1, the global's j/k in xmm5/xmm4); retail loads the seed pointer
@@ -476,6 +477,8 @@ static inline dword surface_random()
 // const old/both inputs/staged cross with both const 160 each; post-cross dot3f in either input order
 // on the const staged graph 181 each; const staged inputs with shared random_index draws 160.
 // Original body restored.
+// DL210: native tail producer/clamp result/component output, masks 1-7, then all with existing vector setter; component-output frame with staged cross/projection-first/both/both and readonly inputs;
+// scores 139/139/139/169/169/169/169/143/169/165/165/165. Original source forms restored.
 // @retail 0x117dd0
 void function_117dd0(long index, vector3f *wind)
 {
@@ -510,7 +513,8 @@ void function_117dd0(long index, vector3f *wind)
 	double strength = (fabs(g_55ecd0) + 0.0075f) * definition->wind_scale * 0.08000000566244125f;
 	wind->i = (real)(g_55ecd4.i * strength); wind->j = (real)(g_55ecd4.j * strength); wind->k = (real)(g_55ecd4.k * strength);
 }
-// score 80 (was 109): 744 bytes and the normal.k cursor agree; retail adds the acceleration as the first operand and
+// score 80 (was 80): frame 0x48 and normal.k cursor agree; weight publication, vector scheduling and history-loop base remain.
+// Earlier: 744 bytes and the normal.k cursor agree; retail adds the acceleration as the first operand and
 // keeps position.x in a register through the force step, evaluates the dot as (i + k) + j (ours i, j, k), and its
 // else loop runs through a vertex pointer. Round 28: the projection through the existing vector3f_scale 103, with
 // dot3f(&vertex->normal, &force) 80 at 744 bytes (kept; force stays in memory as in retail, dot3f(&force, ..) 80),
@@ -560,6 +564,8 @@ void function_117dd0(long index, vector3f *wind)
 // Round 311: native projection/early weights with history scope, projection-consumer scope,
 // paired point-role names and their combinations 102/102/102/102/102/102/102;
 // all with history-branch cursor 112. Seven-point gains rejected; original body restored.
+// DL210: native point setters for weighted/accelerated/final point phases, masks 1-7, then all with CRT history copy on the shared dot/projection graph;
+// scores 80/80/80/79/79/79/79/114. Original source forms restored.
 // @retail 0x118140
 void function_118140(long index)
 {
@@ -643,7 +649,8 @@ public:
 static inline byte *surface_tag(long index) { return g_4e3b44[index & 0xffff].bytes; }
 static inline byte *surface_pointer(byte *base, long offset) { return *(byte **)(base + offset); }
 
-// score 422 (was 453): frame 0x44 versus 0x2c; attribute scans and D3D call expansion differ.
+// score 422 (was 422): frame 0x44 versus 0x2c; descriptor scans, application convention and outer vertex API expansion remain.
+// Earlier: frame 0x44 versus 0x2c; attribute scans and D3D call expansion differ.
 // Integer orientation 529; null-first lighting 522; per-scan results 530; real type
 // cursors 574; existing format/state helpers 473 (kept, full); cursors/orientation
 // 573; helpers/orientation 471 (two-point addition dropped); all three 516.
@@ -688,6 +695,8 @@ static inline byte *surface_pointer(byte *base, long offset) { return *(byte **)
 // 462/434/441/448/450/422/436; all with readonly vertex/rest receivers 436.
 // Keep only binormal and position values, each consumed through all three components: 422 plain,
 // 1452/1361 bytes. Original APIs, both orientation passes, fields and arithmetic preserved.
+// DL210: independent normal/tangent/texture API inputs, masks 1,2,4,5,6,7; texture with native oriented scales, masks 5,7;
+// scores 432/424/422/432/424/436/422/422. Original source forms restored.
 // @retail 0x116b00
 void __stdcall function_116b00(long tag_index, long unused, long group, long variant, long pass, long index, void *context)
 {

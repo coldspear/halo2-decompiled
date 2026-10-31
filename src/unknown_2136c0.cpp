@@ -100,6 +100,11 @@ void function_213970(void);
 // Round 37 (lane 1, fast): still BLOCKED-BY the global layout. Block A's NONE store between its two
 // arrays 131; the enable flag before the NONE stores 131; NONE stores and flag first 131; retail's
 // NONE/flag order right after the clears 131; the zero stores before the clears 131.
+// Round 210: Actual preference-difference decisions reused for refresh and dirty publication:
+// Boolean language/version/both 193/193/226; native language/version/both 185/185/221; byte/short
+// pair 226/225. All regress with every match preserved. Original conditional publications,
+// comparisons, calls, resets and whole body restored. Two complete storage blocks still require
+// coordinated changes to protected definitions outside this queue.
 // @retail 0x2136c0
 void function_2136c0(void)
 {
