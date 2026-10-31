@@ -524,6 +524,11 @@ typedef void (__stdcall *particle_callback_175610)(s_particle_175610 *, s_partic
 // `(real)(x * 1.f)` chains in the callback's scale argument cycle row i through y,z,x (base) / z,x,y / x,y,z
 // with rows j and k fixed, never retail's y,x,z; on the indexed form with scale first a four-deep chain gives
 // 33 at 1130 bytes (every difference but row i of both rotations, one load pair and the branch offsets fixed).
+// Round 93 (lane 8): the helper's copy loads the vector j, k, i where retail loads j, i, k, and row i's
+// sum follows that order. Scale initialised before multiplier 40 (the 1.0 stores only); with the two
+// particle copies swapped 48; with them declared at the inner loop's scope and assigned after the
+// particle lookup 40; with them made just before the rotation test 352 (1187 bytes); indexed
+// definitions with scale first 113 (1136 bytes) and alone 115.
 // @retail 0x175610
 void function_175610(s_particle_value_cache *cache, s_particle_system_datum *system, s_particle_location_datum *location, particle_callback_175610 callback, void *context)
 {

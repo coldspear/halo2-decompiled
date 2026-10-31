@@ -1931,7 +1931,7 @@ void __stdcall function_25f7b0(long arg_0, s_type_967e20 *arg_1, s_type_b36ac5 *
 			local_23 = function_272af0(g_4e0348, &local_21);
 		else
 			local_23 = arg_2->definition->unknown12;
-		arg_2->type = function_1c8df0(*(short *)((byte *)arg_1 + 0x660), local_23,
+		arg_2->type = function_1c8df0(local_23, *(short *)((byte *)arg_1 + 0x660),
 			(point3f const *)((byte *)arg_1 + 0x638), *(long *)((byte *)arg_1 + 0x648), &local_21,
 			local_14, true, local_0->unknown26c != NONE, local_22, NULL);
 	}
