@@ -2240,7 +2240,12 @@ PRIVATE __forceinline void component_surface_vector_clear(hkVector4 *vector)
 // 396/396 (1426 bytes), with normalize3d or vector3f_scale 139/139; the result scaled into velocity then
 // set 159; velocity declared at the top 407; speed summed and averaged in one `speed` local 138 (the
 // speed products all in place), with velocity declared before it 142; velocity declared before
-// speed_sum 95; both 413.
+// speed_sum 95; both 413. Round 131 (lane 4) on 91: the setter taking the property word by value
+// 155 (1467 bytes; the zero goes to EBX before the search, retail EDI), by const reference 155;
+// speed computed before the velocity normalization 430 (1403 bytes); one setter call in the
+// no-contact arm with a conditional value 267 (1371 bytes); the contact test inverted 207 (1498
+// bytes). The matched normal block shows the shape retail's velocity block needs (i scaled through
+// a copy of the inverse, j and k in place in registers loaded before the branch).
 // @retail 0x1d87b0
 void __stdcall function_1d87b0(s_havok_component_rigid_body *body, long body_index, s_havok_component *component)
 {
