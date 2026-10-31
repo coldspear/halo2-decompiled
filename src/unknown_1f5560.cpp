@@ -1159,6 +1159,13 @@ real function_50650(real cosine);
 // clamp through a PIN macro, a named return value, and the velocity through the file's own planar
 // normalizer: identical code each (137). Retail preloads the velocity's j before fsqrt and scales i from
 // memory into a reciprocal copy; the epilogue pops sit before the final minimum's branches.
+// Round 29 (lane 11, fast; control 137): the whole minimum as one return expression 283 (1422 bytes: the
+// macro repeats the nested minimum); a two-pointer 2-D dot helper (as in 0x1b0cd0) for the velocity dot 137,
+// for the facing and velocity dots 137 (same code); facing_scale declared before turning_scale 135 (retail's
+// entry store order: facing, turning, velocity, following); the velocity copy as `= { i, j }` 137. Compile-only
+// listing: the 2-D normalize written out (plain or `*=` products) gives normalize2d_fast's code; retail keeps
+// velocity.j loaded across the length test (`mulss j, inv`, i through a copy of inv), ours folds both; the
+// non-LTCG listing places the four pops after the last merge's comiss as retail does, our LTCG build does not.
 // @retail 0x1f9e70
 real function_1f9e70(long actor_index, long object_index, point2f const *position,
     vector2f const *path_direction, vector2f const *facing, vector2f const *desired,

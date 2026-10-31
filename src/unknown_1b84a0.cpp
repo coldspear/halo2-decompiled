@@ -96,7 +96,10 @@ void function_262800(long actor_index, s_reference reference, bool unknown);
 
 /* slot type 0x23, update: once the actor stands at its prop's position, it
    turns to face it; then it lets the prop go */
-// score 47 (was 47): the actor index, actor, view and state registers differ (retail EBP/EDI/EBX/ESI,
+// score 7 (was 47): only argument temporaries differ: the 0x1f4f40 short argument is converted into DX
+// and pushed after `mov eax, ebp` (retail converts AL in place into AX and pushes it first), and the
+// 0x262800 reference is loaded into EAX (retail ECX).
+// Earlier (47): the actor index, actor, view and state registers differ (retail EBP/EDI/EBX/ESI,
 // ours EDI/EBX/EBP/ESI), and retail saves EBX late, giving the NONE path its own epilogue. The forms
 // with one actor lookup at the top give index EBP and view EBX as retail, but actor ESI and the state
 // EDI, loaded and pushed late. Tried: typed slot data block/current/entry 61/62; on that block actor
@@ -151,42 +154,53 @@ void function_262800(long actor_index, s_reference reference, bool unknown);
 // Round 238: named initial-completion/facing/release decisions, seven subsets 47 each;
 // complete decisions with native slot data block 47. Original callback restored;
 // initial one-use completion snapshot rejected without an exact match.
+// Round 45 (lane 16): the actor looked up once at the top, the state typed as the slot's data block, a
+// guard clause storing the completion for a null view, the completion stored after the final call and
+// again in an else for the NONE prop index: 47 -> 7 (kept; retail's registers, both epilogues and the
+// late EBX push). Steps: top actor with the NONE store in an else 69, plus state declared first/prop-index
+// local/node and view at function scope 69 each; plus the data block 51 (head and NONE epilogue as retail,
+// node EBX and view spilled), view renamed 51, view declared first 51, two actor lookups 92, NONE as an
+// early store and return 79, view through the index getter after/before the node 74/88, one shared store
+// 52; the guard clause 7. On 7: the final call under a positive test 7, `(short)` cast 7, the type byte
+// declared signed char 7, a positive test around the 0x1f4f40 call 7.
 // @retail 0x1b89d0
 void __stdcall function_1b89d0(long actor_index, s_slot *slot)
 {
-	long prop_index = actor_get(actor_index)->prop_index;
-	s_slot_23 *state = (s_slot_23 *)slot;
+	s_actor_view *actor = actor_get(actor_index);
+	s_slot_23_data *state = (s_slot_23_data *)slot->unknownc;
 
-	if (prop_index != NONE)
+	if (actor->prop_index != NONE)
 	{
-		s_prop_node_view *node = prop_node_get(prop_index);
+		s_prop_node_view *node = prop_node_get(actor->prop_index);
 		s_prop_view_fields *view = prop_node_view(node);
 
-		if (view)
+		if (!view)
 		{
-			s_actor_view *actor = actor_get(actor_index);
-			if (state->unknown0c)
-				return;
-
-			state->unknown0c = state->unknown0d && function_1f86f0(actor_index);
-			if (state->unknown0c)
-			{
-				if (!state->unknown1b || !state->unknown1d || state->unknown1c)
-					return;
-
-				function_1f4f40(actor_index, &state->facing, state->unknown1d, &state->point, true);
-				state->unknown1c = true;
-				state->unknown0c = false;
-			}
-
-			if (view->unknown70 != 0 || !function_25da00(node))
-				return;
-
-			function_262800(actor_index, actor->unknown418, false);
+			state->unknown00 = true;
+			return;
 		}
-	}
+		if (state->unknown00)
+			return;
 
-	state->unknown0c = true;
+		state->unknown00 = state->unknown01 && function_1f86f0(actor_index);
+		if (state->unknown00)
+		{
+			if (!state->unknown0f || !state->unknown11 || state->unknown10)
+				return;
+
+			function_1f4f40(actor_index, &state->facing, state->unknown11, &state->point, true);
+			state->unknown10 = true;
+			state->unknown00 = false;
+		}
+
+		if (view->unknown70 != 0 || !function_25da00(node))
+			return;
+
+		function_262800(actor_index, actor->unknown418, false);
+		state->unknown00 = true;
+	}
+	else
+		state->unknown00 = true;
 }
 
 // @retail 0x1b8ae0
@@ -268,13 +282,13 @@ bool function_1f4a20(s_1f4a20_entry const *entries, long actor_index, s_referenc
     bool alternate, s_type_c3b527 *point, vector3f *facing,
     signed char *type, bool *available);
 
-// score 193 (was 212): frame 0x162c agrees since round 91; the actor offset (retail ESI), slot
+// score 193 (was 193): frame 0x162c agrees since round 91; the actor offset (retail ESI), slot
 // (retail rematerialized into EBX) and scratch (retail in node's slot) homes remain.
 // Earlier: aligned frame 0x1634 versus 0x162c and actor/slot/scratch homes remain.
 // Round 16: retail takes the actor index from its first stack argument into EBX, keeps the
 // scaled actor offset in ESI and the actor pointer in EDI and stores them at [esp+0x18] and
 // [esp+0x20]; ours keeps the slot index in ESI and spills the actor offset.
-// score 212 (was 212): aligned frame 0x1634 versus 0x162c and actor/slot/scratch homes remain.
+// Earlier note (score 212): aligned frame 0x1634 versus 0x162c and actor/slot/scratch homes remain.
 // Earlier: frame 0x1634 versus 0x162c; scaled actor offset and
 // slot/scratch homes remain, with a 14-byte length deficit.
 // Round 198: payload/native input/read-only input/input scope 323 each; clamp 322;
@@ -313,6 +327,18 @@ bool function_1f4a20(s_1f4a20_entry const *entries, long actor_index, s_referenc
 // has_markers cleared right before its test 284; reference copied before its flag 242 (one load,
 // 1048 bytes); state declared at the top 193; state in the node block and again before its
 // unknown04 test 294; minimum as distance < limit 193.
+// Round 45 (lane 16): retail calls 0x25d690 before pushing the marker call's arguments; the node
+// state read into a block local first gives that block exactly, 173 (one-use call result, not kept);
+// on it: early/late state pointers 294, existing 0x1f86f0 for the moving test 295 (stays a call),
+// named marker-list local 173; `return true` at the not-ready exit 288 (1068 bytes, own `mov al, 1`
+// epilogue; retail stores the result through AL and that exit returns AL unreloaded); non-volatile
+// result 287 (folded); scratch declared in the search block 193; `limit < distance ? limit :
+// distance` 191; limit read from the field at each use 189 (retail's select with distance in XMM0);
+// with that, the reference read once into a local inside the nested moving test 239 (1048 bytes).
+// Retail's `mov al, 1; mov [esp+0xf], al` with the not-ready exit returning AL unreloaded is the shape
+// of a plain bool result kept in memory (matched 0x1bcd00 shows it for a result assigned false on one
+// path); a plain result assigned false for the missing prop (single exit, body nested in the ready
+// test) folds to constants 293; the result's address taken as a no-op 287 (folded too).
 // @retail 0x1b85a0
 bool __stdcall function_1b85a0(long actor_index, s_slot *slot)
 {

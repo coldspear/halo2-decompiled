@@ -861,6 +861,10 @@ bool function_1995a0(const byte *source, dword source_size, byte *destination, l
 // do/while under `if (result)` 14. Compile-only probes (a constructor, a constant zero header copy,
 // a memset of a copy, bitfield or union kinds, `*(char *)&kind`, a pointer memset) all store both
 // zeros before the kind; no other retail function stores between an 8-byte memset's two halves.
+// Round 89, each with the named data pointer: two partial memsets 18; direct offset zero after
+// the first partial memset 112; explicit field stores 118; aggregate `= { 0 }` 9; named-type value
+// initialization 17; early data address with two partial memsets 18; header outside the loop 18;
+// named positive-count test 18; terminal size memset 18. All restored because none matched.
 // @retail 0x86800
 bool function_86800(dword capacity, c_simulation_view *view, dword source_size, byte *destination)
 {

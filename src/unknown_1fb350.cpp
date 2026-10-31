@@ -326,6 +326,24 @@ void function_f0fd0(long vehicle_index, bool set);
    unit's flags and are deleted */
 extern "C" void _ReadWriteBarrier(void);
 #pragma intrinsic(_ReadWriteBarrier)
+// Round 17: a _ReadWriteBarrier() between the datum lookup and the null test makes MSVC materialise
+// retail's 0-or-pointer phi, and a second one between iterator.index = index and the object-index
+// load keeps the object load after the store; with both the found path is instruction for instruction
+// retail's and the function measures 473 bytes, retail's length, but the second barrier makes MSVC
+// hoist g_4e0300 into EBP and wrecks the prologue (139). Without it the best surviving form is the
+// committed body with the datum index computed from the element's salt instead of the shared helper:
+// 99, a gain of 2, below the threshold, so the body was restored. The tail's element expression
+// (pool->size * index + pool->data), the order of the store and the datum index, and the object
+// index in a local are all insensitive (99, 99, 164, 99). What is left is the register allocation:
+// retail keeps the datum index in EDI, the element base in EBP and the object pool in EBX, and its
+// body is 7 bytes longer than ours, so the internal jump displacements differ as well.
+// Not kept (101, no match): the iterator step written out in the body (data_find_index, the
+// element and datum index by hand, a four-field datum iterator), a hand copy of function_1fb762.
+// With it the search matches retail byte for byte (the shared data_find_index scan
+// snapshots the high water in ESI and the four-field datum iterator gives retail's 0x14 frame and its
+// two pool homes). What still differs is register allocation: retail keeps the datum index in EDI and
+// the element base in EBP, ours keeps the datum index in EBX and the element base in ECX, so the
+// object-pool load lands in EBP instead of EBX and the unit mask in EAX instead of EDX.
 // score 122 (was 122): our frame is eight bytes smaller and the base pointer is kept in EDI where
 // retail keeps it in ECX. Retail iterates with the four-field datum iterator (data and index stored,
 // the datum index kept in EDI), snapshots the high water per search and computes the element from a

@@ -363,6 +363,14 @@ void function_125a90(long value);
 // the removal arm is written before the keep arm, which puts retail's blocks in retail's order.
 // Still differs: the b flag is loaded before the element address (retail loads it after) and
 // the type lookup uses EAX where retail uses EDX.
+// Round 109 (lane 5, fast): the special arm as `if (type == 0x26) remove = !a; else remove = false;`
+// on the long type with the kind arm as `if (byte == 1) remove = false;` 51: both arm bodies are
+// then retail's code (`cmp eax, 0x26`, the `sete` of !a, the fused kind arm), but the kind chain is
+// still laid out first; that with keep written first 47 (tail-merged); the condition named `bool
+// special = 0x20 || 0x26` with those arms 144 (retail's block order, but LTCG then inlines 0x221810,
+// 467 bytes), with `if (!special)` and the kind arm first 158 (471 bytes, inlined), with the call's
+// argument as `(short)type` 144. BLOCKED-BY 0x221810: the named-condition layout needs 0x221810 kept
+// out of line (its file is outside this round).
 // Round 44 (lane 16, fast counts; control 36): retail lays out the special arm first, falling
 // into the removal with its `!a` materialized (`sete al; test al, al; je keep`), then the kind
 // arm fused (`jne remove`) falling into keep; ours lays out the kind arm first (materialized

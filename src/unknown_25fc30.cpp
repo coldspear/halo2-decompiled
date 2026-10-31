@@ -457,6 +457,10 @@ void __stdcall function_25dd50(
 // s_sector_trace_result with its blocked/edge_index fields 38 (same code); `position->reference.unknown0
 // + covers` 38 (canonicalized: the scaled index stays the add's destination); the facing test written
 // constant-first 38; the embedded pathfinding assignment split into its own statements 38 (not kept: no gain).
+// Round 34 (fast): the two transform calls as a positive `if (a && b) side = ...; else continue;` 38
+// (same code); the facing test with the failing arm first as an if/else 85 (839 bytes); covers
+// declared at the loop-body top 38; no cover pointer, `covers[index]` at both uses 38; the face flags
+// read through `bsp->pathfinding` 165 (844 bytes; the face address keeps `[edx + ecx + 5]`).
 // @retail 0x25e430
 void __stdcall function_25e430(
 	long actor_index,

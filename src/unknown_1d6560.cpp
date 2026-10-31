@@ -114,6 +114,11 @@ void __stdcall function_1d6560(s_havok_component *component, s_physics_model_own
 // MiniMax R: both flag results computed as ((flags & 8) | 0x30) >> 2 and >> 3 instead of branching: 95 (not kept).
 // Round 200: byte/char/short/word layer result 92/91/119/119; with one direct full-width type
 // 141/141/121/121, all four lose the matched caller. Original layer and dispatch restored.
+// Round r4 (lane 17): one header pointer for type and object 132 (220 bytes, kind moves to ESI, caller 213); header
+// array local with one object_index read and one type read 124 (228, component on the stack, caller 209); one type
+// read keeping the component read in case 0 94 (256, component/index swap EAX/ECX, caller 13), the same with result
+// declared first 94 (caller 13); header array local with the component read at both uses 127 (224, caller 209).
+// The register parameters follow how often the body reads component: one read puts it on the stack.
 // Round 320: both rigid-body flags read live through the model; repeated/shared byte type
 // and original/explicit object-bit result arms 117/111/114/117; explicit level tests
 // 117/111/114/117. Every form loses the matched caller; complete original body restored.
