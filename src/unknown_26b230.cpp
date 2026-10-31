@@ -1801,29 +1801,33 @@ void function_269580(long destination_index, long source_index)
 	short count = 0;
 	iterator.next = ((s_clump_activity_view *)(g_502420->data + (source_index & 0xffff) * sizeof(s_clump_activity_view)))->first_prop;
 	while (clump_next_prop(&iterator)) indices[count++] = iterator.index;
-	long *cursor = indices;
-	for (short remaining = count; remaining > 0; --remaining)
+	short remaining = count;
+	if (remaining > 0)
 	{
-		long index = *cursor;
-		if (index != NONE && (index & 0xffff) < g_50241c->high_water_index)
+		long *cursor = indices;
+		for (; remaining > 0; --remaining)
 		{
-			s_prop_copy_view *copy = (s_prop_copy_view *)(g_50241c->data + g_50241c->size * (index & 0xffff));
-			if (copy->salt && copy->salt == (index >> 16))
+			long index = *cursor;
+			if (index != NONE && (index & 0xffff) < g_50241c->high_water_index)
 			{
-				long object_index = copy->object_index;
-				if (function_badc0(object_index, (dword)NONE))
+				s_prop_copy_view *copy = (s_prop_copy_view *)(g_50241c->data + g_50241c->size * (index & 0xffff));
+				if (copy->salt && copy->salt == (index >> 16))
 				{
-					long object_slot = object_index & 0xffff;
-					if (g_4de300[object_slot] != g_4de2fc)
+					long object_index = copy->object_index;
+					if (function_badc0(object_index, (dword)NONE))
 					{
-						g_4de300[object_slot] = g_4de2fc;
-						long added = function_26a860(destination, copy);
-						if (added != NONE) function_26a960((s_clump *)destination, added);
+						long object_slot = object_index & 0xffff;
+						if (g_4de300[object_slot] != g_4de2fc)
+						{
+							g_4de300[object_slot] = g_4de2fc;
+							long added = function_26a860(destination, copy);
+							if (added != NONE) function_26a960((s_clump *)destination, added);
+						}
 					}
 				}
 			}
+			++cursor;
 		}
-		++cursor;
 	}
 	g_4de2f8 = false;
 	if (*(real *)((byte *)source + 0x2c) > *(real *)((byte *)destination + 0x2c))
@@ -1906,6 +1910,19 @@ void function_269250(long clump_index, long actor_index);
 // Round 83 (fast; unchanged control 89): two-arm score assignment 128; zero-initialized two-arm
 // assignment 128; reversed strict comparison 89; separate best publication 89; old-clump local
 // after/before the scan 141/147; flattened selection/creation tests 89; byte activity snapshot 89.
+// Round 129: selection stored before the best score (retail cross-jumps the best store with the
+// initialisation's) 89 (aligned 54 -> 58); in-arm compare with that order 126 (480 B, aligned 60;
+// retail's x87 compare, but the found block is laid out after the improve block and the selection
+// stays in EDI after the loop); with the iterator's datum index 128 (pool hoisted and the shared best
+// store as retail, but the not-found path threads to the exit and the score/best/selection homes are
+// 0x14/0x18/0x1c against retail's 0x1c/0x18/0x14 reversed); best, score, selection declared in that
+// order, either selection 128/126 (homes unchanged).
+// Round 107 (fast, with 0x269580/0x269040 in the build; without them 0x269580's arguments swap):
+// the team-arm form gives retail's homes (selection 0x14, score 0x18, best 0x1c) and x87 compare,
+// 126; a memory-only selection (diagnostic, reverted) shows the pool then takes EBX. On the
+// team-arm form: selection locals before the walk 129; activity read in the walk call 126; team
+// compare reversed 126; the datum step reading the pool field at each use (data_iterator.h) 126,
+// identical. Zero-default score with the common compare 90.
 // @retail 0x2689d0
 void function_2689d0(void)
 {
@@ -2102,10 +2119,22 @@ void function_269250(long clump_index, long actor_index)
 // original/invariant-first completion and direct/shared head; fast
 // 230/230/229/229/230/230/229/229.
 // Original body and existing helper restored.
+// Round 107: the pool registers follow how g_502418/g_50241c are declared. With the 3 form and the
+// two pools as plain separate globals (either declaration order, or one of them in a one-field
+// struct) this function matches byte for byte, but 0x25d770 (0 -> 2) and 0x25d810 (0 -> 91) then
+// load the node pool first (the other 717 functions of the 46 pool files unchanged); with
+// s_prop_pool_storage those two match and this one keeps the node pool in edi. Also 3: the struct
+// with the tracking pool (0x502414) or the clump pool (0x502420) added, the struct defined in a
+// /GL- file, the prop step reading the pool twice. The swarm flag renamed (slot order) 89, identical.
 // Round 31: on the 3 form, prop loop as an explicit index loop with the lookup in its body 189 (the pools
 // are no longer hoisted); target-clear arm through prop_get at each use 220; the existing prop walk
 // struct 3; node iterator declared beside the prop iterator 3. On the opening body the deletion arm as
 // `if (unit) continue; break;` 89 (identical code).
+// Lane 14 r22: unit flag renamed to sort before the group flag 89 (slots unchanged); the completion
+// test as the prop loop's condition (`(!changed || unit) && next`, the removal arm `continue`) 111
+// (741 B, but the entry is not threaded past the test); the removed flag rechecked 3 (both flag slots
+// then agree; only the prop/node pool roles in EDI/EBP differ, set by s_prop_pool_storage, which
+// matched 0x25d770 needs); with the removed test last 190; set before the removal call 3.
 // @retail 0x26ae30
 void function_26ae30(long object_index)
 {
@@ -2309,6 +2338,9 @@ void *actor_get_character_situation_entry(long actor_index);
 // shift); one iterator per actor loop 283 (same code); structure global at each use 318; named stamp
 // index in both marking arms 319 (retail's direct marking addresses, later loops misaligned by padding);
 // with `while (selected < 50 && cursor < count)` as well 326.
+// DL round 206: candidate evaluator/collector inline modes 1/0, 0/1, 1/1, 2/0,
+// 0/2, 2/1, 1/2, 2/2 (ordinary, inline, forced) 283/283/283/1749/459/1749/459/3173.
+// Forced evaluator expansion also loses matched neighbours; all declarations and body restored.
 // @retail 0x269870
 void function_269870(long clump_index)
 {

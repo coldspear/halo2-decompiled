@@ -19,6 +19,7 @@
 #include "unknown_067e10.h"
 #include "unknown_058ee0.h"
 #include "crc.h"
+#include "bit_vector.h"
 
 void function_caf90(long unit_index, point3f *position);
 bool juggernaut_is(short player_index);
@@ -958,7 +959,7 @@ void voice_record_voice_mail(long port, DWORD maximum_time, DWORD buffer_size, B
 static inline long voice_get_unknown00(void)
 {
 	long result = 0;
-	if (voice_available())
+	if (g_4c9878.initialized && g_476fc8.initialized)
 		result = g_4c9878.unknown00;
 	return result;
 }
@@ -1324,6 +1325,18 @@ bool voice_channels_have_player(s_voice_channels *channels, long player)
 // Round 217: forward group-end ownership, outer/inner short-long, short-short, long-long,
 // long-short with post/pre-tested inner spans 224/222, 258/237, 236/240, 260/260. Tiny gains
 // rejected; other forms lose 0x54990 or regress. Original grouped traversal restored.
+// Round 30 (lane 10, one-file harness exact): retail's unrolled copies address channel 0 at +4 with
+// fixed offsets and one 0x5c0 step; indexed forms strength-reduce to a biased base (+0x17c or
+// +0x2ec, as matched 0x56160 does) and pass channels on the stack (0x54990 1). Indexed with an
+// element pointer 109, the same through a cursor `&channel[i]` 108, `channel + i` / `channel[i]`
+// 128 (368 bytes), indexed with a separate result 112; cursor, flag, total order 99 (350 bytes);
+// the cursor step in the for statement 94 (same code).
+// Round 95: single cause, the identity flag's register (bl, retail al); every other difference follows from it.
+// Flag before cursor and total 93 (350 bytes); flag, total, cursor 111 (0x54990 1); flag set by an if
+// from false 93 (still bl); flag at function entry 108 (0x54990 1); getter value kept as a long and compared
+// in the ternary 141 (0x54990 13); screened: const flag, `? true : false`, a per-channel stride local in
+// either operand order, `2 + product`, two-statement and parenthesised adds 94 (same code); flag per channel
+// 165 (390 bytes); the channels pointer kept live past the loop (diagnostic) leaves the flag in bl.
 // @retail 0x56220
 long voice_channels_get_bandwidth(s_voice_channels *channels, long player)
 {
@@ -1580,6 +1593,10 @@ static inline bool voice_mode_is_passive(void)
 // compiled /O2 or redeclared inline/__forceinline is inlined in all three callers; with the session getters
 // 0x59670/0x596a0 opaque the eager pair and esi remote appear (60, 415 bytes), so the lazy byte is
 // BLOCKED-BY 0x59670/0x596a0 being visible to LTCG, the call by 0x53bb0's per-site inlining.
+// Round 95: the active mask through the existing getter 0x54d00 171 (called, 390 bytes); the inner removal
+// test nested under the mask test, a named target bit, or a named removal flag 85 each (same code); the remote
+// mask computed after the active mask 113. 0x53bb0 declared inline (diagnostic) inlines it in all three callers
+// and its copy here runs 19 bytes long (102), so the per-site inlining is not the only gap.
 // @retail 0x55990
 void function_55990(s_voice_player_values *values)
 {
@@ -2629,7 +2646,7 @@ static __forceinline bool function_56790(dword arg_0, long arg_1)
 }
 
 // @retail 0x56790
-void function_56790(long *capacity, dword *remaining, dword allowed, word *selected,
+void function_56790(dword *remaining, long *capacity, dword allowed, word *selected,
 	bool preserve_one, long excluded, bool *blocked)
 {
 	for (long i = 0; i < 16; i++)
@@ -2660,43 +2677,7 @@ long __stdcall function_53b00(long player, byte *output, long capacity)
  return result;
 }
 
-// Round 19: unchanged; the capacity/preserve homes, the preferred-bit scheduling and the 0x53c70
-// call order still differ; no new form was found.
-// score 124 (was 124): capacity/preserve homes, preferred-bit scheduling and the 0x53c70 call order differ;
-// retail tests the availability flags once (no re-read) and recomputes 1 << preferred for the final ors.
-// Frame 0x14 agrees; capacity/preserve homes, preferred index/bit and helper setup differ.
-// Earlier: capacity/preserve homes, preferred-bit scheduling and session-field load differ.
-// Capacity named slots 124; native long preserve 144; final preferred-bit recomputation 161;
-// non-preservation-first finish 131; separate entry guards 124.
-// Preserve declared before capacity 124; complete output fill 146; later preferred-bit lifetime 124;
-// direct deferred-mask expression 124; combined skip predicate 124. Original body retained.
-// Boolean role names 124; entry-scope workspaces 124; guarded preferred/mode values 154;
-// shared final selected bit 189; direct blocked assignment 165.
-// Capacity/preserve and preferred-bit homes remain; original body retained.
-// Mode read from field +4 as retail does (value fix) 124; existing unknown00 getter 124;
-// plain flag test for preferred 162; word deferred 138 (its block then agrees, 447 bytes);
-// zero-initialised masks 124 but loses the matched 0x54890; int/unsigned shift in the final ors 176/176.
-// Captured/working capacity after guard/preserve/preferred/mode/members 127/147/158/147/147;
-// entry working declaration 127; derived capacity before admission/in routing scope 147/130. Restored.
-// Round 117: Plain availability fields 162; joint workspace names 124; full final mask 143; mode observation first 130; existing preferred getter 124; byte preserve 146; unsigned preferred 124.
-// Definite blocked path result 165; shared mode-two capacity 160; direct session query 188;
-// early allowed-member query 124 (exact-only); mode-two admission first 137;
-// preferred eligibility first 142; complete blocked-preservation arm 124; path result plus arm 165.
-// Round 71: shared availability scope with full-width deferred 167 (432 bytes);
-// full-width deferred with final preferred-bit recomputation 178 (417); entry preserve 124;
-// early allowed-member query with final recomputation 161 (428); entry preserve/selected 124;
-// selected-only recomputation 144; nonblocked deferred-only/both recomputation 146/146 (470).
-// Original body restored.
-// Round 82 (one-file LTCG build, exact for this file): plain flag reads in the preferred getter give retail's flag
-// block (CL for the second flag, AL kept for the mode test) and recomputing 1 << preferred for the final ors puts the
-// index in EDI as retail does, but either lets the bit take EBP and the mode a cmov (retail: the bit in EBX, spilled
-// around the calls, and the mode on the stack). Word deferred 138; recomputed ors 161; both 176; plain getter 162,
-// with both 177; the 0x53c70 result in a named local 124 (the call stays after the pushes); every order of the bit,
-// blocked, selected and deferred declarations, five finish shapes and a 250-form toggle sample 124 or more. The
-// one-use deferred temporary and its casts were dropped (same code).
-// Round 86: mode in an if/else 157, declared first 135; word deferred with selected ored first 138; output
-// stores in each finish arm 160; bit tests through function_56790(dword, long) 165; local renames move no
-// slot; with the plain getter the mode becomes a cmov and selected loses EBP; a 154-form toggle search 124+.
+/* fills a route with the members the routing reaches now and the ones it defers */
 // @retail 0x565c0
 void __stdcall function_565c0(s_voice_routing *routing, dword remaining, s_voice_route *output)
 {
@@ -2712,22 +2693,17 @@ void __stdcall function_565c0(s_voice_routing *routing, dword remaining, s_voice
  if (g_4c9878.initialized)
   mode = g_4c9878.unknown04;
  dword eligible = voice_get_current_member_value();
- dword preferred_bit = 1 << (long)preferred;
- bool blocked = false;
  word selected = output->members;
- dword deferred = output->unknown02;
- if (!(eligible & preferred_bit))
- {
+ bool blocked = false;
+ word deferred = output->unknown02;
+ if (!function_56790(eligible, preferred))
   preserve = false;
-  if (mode == 2)
-   capacity = 1;
- }
  else if (preserve && (mode == 1 || mode == 2))
  {
   blocked = true;
   goto finish;
  }
- else if (mode == 2)
+ if (mode == 2)
   capacity = 1;
  {
   long kind = voice_get_session_kind();
@@ -2735,23 +2711,24 @@ void __stdcall function_565c0(s_voice_routing *routing, dword remaining, s_voice
   remaining &= eligible;
   if (deferred)
    blocked = true;
+  dword allowed = kind == 2 ? function_53c70() : 0;
   if (kind == 2)
-   function_56790(&capacity, &remaining, function_53c70(), &selected, preserve, preferred, &blocked);
+   function_56790(&remaining, &capacity, allowed, &selected, preserve, preferred, &blocked);
   if (capacity != 1 || !preserve || !blocked)
-   function_56790(&capacity, &remaining, (dword)-1, &selected, preserve, preferred, &blocked);
+   function_56790(&remaining, &capacity, (dword)-1, &selected, preserve, preferred, &blocked);
  }
 finish:
  if (preserve)
  {
   if (blocked)
   {
+   word_flags_set(&selected, preferred, true);
    deferred |= (word)remaining;
-   selected |= (word)preferred_bit;
   }
-  else if ((remaining & preferred_bit) != 0)
+  else if (function_56790(remaining, preferred))
   {
-   selected |= (word)preferred_bit;
-   deferred |= (word)preferred_bit;
+   word_flags_set(&selected, preferred, true);
+   word_flags_set(&deferred, preferred, true);
   }
  }
  else
@@ -3075,6 +3052,15 @@ struct s_voice_route_choice
 // Round 86: a choice cursor declared first and stepped at the end of the body 392 (frame 0x48); a reference to
 // the listener mask 399; the headset test inverted 406; the distance comparison reversed 363 and the nearest
 // test nested 363 (same code).
+// Round 95: after the loops retail holds talker in EBX and a zero in EBP (byte tests then load al and test
+// it, the priority-0 push is `push ebp`, and the two SetPlaybackPriority tails merge); ours swaps them (zero
+// in EBX gives `cmp [mem], bl` and the separate tails). An extra per-iteration use of choices or talker
+// (diagnostic) moves neither. Word headset 364; branch radio with a word headset 408 (1273 bytes, aligned
+// differences 220 against 281); the nearest arm first (`if (!radio && nearest != NONE)`) 383, with branch radio
+// 416, with a word headset 384.
+// Round 446: Unsigned nearest/player field plus ordinal/both, signed headset alone/with nearest/
+// with player/all three, and player field alone: all eight 363 on the byte-bitwise graph.
+// Unsigned mode field did not compile; original mode, records and full body restored.
 // @retail 0x57eb0
 void function_57eb0(s_voice_player_settings *settings, long talker,
 	const s_voice_route_choice *choices, long count)
@@ -3254,9 +3240,9 @@ static inline long voice_packet_clamp_count(byte count, long minimum, long maxim
  return count;
 }
 
+// score 139 (was 139): channel/cursor/count registers and route homes differ;
 // Round 19: unchanged; retail keeps the channel in ebp from entry and the cursor in edi, ours
 // gives the member index ebp and reloads the channel; no new form was found.
-// score 139 (was 139): channel/cursor/count registers and route homes differ;
 // frame pointer 188; short stride 163; short index 139; recipient-bit reuse 161; route name 139.
 // Round 53: retail keeps the channel in ebp from entry (its home then holds the route) and spills
 // the current member; ours gives the member ebp and reloads the channel. A packet cursor beside the
@@ -3275,6 +3261,23 @@ static inline long voice_packet_clamp_count(byte count, long minimum, long maxim
 // Round 86: cursor with a channel-index local in the relay arm 158, with a dword member mask 190, with split
 // NONE/kind tests 164; index local, late stride and early counter 158; index local in the other arm 162;
 // a 245-form toggle search 139+.
+// Round 95: the allocator ranks the member local just above the channel parameter: with the packet cursor,
+// one extra per-iteration read of channel->index (diagnostic store to a global) flips EBP to the channel
+// from entry, the route moves into the channel's parameter slot and, with the entry order size, stride,
+// count, cursor, only that store, `add edi, ecx` for `add edi, 2` and retail's separate zero-trip exit
+// (`mov eax, ecx`) differ (harness 61); the member forced to memory gives the same flip (136). Local and
+// parameter names change nothing. Real trials: cursor 164; cursor with entry order size/stride/count/cursor
+// 167; member fetched before a shared kind test 169; clear through word_flags_set 164; named member bit
+// 179; screened: the existing inline bit test 164, arms swapped 156, member declared at loop top 167,
+// a shared two-call receive helper 184.
+// Round 446: Direct count bounds disjunction/lower-first/upper-first 185/179/180;
+// byte admission with original clamp 139; byte/long direct bounds 185/182;
+// direct/byte bounds with independent cursor 177/177. Original complete body restored.
+// Round 52: packet cursor beside the count (retail's EDI cursor, BX mask, ESI size; the member then
+// takes EBP and the channel stays in its stack slot) 164; with that, the NONE and kind tests split 164,
+// the mask tested as `(members >> member) & 1` 164, a per-iteration channel-index local 164; the
+// cursor at function scope before the stride 141. Screened: a channel pointer copy and the mask
+// declared before the member read change nothing.
 // @retail 0x55e10
 long __stdcall function_55e10(s_voice_channel *channel, byte *data, long size, bool relay)
 {

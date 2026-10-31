@@ -320,6 +320,12 @@ s_object_gc_entry_ab g_440570[6] =
 // Round 300: Named native long/dword level mask at use with compound, rejection-guard and
 // nested-positive eligibility 110/110/110/110/110/110; rejection/nested forms with terminal state
 // fields at use 125/125. Original frame, loop, field observations and body restored.
+// Round 105: retail behaves as if the 0xbf1c0 call may change g_4de2f4 (the loop-top load stays
+// in the header and the failure exit reloads); ours keeps it across the call, spilling the level.
+// 0xbf1c0 defined after this function 110 (no change); level test as a scope around a while loop
+// with the final clear through the entry pointer 179 (330 bytes); state declared before the loop,
+// assigned at its top, cleared after it 110; index walk while loop in a level scope 181; that with
+// the in-loop action exit 186.
 // Round 44: index walk (`g_440570[index].`, retail's +8 entry pointer) 177; index walk + `advance = !again` with the
 // in-loop exit through the state local 122 (393 bytes, retail's frame, level register and sete), with an entry pointer
 // 122, gathered declared first 121; while + break + advance + after-loop clear 176 (333 bytes), state re-read at the
@@ -329,6 +335,11 @@ s_object_gc_entry_ab g_440570[6] =
 // Round 315: Early gather commitment with direct terminal state/query-produced critical/reused action
 // ownership masks 0..7: 115/125/138/125/113/134/132/136. Direct-state forms recover the frame but
 // shorten to 374 and regress. Original state, query, callbacks, buffers and loop restored at 110.
+// Round r4 (lane 17): index walk + advance flag with one final clear (break on the query) 176 (333 bytes); with early
+// returns for NONE and the query, global at each use 119 (379, aligned 35: our while is inverted and its first action
+// test peeled at the constant first entry, and the NONE exit falls through where retail branches to it); the same
+// with the exit test inside for (;;) 119 (same code); NONE as an enclosing if with one final clear and the query
+// returning 153 (361); the query in the while condition 176 (333).
 // @retail 0xbf380
 void function_bf380()
 {
@@ -755,6 +766,9 @@ void __stdcall function_bc300(long object_index)
 // src/unknown_0b8ca0.cpp, src/unknown_118e80.cpp, src/unit_object_type.cpp) the function matches
 // byte for byte, but 0x118510 rises 83 -> 102 (its call site then loads the size into ECX where
 // retail uses EAX): BLOCKED-BY 0x118510.
+// Round 30 (lane C): declaring the third parameter `short` alone makes the reduced image match
+// byte for byte, but the full tree then fails to link (LNK2001: ?function_bc380@@YI_NJJJJ@Z is
+// still referenced by declarations in four other files), so the parameter stays `long`.
 // Forms (score 42 then): a shared absolute index 42; the header reused for the refreshed lookup
 // 68; a function-scope block pointer 42; allocator noinline 42; old size read before allocation
 // 81; size optimization 107; global optimization off 151; shared index, block scope and allocator

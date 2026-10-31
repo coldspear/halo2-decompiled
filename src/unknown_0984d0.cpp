@@ -312,7 +312,7 @@ PRIVATE __forceinline bool function_98fb1(c_handle_table_450cd0 *arg_0, long con
 	long local_1 = arg_1[0];
 	return function_991d0(arg_0, local_1, local_0, arg_2);
 }
-// score 105 (was 115): the case 1/3 loop still differs in registers: retail keeps the items
+// score 115 (was 115): the case 1/3 loop still differs in registers: retail keeps the items
 // pointer and the index in different registers than ours, and the argument order of the
 // 0x991d0 call is not reproduced.
 // pointer in eax and the data pointer in edx and enters the loop past the items reload; ours uses
@@ -369,6 +369,11 @@ PRIVATE __forceinline bool function_98fb1(c_handle_table_450cd0 *arg_0, long con
 // sized by info.count 158; peers local also in case 2/4 for the flag tests and the chain query 126;
 // 0x991d0 called directly from the loop 137; entry state tested first as an early return 105; loop
 // cursors declared before the count test 195.
+// Round 10 (m3 lane 2): the switch now dispatches with grouped case labels and breaks in place of
+// gotos to labels (identical code, 115). The volatile cursor reads swapped 115; both passed straight
+// to the helper 115; the case 2/4 entry through a named element pointer 115, its state read once into
+// a named local 115 (same code). Natural loops still split the handle (harness: pointer cursors 184
+// positional, index loops with the direct call or the helper 184/185).
 // @retail 0x98fb0
 void c_handle_table_450cd0::v6(s_request_450cd0 *a1)
 {
@@ -377,14 +382,8 @@ void c_handle_table_450cd0::v6(s_request_450cd0 *a1)
 	long local_2 = local_1 & 0x3ff;
 	switch (local_0->type)
 	{
-	case 1: goto local_3;
-	case 2: goto local_4;
-	case 3: goto local_3;
-	case 4: goto local_4;
-	case 5: goto local_5;
-	default: __assume(0);
-	}
-local_3:
+	case 1:
+	case 3:
 	{
 		bool local_6 = true;
 		long local_7 = 0;
@@ -420,9 +419,10 @@ local_3:
 			replication_table_add_chain((long const *)local_0->info.b, table, local_0->info.count, (long const *)local_0->info.items, (long const *)local_0->info.c, (s_handle_creation *)&local_0->data);
 		for (long local_7 = 0; local_7 < local_0->info.count; local_7++)
 			function_99690(this, local_0->info.items[local_7], 3);
-		return;
+		break;
 	}
-local_4:
+	case 2:
+	case 4:
 	{
 		if (entries[local_2].state && entries[local_2].handle == local_1 && entries[local_2].state == 3)
 		{
@@ -446,8 +446,12 @@ local_4:
 				}
 			}
 		}
-		return;
+		break;
 	}
-local_5:
-	((c_98fb0 *)table->owner)->v7(local_1, local_0->info.c[0], local_0->count, &local_0->data);
+	case 5:
+		((c_98fb0 *)table->owner)->v7(local_1, local_0->info.c[0], local_0->count, &local_0->data);
+		break;
+	default:
+		__assume(0);
+	}
 }

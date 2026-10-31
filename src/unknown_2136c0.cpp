@@ -90,10 +90,18 @@ void function_213970(void);
 // joint preference guard 158. All gains below the retention threshold; original body restored.
 // Round 198: Complete payload clear orders with the byte-tail block first/last/middle,
 // size-ordered blocks and all blocks reversed: eight orders, all 131. Original body and bounds restored.
+// Round 205: Coordinated invalidation/finish ordinary-inline pairs 1/0, 0/1, 1/1: 131/131/131;
+// forced pairs 2/0, 0/2, 2/1, 1/2, 2/2: 392/973/392/973/1434.
+// All provider declarations restored; separate allocation and the language expansion still block the two retail clears.
 // Round 2 of lane 18: BLOCKED-BY the separate definitions (block A: src/unknown_213760.cpp and
 // src/unknown_213d20.cpp, with an extern in src/unknown_214c30.cpp; block B: g_55bd04/g_55bd08 in
 // src/unknown_12be90.cpp). Scalar zero stores before the clears 131, without the size pragma 158;
 // enabled flag before the NONE stores 131; NONE stores before the zero stores 131, without the pragma 161.
+// Round 210: Actual preference-difference decisions reused for refresh and dirty publication:
+// Boolean language/version/both 193/193/226; native language/version/both 185/185/221; byte/short
+// pair 226/225. All regress with every match preserved. Original conditional publications,
+// comparisons, calls, resets and whole body restored. Two complete storage blocks still require
+// coordinated changes to protected definitions outside this queue.
 // @retail 0x2136c0
 void function_2136c0(void)
 {

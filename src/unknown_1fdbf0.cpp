@@ -385,6 +385,28 @@ vector3f *function_11d000(vector3f const *v, vector3f *out);
 // projection itself 43; either with single-expression rows 57 (38/11 aligned against 46/17: the
 // cosine is then held in a register as in retail, colours still ours); with the projection term
 // first in every row 57.
+// Round 45 (lane 9): scalar axis copies read after the parallel factor 43 (same code); the parallel factor computed
+// from forward before the direction copy 73; from forward after it 69; cross terms before the parallel factor 53; the
+// parallel part through vector3f_scale into a vector 88.
+// Round 107 (fast): i, j, k declared before the parallel factor 43; the rows into a rotated vector stored
+// once 100 (796 bytes); axis-first parallel products in all rows 43; a named cosine local 43; scalar axis
+// copies declared before the parallel factor 43 (all the same code but the copy).
+// Lane 14 r19 (fast `0x1fddd0 0x1fe120 0x30bf0 0x11d000` reproduces 43; no other retail code uses
+// the 0.1339746 constant, and the matched 0.866 users are not rotations): named j/k projection
+// products before the i row 57; the projection defined after the cross terms 53; axis j/k read into
+// scalars after the projection, axis first 43 (same code); axis-first j/k products with the i and j
+// stores together 59 (776 bytes); projection term first in every row with `axis.i * local_0` 57.
+// Round 95 (lane 8): which operand of a parallel product keeps its register follows the variables'
+// first-assignment order (the later one is the destination). The projection stored in the earlier
+// `dot` variable makes all three products in place on the axis (retail: i copies the projection,
+// j/k in place) 67 (766 bytes, aligned 46 -> 63); that with the cosine term first in row i 66
+// (aligned 37, left: axis j/k in xmm4/xmm3 for retail's xmm2/xmm1 and row i in place); the dot
+// accumulated 67, both 66; parallel term first in rows j/k 62 (aligned 40).
+// Lane 16 r46: axis i/j/k read into scalars before `*direction = forward` 43 (same code); cross terms
+// read from forward, the dot from direction 74 (776 B); axis operands first in the dot and the crosses
+// 43; the j and k rows interleaved (both projections `axis * local_0`, then both cosine terms, then both
+// sine terms, then both stores) 57 (gives retail's cosine in a register and early d.j load, colours stay
+// ours: direction j/i take xmm1/xmm2 where retail gives them axis k/j); that with k first 57.
 // @retail 0x1fddd0
 bool function_1fddd0(long actor_index, point3f const *origin, vector3f *direction,
     long *out_index, real *arg_c9241c, long *out_object)

@@ -1357,13 +1357,14 @@ char *__stdcall function_1537a0(byte const *address);
 
 struct s_rating_summary
 {
-    long values[16];
+    ULONGLONG session;
+    long values[14];
     char identity[64];
     char name[64];
 };
 
 #pragma inline_depth(0)
-// score 92 (was 177): frame 0xfc and length (1212) agree. Left: level and the group-compare cursor take
+// score 92 (was 92): frame 0xfc and length (1212) agree. Left: level and the group-compare cursor take
 // each other's slots (ours 0x18/0x14, retail 0x14/0x18); retail loads the key before the collection
 // fields and calls the identity formatter before pushing strncpy's count; in the team loop retail keeps
 // the counters cursor in a stack slot and the collection, then level, in EBX (ours: cursor in EBX,
@@ -1441,6 +1442,26 @@ struct s_rating_summary
 // name budget word/short/byte/dword 174/181/230/170; word/short/byte budget with word character
 // 170/174/211. Seven-point leads rejected; original types, loops and complete body restored.
 // DL190: Native status alone/statistics/both with aggregate zero 177/170/365; status with aggregate zero 365; status with word character 183, with statistics 176, with statistics/aggregate 369; statistics/aggregate without status 365. Native full-width unsigned-long/int/unsigned-int count results on status/statistics 170 each. Seven-point best rejected; original types, loops and body restored.
+// Round 12 (m3 lane 2; kept: the team statistics pointer formed in the inner block instead of a loop-top
+// pointer copied into it, byte-identical 92): the formatted identity in a local before the strncpy 89
+// (retail's call-before-count order); with it identity renamed player_identity or level renamed
+// adjusted_level/rating_level 89 (names never move the level/compare-cursor slots); with it the summary's
+// key stored before the two collection fields 83 (fixes that block except the identity slot), the two
+// fields swapped 87, key between them 89; the key first alone 88; with the inner statistics pointer 88;
+// the statistics read through collection->team_counters[i] at the call 212; level declared per loop 108,
+// all four shared values per loop 108, each with the formatted local and key first 100. Left after 83:
+// level and the compare cursor/identity slot swapped (ours 0x18/0x14), and in the team loop retail keeps
+// the collection then level in EBX and the counters cursor in a stack slot (ours the reverse).
+// Round 47 (lane 16; kept: the summary as `= { 0 }` with a 64-bit first field, byte-identical 92, in
+// place of two zero stores and a hand-written memset of the rest): the team loop bounded by a
+// team-count helper in the for condition 331 (loop rotated); a team entry pointer in the team loop
+// 245 (1192 bytes); a force-inline terminating copy helper for the identity 225 (it stays a
+// register-argument call under the inline_depth(0) region); on the kept form, the key stored before the
+// session copy 88 (the summary block then differs only in the formatter call/count push order).
+// Slot sharing: retail packs {level, team cursor} and {group-compare cursor, identity, counters
+// cursor}; ours spills level in both loops and keeps the counters cursor in EBX, so the slot swap
+// likely follows the team loop's register choice (diagnostic: with constant counter arguments level
+// takes EBX, but the collection is still reloaded from its parameter slot rather than kept in EBX).
 // @retail 0x741f0
 void __stdcall function_741f0(s_match_player_rating_collection *collection, s_query_batch *batch)
 {
@@ -1483,15 +1504,11 @@ void __stdcall function_741f0(s_match_player_rating_collection *collection, s_qu
                         function_739a0(group, key);
                     }
                 }
-                s_rating_summary summary;
-                summary.values[0] = 0;
-                summary.values[1] = 0;
-                memset((byte *)&summary + 8, 0, sizeof(summary) - 8);
-                summary.values[2] = function_199290((byte *)collection);
-                summary.values[3] = function_199250((s_address_table *)collection, g_4cf7cc);
-                summary.values[0] = *(long *)((byte *)collection + 0x130);
-                summary.values[1] = *(long *)((byte *)collection + 0x134);
-                summary.values[4] = key;
+                s_rating_summary summary = { 0 };
+                summary.values[0] = function_199290((byte *)collection);
+                summary.values[1] = function_199250((s_address_table *)collection, g_4cf7cc);
+                summary.session = *(const ULONGLONG *)((byte *)collection + 0x130);
+                summary.values[2] = key;
                 const XUID *identity = (const XUID *)((const byte *)player + 2);
                 strncpy(summary.identity, function_1537a0((const byte *)identity), 64);
                 summary.identity[63] = 0;
@@ -1509,17 +1526,17 @@ void __stdcall function_741f0(s_match_player_rating_collection *collection, s_qu
                     destination++;
                     remaining--;
                 } while (character && remaining > 0);
-                summary.values[5] = *(const short *)((const byte *)player + 0xa2);
-                summary.values[6] = player->rank;
-                summary.values[7] = value;
-                summary.values[8] = change;
-                summary.values[9] = level;
-                summary.values[10] = first;
-                summary.values[11] = second;
-                summary.values[12] = third;
-                summary.values[13] = player->team;
-                summary.values[14] = collection->teams[player->team].unknown02;
-                summary.values[15] = collection->teams[player->team].rank;
+                summary.values[3] = *(const short *)((const byte *)player + 0xa2);
+                summary.values[4] = player->rank;
+                summary.values[5] = value;
+                summary.values[6] = change;
+                summary.values[7] = level;
+                summary.values[8] = first;
+                summary.values[9] = second;
+                summary.values[10] = third;
+                summary.values[11] = player->team;
+                summary.values[12] = collection->teams[player->team].unknown02;
+                summary.values[13] = collection->teams[player->team].rank;
                 function_73e00(lower, batch, identity, change, first, second, third, level, 3, players);
             }
         }
@@ -1528,7 +1545,6 @@ void __stdcall function_741f0(s_match_player_rating_collection *collection, s_qu
     {
         for (long i = 0; ; ++i)
         {
-            const s_rating_counters_team *local_3 = &collection->team_counters[i];
             long count = NONE;
             switch (variant->type)
             {
@@ -1551,7 +1567,7 @@ void __stdcall function_741f0(s_match_player_rating_collection *collection, s_qu
                     value += change;
                     level = function_74970(value, skill);
                     lower = value >= 0 ? function_74970(value, 0) : 0;
-                    const s_rating_counters_team *stats = local_3;
+                    const s_rating_counters_team *stats = &collection->team_counters[i];
                     function_73e00(lower, batch, (const XUID *)collection->teams[i].unknown0c, change,
                         stats->first, stats->second, stats->third, level, 3, players);
                 }

@@ -350,7 +350,7 @@ bool function_44690(s_word_bit_iterator *iterator, long *out);
 // frame 0xf0 agrees; padded-count retention and iterator/portal homes differ.
 // Earlier at 125 (was 142): retail keeps count + 31 in EBX (word count shifted from it after the copies),
 // bytes in EDI and base in ESI; ours keeps bytes in EBX, so the spill homes and memcmp registers differ.
-// score 111 (was 111): frame 0xf0 agrees. Retail keeps count + 31 in EBX across the copies (word count
+// frame 0xf0 agrees. Retail keeps count + 31 in EBX across the copies (word count
 // shifted from it afterwards: `sar ebx, 5`), derives bytes from the word count (`lea edi, [edx*4]`, EDI)
 // and base in ESI; ours computes bytes as `sar 3; and ~3` in EBX, so the spill homes (base, word count,
 // iterator, cluster index), the memcmp registers and the convergence branch differ.
@@ -395,6 +395,11 @@ bool function_44690(s_word_bit_iterator *iterator, long *out);
 // ((count + 31) >> 5) * 4 238 (retail's `lea [words*4]` head, aligned 82 for 86, but later code
 // shifts), with the word count as bytes / 4 238 (821 bytes); every local renamed (three name sets) 111
 // each: identical code, names do not move these slots.
+// Round 210: Complementary convergence bool/byte/short/long 111/111/112/111; with one padded-count
+// capture for both original byte/base observations 111/111/112/111. Frame 0xf0, first +0x10 and
+// 811-byte extent remain. The original unsigned word quotient, signed loops and memory operations
+// were preserved. Original positive Boolean convergence and complete body restored; padded-
+// count/byte-count and scalar homes remain.
 // @retail 0x16de20
 void function_16de20(short index, s_16e150_bits const *table, dword *output)
 {
@@ -1634,6 +1639,10 @@ struct s_camera_clip_reference_16ebf0
 // N227: Independent computed left-axis output, simple/staged cross, direct/retained matrix
 // inputs and native/CRT transfers: eight at 239/976. Original cross destination, copies
 // and complete body restored; forward/position saved-register exchange remains.
+// Round 45 (lane 9): BLOCKED-BY 0x171d00 (held file): retail passes the clip flag in DL and the end point in ESI.
+// Flag false by default with one `= true` under retail's nesting 165; plane test through plane_distance_to_point 127;
+// plane terms spelled i, k, j 120 (retail's j, k, i product order, aligned 88 -> 86); with a cluster pointer local
+// 120; with a reference-table base local 120.
 // Round 90 (fast): forward pointer local declared before/after the position pointer 118/118 (plain
 // fast 119); forward and up pointer locals in all six declaration orders 166..248; up pointer only
 // 166; position written as the field expression (forward then takes EBX, but position is spilled)

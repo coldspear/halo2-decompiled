@@ -77,18 +77,6 @@ static inline void sequence_window_advance(s_sequence_window *window, long seque
 	}
 }
 
-/* the release routine retail inlines here */
-static inline void free_block(void *block)
-{
-	long info;
-	if (!g_4d87f8->allocator->get_info(block, &info))
-		info = NONE;
-	s_allocator_globals *globals = g_4d87f8;
-	globals->allocator->release(block, NONE);
-	if (block != 0)
-		globals->count--;
-}
-
 
 // @retail 0x81410
 bool c_network_reliable_stream::v1(long *reason)
@@ -129,6 +117,15 @@ static __forceinline void function_94bf3(s_allocator_globals *arg_0, void *arg_1
 	local_0->release(arg_1, NONE);
 	if (arg_1)
 		arg_0->count--;
+}
+
+/* the release routine retail inlines here */
+static inline void free_block(void *block)
+{
+	long info;
+	if (!g_4d87f8->allocator->get_info(block, &info))
+		info = NONE;
+	function_94bf3(g_4d87f8, block);
 }
 
 static __forceinline void function_94bf4(s_allocator_globals *arg_0, void *arg_1, s_allocator_globals **arg_2)
@@ -1166,7 +1163,7 @@ void __stdcall function_095580(void *header, long message_type, long message_siz
 
 bool network_message_read_header(s_bitstream *stream, long *type, c_type_659ceb const *collection, long *size);
 
-// score 141 (was 141): frame agrees; aligned 39. Retail reads the oldest sequence once (EDX) for the
+// score 107 (was 141): frame agrees; aligned 50. Retail reads the oldest sequence once (EDX) for the
 // count, the first sequence and the scan; keeps the result in a stack byte, made zero in CL at entry and
 // returned with `mov al, cl` from early exits placed at the end, reloaded at the final return; sets the
 // copy loop's fragment to NULL before the index test; and falls into the failure return after the
@@ -1302,16 +1299,34 @@ bool network_message_read_header(s_bitstream *stream, long *type, c_type_659ceb 
 // Round 80: result-first Boolean 234; separate Boolean/long availability 225/162;
 // two long results 162; force-inline count 141; oldest reference 141;
 // addressed Boolean empty/final exits 234/234. Original long-result body restored.
+// Round 105 (kept, 141 -> 107): bool result, the count test as a scope, `if (!result) return
+// result;` after the scan, a literal false failure, the copy loop's fragment set to NULL before
+// the index test, and the release through the existing function_94bf3. Still differs: oldest in
+// ECX with the zero stored as an immediate (retail EDX, zero in CL returned by the early exits),
+// and the early exits share the final return. On it: success through one exit label 118; failure
+// as `result = false` 123; early count return 121; result declared first 107; scan fragment NULL
+// first 107; count `> 0` 106 (oldest in EDX, one extra test); an address-of-result diagnostic
+// compiled identically (compile-only).
 // Round 44: bool result with an early `if (!result) return result;` after the scan 224 (781 bytes); that with
 // a `return false` failure 224; that with the count test as a scope 212 (789 bytes); long result with the early
 // return and `return false` failure 161; bool result, count scope, `return false` failure 232. Original body kept.
+// Round 51: the 14 missing bytes are retail's own epilogue for the scan-not-entered exit (before
+// `push edi`, `mov al, cl`): retail returns a merged result from CL at both early exits, ours folds it
+// to `xor al, al` and joins a shared full epilogue. `bool last; bool result = last = false;` 250; the
+// copy/decode block under `if (result)` with literal returns 123; one final `return result;` reached
+// by a goto from the decode success, failure `return false` 116; the same with the failure as
+// `result = false` 108 (779 bytes: result made in a register at entry and stored, oldest in EDX and
+// the failure epilogue as retail; but the result takes AL, coalesced with the return, where retail
+// has CL with the count in EAX, so the early exits share the final epilogue's pops). On that form:
+// result declared before `self`, declared then assigned, the count in a local 108 each; forceinline
+// count helper 108; count `> 0` 116; a `window` pointer local 291; the count written out (diagnostic)
+// 248, as `!=` 252 (count then in EAX, result in DL).
 // @retail 0x95840
 bool __stdcall function_095840(s_network_stream_header *header, long *message_type, long *message_size, void *message_data)
 {
 	c_network_unreliable_stream *self = (c_network_unreliable_stream *)header;
-	long result = false;
-	if (!sequence_window_count(&self->m_fragment_window))
-		return result;
+	bool result = false;
+	if (sequence_window_count(&self->m_fragment_window))
 	{
 		long first = self->m_fragment_window.oldest + 1;
 		for (long sequence = first; sequence <= self->m_fragment_window.newest; sequence++)
@@ -1323,7 +1338,8 @@ bool __stdcall function_095840(s_network_stream_header *header, long *message_ty
 			if (fragment->flags & 2)
 				result = true;
 		}
-		if (result)
+		if (!result)
+			return result;
 		{
 			struct
 			{
@@ -1343,7 +1359,9 @@ bool __stdcall function_095840(s_network_stream_header *header, long *message_ty
 			for (long sequence = first; !last && sequence <= self->m_fragment_window.newest; sequence++)
 			{
 				long index = sequence_window_index(&self->m_fragment_window, sequence);
-				s_stream_fragment *fragment = index != NONE ? &self->m_fragments[index] : NULL;
+				s_stream_fragment *fragment = NULL;
+				if (index != NONE)
+					fragment = &self->m_fragments[index];
 				long size;
 				if (fragment->flags & 2)
 				{
@@ -1377,7 +1395,7 @@ bool __stdcall function_095840(s_network_stream_header *header, long *message_ty
 				}
 			}
 			self->m_unknown05 = true;
-			result = false;
+			return false;
 		}
 	}
 	return result;

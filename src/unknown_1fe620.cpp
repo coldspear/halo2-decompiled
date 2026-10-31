@@ -13,6 +13,17 @@ void function_1fe410(point3f *arg_0, real arg_1);
 static __forceinline long real_to_long(real value);
 
 // score 373 (was 378): frame 0x4c versus 0x48; early third-input/random-state carriers and scalar homes differ.
+// Round 28 lead (not kept: needs one-use locals): retail reads the third draw's bounds (+0x14/+0x18) before the
+// first draw and keeps them on the x87 stack; with them read into locals ahead of the draws, all three draws through
+// local_10 (the random-state local: one seed store after the third draw, as retail) and the lower bounds written as
+// call arguments, the third input moves to ESI and the random state to ECX and the frame becomes 0x48 (367, 1843
+// bytes, first difference +0x1ab); with +0x3c read at each use and the resolver as an if/else with two copies (as
+// 0x210850, which retail inlines here) 342 at 1861 bytes. Without the early bound reads 436 (1870); +0x38 as a local
+// changes nothing. Alone on the original body: +0x3c per use 447 (1846), if/else resolver 466 (1889), lower bounds
+// as arguments 389, both of the first two 450; early bounds only 424, with +0x38 420, +0x38 only 375; early bounds
+// with slot_random_range for draws 1/3, 1, 3: 438/418/441; draws through local_10 without early bounds 438 (1856),
+// draws 1/3 only with early bounds 441; the 0x210850 call (not inlined by our LTCG, also with an inline or
+// __forceinline declaration here) 455/470.
 // Retail runs the three range draws on a seed held in EAX with one store at the end; ours reloads and stores it
 // per draw. Round 26: the hand-written normalization replaced by normalize3d 373 (kept); the up-vector cross
 // product through cross3f with a const {0, 0, 1} 378, with normalize3d 378; magnitude3d for the displacement

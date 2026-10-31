@@ -153,27 +153,9 @@ c_button_widget_45d5d0::c_button_widget_45d5d0(short valuef8, word user_flags) :
 {
 }
 
-/* the first of the widget's siblings */
-static __forceinline c_class_1a2c81 *widget_first_sibling(c_class_1a2c81 *widget)
-{
-	while (widget->previous)
-	{
-		widget = widget->previous;
-	}
-	return widget;
-}
-
-/* the last of the widget's siblings */
-static __forceinline c_class_1a2c81 *widget_last_sibling(c_class_1a2c81 *widget)
-{
-	while (widget->next)
-	{
-		widget = widget->next;
-	}
-	return widget;
-}
-
-// score 12 (was 20): only the entry differs: retail finds the first widget in EAX/EDX, saves ESI after it
+// score 2 (was 12): only the loop's shared tail differs: retail copies the widget to ESI and tests ESI, ours
+// tests EAX before the copy (`test eax, eax; mov esi, eax`).
+// Before round 9, score 12 (was 20): only the entry differs: retail finds the first widget in EAX/EDX, saves ESI after it
 // and joins the loop's `mov esi, eax; test esi, esi` tail; ours finds it straight into ESI (push first).
 // Forms with the old candidate copied at the loop head (all 20 unless given): entry/repeated/both field
 // walks; entry helper only 43; shared edge cursor; earlier entry edge lifetime; widget edge iteration;
@@ -190,10 +172,12 @@ static __forceinline c_class_1a2c81 *widget_last_sibling(c_class_1a2c81 *widget)
 // with a do-while 28; forceinline eligibility helper 20.
 // The ternary step (`widget = next ? next : first sibling`) keeps the body as retail: 12; the same through a
 // next-or-first ternary helper 12.
+// Round 9: the shared next_wrapped (screen_widgets.h, a single-exit `result` set in an if/else) at the
+// entry and the step 2 (the same form took 0x22ebc3/0x22ec1b 12 -> 2).
 // @retail 0x2c8f56
 void c_button_widget_45d5d0::v8()
 {
-	c_class_1a2c81 *widget = next ? next : widget_first_sibling(this);
+	c_class_1a2c81 *widget = next_wrapped();
 	while (widget)
 	{
 		if (widget->has_valid_type() && widget->value6e)
@@ -202,11 +186,13 @@ void c_button_widget_45d5d0::v8()
 			widget->function_22ecb4_2(true);
 			return;
 		}
-		widget = widget->next ? widget->next : widget_first_sibling(widget);
+		widget = widget->next_wrapped();
 	}
 }
 
-// score 12 (was 20): only the entry differs: retail finds the first widget in EAX/EDX, saves ESI after it
+// score 2 (was 12): only the loop's shared tail differs: retail copies the widget to ESI and tests ESI, ours
+// tests EAX before the copy (`test eax, eax; mov esi, eax`).
+// Before round 9, score 12 (was 20): only the entry differs: retail finds the first widget in EAX/EDX, saves ESI after it
 // and joins the loop's `mov esi, eax; test esi, esi` tail; ours finds it straight into ESI (push first).
 // Forms with the old candidate copied at the loop head (all 20 unless given): entry/repeated/both field
 // walks; entry helper only 43; shared edge cursor; earlier entry edge lifetime; widget edge iteration;
@@ -223,10 +209,12 @@ void c_button_widget_45d5d0::v8()
 // with a do-while 28; forceinline eligibility helper 20.
 // The ternary step (`widget = previous ? previous : last sibling`) keeps the body as retail: 12; the same through
 // a previous-or-last ternary helper 12.
+// Round 9: the shared previous_wrapped (screen_widgets.h, a single-exit `result` set in an if/else) at the
+// entry and the step 2 (the same form took 0x22ebc3/0x22ec1b 12 -> 2).
 // @retail 0x2c8fb4
 void c_button_widget_45d5d0::v9()
 {
-	c_class_1a2c81 *widget = previous ? previous : widget_last_sibling(this);
+	c_class_1a2c81 *widget = previous_wrapped();
 	while (widget)
 	{
 		if (widget->has_valid_type() && widget->value6e)
@@ -235,7 +223,7 @@ void c_button_widget_45d5d0::v9()
 			widget->function_22ecb4_2(true);
 			return;
 		}
-		widget = widget->previous ? widget->previous : widget_last_sibling(widget);
+		widget = widget->previous_wrapped();
 	}
 }
 

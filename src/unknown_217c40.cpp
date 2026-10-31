@@ -138,6 +138,9 @@ PRIVATE __forceinline void function_217c42(real *arg_0, real *arg_1, real arg_2,
 // Round 220: Selected trig magnitude in shared/separate native phase scalars, with long/word/byte/char
 // controller induction, 501/548/539/539 each. Byte/char recover frame 0x40 and first +0x1b but regress;
 // every form retains 2012 bytes and both matched callers. Original body restored.
+// Round 27: retail's instruction order is followed closely, but our frame is 0x38 against retail's
+// 0x40: retail holds one more dword local below the angles, so its dwords sit four bytes higher and
+// its double angle at 0x48 against our 0x40, and every stack reference differs; no form found.
 // score 474 (was 501): the per-controller block and the preferences are declared in retail's order,
 // so the block pointer keeps the register retail loads it into. The frame 0x38 versus 0x40, the loop
 // counter's home and the remaining field and register rotations remain.

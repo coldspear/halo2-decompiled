@@ -421,6 +421,11 @@ bool function_1b1970(long actor_index, short mode, vector2f const *forward,
 // with the mode local after it 19; short index with a result local set in both
 // arms 48. The 0x1b0e40 setup order is unchanged by an origin local, a const
 // origin cast, a mode or index local at the call.
+// Round 53: slot data view scoped to the active branch 12; current index with the mode in
+// the valid block 26; whole-slot state scoped to the active branch 12; facing address before
+// the dot test 18; facing address before the active branch 155; leader declaration split 12;
+// basis declarations before the leader 12; state declaration split from its cast 12.
+// Opening body restored.
 // @retail 0x1b1a90
 void __stdcall function_1b1a90(long actor_index, s_slot *slot, s_slot_target_list *list)
 {

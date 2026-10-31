@@ -189,6 +189,14 @@ void function_44720(void)
 // material index by the long index, `geometry == NULL` (63 forms) none closer; a `dword` selector
 // local read first (the 0x44720 form) or a `flags` local for the level and transform tests none
 // closer; the lookup as an ordinary or forceinline function in another file stays a call.
+// Round 33 (fast, agreeing with the full count on the unchanged source): with the level at the call
+// and the lookup given `&g_4ba138[(short)index]` (136, 503 bytes) the entry address and the transform
+// (`and eax, 0xf`, flags re-read in each lookup path) are retail's, but g_4e0348 is hoisted into EBX,
+// the index and entry swap EDI/EBP, the level (not the weight) takes EBX in the inner loop and the
+// non-tag path re-reads the first word. On that: the 0x44720 selector local (`dword entry_flags`) 136;
+// the selector local alone with the level at the call 146; the expression argument on the cached-byte
+// form 140; the lookup taking the entry index (both callers) 136 / 140 on the cached form, and
+// 0x45560 190 -> 228.
 // Round 44: lookup given `&g_4ba138[index]` (long index) 177, with level at the call 169; first test read through
 // `g_4ba138[(short)index]` with the entry pointer after it and level at the call 139 (508 bytes), plus the indexed
 // lookup 150; indexed lookup with the weight read at the call and level at the call 140 (503 bytes). Original kept.
@@ -341,6 +349,9 @@ void __stdcall function_44c90(long group, dword selection_mask, long level,
 // Round 437: One intersection result and a single marking block, crossed with read-only
 // geometry/native bound sphere/uniform node reads, 223/223/223/223/234/234/242/242. All
 // conditional-result forms restored; all matched controls survived.
+// Round 446: Native center reference/own inline declaration/both 190/190/190;
+// each with the full table/dispatch ordinal 191/191/191; explicit stdcall with
+// original/reference center 190/190. Original definition, declaration and sole caller restored.
 // @retail 0x45560
 void function_45560(short entry_index, point3f const *center, real radius)
 {

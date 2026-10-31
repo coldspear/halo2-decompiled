@@ -434,10 +434,10 @@ point3f *function_b9dd0(long object_index, point3f *result);
 // flag still travels in BL where retail uses CL (the special path does `mov cl, 1; jmp
 // tail` and the scan stores 0 at its start); this round's trials in this file found no
 // lower form of that carrier choice
-// score 47 (was 47): NONE is still kept in EBP where retail keeps it in EBX and the special
+// Earlier: NONE is still kept in EBP where retail keeps it in EBX and the special
 // flag still travels in BL where retail uses CL; this round's trials in this file found
 // no lower form of that carrier choice
-// score 47 (was 47): NONE in EBP (retail EBX) and the special flag in BL (retail CL: the special
+// Earlier: NONE in EBP (retail EBX) and the special flag in BL (retail CL: the special
 // path does `mov cl, 1; jmp tail`, the scan stores 0 at its start) remain; the tail and the
 // proximity block now match. Round 78: the tail's prop node as a named pointer 85 -> 51 and the
 // deltas x, y, z 51 -> 47 (kept); on that, `&&` flag 200; flag set in if/else arms 200;
@@ -494,6 +494,36 @@ point3f *function_b9dd0(long object_index, point3f *result);
 // Round 433: Complementary ordinary-case predicate, bitwise/logical OR, original/complementary
 // permission, entry/eligible permission scope; fast 48/74/53/75/200/222/201/222.
 // Original body and existing helper restored.
+// Round 44 (lane 16, fast counts; the unchanged control gives 47): `special = type == 6;
+// special &= byte != 0` 47 (same code); `(type == 6) & actor->unknown268` (raw byte) 193;
+// `special = false; if (type == 6) special = actor->unknown268 != 0;` 99 (aligned 11: the entry
+// is retail's, NONE in EBX, the special test branches as retail, but the flag is stored
+// at both defs and read from memory at the tail, so the tail's movsx takes ECX); that with
+// `else special = false` instead of the initializer 187 (877 bytes); that with special
+// declared first in the function 135 (frame 0x30).
+// Round 18 (lane 14): bitwise flag with the bool field unconverted 193; flag built as `== 6` then
+// `&= field != 0` 47 (same code); flag computed without the one-use tag local 47; `&&` flag with a
+// return at the proximity exit only 226 (872 bytes; compile-only screen: the special path still falls
+// into the unknown268 block); bitwise flag held in a long 172.
+// Round 32 (lane 10, fast counts): the tail condition as a named `release` bool 47 (same code), with the `&&`
+// flag 200; `special = type == 6; if (special) special = byte != 0;` 210 (877 bytes); the tail as nested
+// `if (special) if (prop_index != NONE)` 47 (same code), with the `&&` flag 200; the flag declared next to
+// allow_exit and assigned the `&&` value in the block 200; `special = false; if (type == 6 && byte)
+// special = true; else { scan }` in the block 202 (872 bytes: both constants stored, read from memory at
+// the tail), with the false flag at function scope 223.
+// Round 109 (lane 5, fast): the entry tests as one `goto done` 47 (same code). Cause found: NONE
+// loses EBX whenever the special def needs a third byte register (EDX keeps the vehicle index for
+// 0x1b8d40), so the `!= 0` bitwise def takes BL; `(type == 6) & actor->unknown268` (two byte
+// registers) gives NONE in EBX and retail's entry. An explicit `special = false` at the scan's start
+// gives retail's split (0 stored to the argument slot, reloaded at the scan's exit, a scratch
+// register in the tail): bitwise def 68 (flag AL, NONE EBP); raw-bool def 193 (aligned 18: only the
+// setcc def against retail's branchy `mov cl, 1; jmp`, and the tail flag in AL, not CL), operands
+// swapped 193 (same); `&&` def 200 (flag memory-only, tail after the special path); the F11 def 97
+// (memory-only). Every all-constant (branchy) def keeps the flag in memory.
+// Round 131 (lane 4, aligned counts against 39): seat_object = NONE declared at the outer block's
+// top 47 (aligned 40); allow_exit declared after the actor lookup 52 (44); `!!actor->unknown268`
+// in the bitwise def 47 (same code); the iterator declared at the outer block's top 47 (same code);
+// the seat index in a long 196.
 // @retail 0x1bbf40
 short __stdcall function_1bbf40(long actor_index, s_slot *slot)
 {

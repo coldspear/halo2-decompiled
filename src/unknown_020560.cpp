@@ -851,7 +851,7 @@ PRIVATE __forceinline void copy_light_sample(s_light_sample const *sample, byte 
     *direction = sample->direction;
 }
 
-// score 604 (was 627): Frame 0x18/0x2c, input/selection homes, override layout and fraction retention differ.
+// score 589 (was 604): Frame 0x18/0x2c, input/selection homes, override layout and fraction retention differ.
 // Native point-difference producer subsets nearest/anchor/both/opposite/nearest+opposite/
 // anchor+opposite/all: 626/627/626/685/668/685/668; all plus shared dot 668 (exact-only).
 // The one-point nearest gains are ineligible; original scalar producers and arithmetic restored.
@@ -863,6 +863,9 @@ PRIVATE __forceinline void copy_light_sample(s_light_sample const *sample, byte 
 // actual pointer-end traversal alone/both 696/629/798; nearest ordinal/opposite pointer
 // 604 (kept, plain; 2138/2122 bytes), inverse 618. Frame shrinks to 0x18; the position
 // input arrives in EAX rather than EDX; search/fraction homes remain.
+// Round 450: one sample-table observation on cursor/end traversal 594; complete query
+// value 729; both 727; live count 604, with table/query/both 594/729/727; entry delta 604.
+// Singleton/multi-record shared table scope 589 (kept, plain; 2127/2122 bytes).
 // @retail 0x22cf0
 void __stdcall function_22cf0(s_light_sample_source const *source, real *red, real *green, real *blue, byte order,
     vector3f *direction, point3f const *position)
@@ -877,14 +880,15 @@ void __stdcall function_22cf0(s_light_sample_source const *source, real *red, re
             memcpy(blue, g_4b8988, sizeof(g_4b8988));
             return;
         }
+        s_light_sample const *samples = source->entries;
         if (count == 1)
         {
-            copy_light_sample(source->entries, order, red, green, blue, direction);
+            copy_light_sample(samples, order, red, green, blue, direction);
             return;
         }
         long nearest = 0;
         real closest_distance = 1048576.0f;
-        s_light_sample const *nearest_sample = source->entries;
+        s_light_sample const *nearest_sample = samples;
         for (long i = 0; i < count; ++i)
         {
             real x = position->x - nearest_sample->position.x;
@@ -898,15 +902,15 @@ void __stdcall function_22cf0(s_light_sample_source const *source, real *red, re
             }
             ++nearest_sample;
         }
-        s_light_sample const *first = source->entries + nearest;
+        s_light_sample const *first = samples + nearest;
         vector3f delta;
         delta.i = position->x - first->position.x;
         delta.j = position->y - first->position.y;
         delta.k = position->z - first->position.z;
         long opposite = NONE;
         real other_distance = 1048576.0f;
-        for (s_light_sample const *opposite_sample = source->entries;
-             opposite_sample < source->entries + count; ++opposite_sample)
+        for (s_light_sample const *opposite_sample = samples;
+             opposite_sample < samples + count; ++opposite_sample)
         {
             if (opposite_sample != first)
             {
@@ -920,18 +924,18 @@ void __stdcall function_22cf0(s_light_sample_source const *source, real *red, re
                     if (distance < other_distance)
                     {
                         other_distance = distance;
-                        opposite = opposite_sample - source->entries;
+                        opposite = opposite_sample - samples;
                     }
                 }
             }
         }
         real fraction = opposite != NONE
-            ? function_022c30(&first->position, position, &source->entries[opposite].position) : 0.0f;
+            ? function_022c30(&first->position, position, &samples[opposite].position) : 0.0f;
         if (fraction <= 0.0f || opposite == NONE)
             copy_light_sample(first, order, red, green, blue, direction);
         else
         {
-            s_light_sample const *second = source->entries + opposite;
+            s_light_sample const *second = samples + opposite;
             if (fraction >= 1.0f)
                 copy_light_sample(second, order, red, green, blue, direction);
             else
@@ -1267,6 +1271,10 @@ bool function_0bfe60(dword const *flags, long bit);
 // 52; the clamp as if/else 52; a const set 52. Without LTCG every spelling of the bitset row
 // (row pointer, &row[0], flat index, pointer arithmetic, const, a separate global or struct row)
 // gives ADD; retail's LEA costs the one byte that shifts the exits.
+// Round 49 (lane 12), screened in an LTCG mini-link with the D3D objects (it reproduces ours but for
+// 0xbfe60's bitset argument, so only differences count): loop counter, index or set declared at the
+// top no change; bitset row declared before the test index +17; the index from an if +3; status as
+// long no change; a while loop +5.
 // Round 7 (m3 lane 2): retail's LEA comes back when the row is first computed as 0xbfe60's argument
 // (`function_0bfe60(g_51f40c.bitsets[set], index)`) and the store goes through a row pointer named at
 // the store (CSE'd and spilled as retail): 38, only the colours left (a mixed read, kept only on a
@@ -1277,6 +1285,20 @@ bool function_0bfe60(dword const *flags, long bit);
 // before the loop 52; the push pointer read as `*(dword volatile **)device` 52; the test index written
 // at both calls 142 (as lane 13); status declared before the test index 53; `slot->b == player` 52;
 // `player == g_5234c4` 53.
+// Round 108 (lane 6), on round 7's 38 form (the row passed straight to 0xbfe60, named at the store;
+// only the colours left: counter/total EDI where retail has EBP, test index and player EBP/EBP
+// where retail has EDI/EBX, the device EDI where retail reuses status's EBX): the loop counter
+// declared before the loop 38; `slot->b == player` 38; the index set to the counter and then
+// overwritten from the list 41; the test index computed before the query branch 49; the push
+// pointer without volatile 42; a count local (`indices ? count : g_51f40c.count`) in place of
+// reassigning the parameter 47. Retail inlines
+// the SDK's begin-visibility-test body here, which our link keeps out of line.
+// Round 31 (lane 10): on the round-7 row form (38) the rest is one register permutation (retail
+// counter/total EBP, player EBX, slot fields and test index EDI, device EBX; ours EDI, EBP, EBX,
+// EDI). The total as short or word 125/125 (the clamp re-extends); the row named at the loop top 85;
+// round-7 form with a short total 135; with the mask tested before the player 135; with the slot
+// tests as a `continue` filter 38. A one-file harness with the D3D objects linked is not exact (60:
+// it cannot reproduce MakeRequestedSpace's register argument).
 // @retail 0x20bb0
 void __stdcall function_20bb0(long player, dword mask, long const *indices, long count, bool query, visibility_draw_callback draw)
 {
@@ -1372,6 +1394,9 @@ long __stdcall function_3bf20(s_slot *slot, byte *data);
 // sinks), read before the storage test 6; written inside the bitset test 72 (the load stays, the
 // divide moves after the clamp); the bit test through function_0bfe60 90; the bit test before
 // the clamp 79.
+// Round 88: availability before validity, direct/shared bit test 77/77; blocked polarity
+// and row pointer 68/68; availability before the slot 90; full counter there 90;
+// inline target 6; const slot 6. Early dependencies move the divide and bit work; restored.
 // @retail 0x3c270
 bool __stdcall function_3c270(dword value)
 {

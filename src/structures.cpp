@@ -241,6 +241,23 @@ static __forceinline bool structure_bsp_collision_available()
 // Round 44: existing availability producer result-first/guard returns/nested outcomes/
 // structure once/settings once/both/both guarded/both with BSP receiver 61/98/98/61/78/78/98/61.
 // Original helper/body restored; exclusion BL and source-slot join remain.
+// Round 32 (lane 10, fast counts): `bool excluded = scenery && policy != 2;` with
+// `if (!excluded && 0xbf9a0) { result = 0x14a8e0(...); return result; } else if (!excluded) requery; else
+// return result;` 56 (286 bytes, threaded: no flag), with a bool result 71 (269 bytes); the requery as
+// `if (!excluded) ... else found = false;` 72 (268 bytes), with a bool result 82 (258 bytes); the flag set
+// in the scenery arm with the model query as its else-if and the collision re-read from the source at the
+// join before `if (excluded) return result;` 55 (286 bytes, still threaded; a flag set in a test, not kept),
+// with `if (!excluded) requery else found = false` 72; an inline exclusion test returning true/false
+// (diagnostic) 95 (269 bytes).
+// Round 11 (lane 2): ours threads the second flag test across the 0xbf9a0 call (the false edge knows
+// the flag is clear); retail threads only the first. Real: the scenery test in a forceinline
+// single-exit bool helper 112 (302 bytes: 0x10a0b0 inlined, flag threaded); the && flag tested
+// twice (`!excluded && 0xbf9a0`, then `if (excluded) return result;`) 62; on it, `collision` reloaded
+// from the source just before the second test 62 (dropped before threading; diagnostic); on it, a
+// bool result 65; a function-scope flag cleared at entry, set in the scenery arm, 0xbf9a0 in an else-if,
+// the requery under `if (!excluded)` with `found = false` otherwise 77 (263 bytes). The one-file LTCG
+// harness passes the surface in EAX (the real build in ESI) even with 0xd2bb0's file and the other
+// callers of 0x14ac60/0x14a8e0 linked, so it cannot screen this function.
 // @retail 0x14b120
 bool function_14b120(s_surface_query_source source, void *surface)
 {
@@ -768,6 +785,12 @@ done:
 // Round 229: collision object observed at each use 125; complete eligibility observations 216,
 // both 216; query success in the actual result 158, with object/eligibility/both 158/233/233;
 // all with admitted-geometry result lifetime 267. Full original body restored.
+// Lane 15 r19: retail's caller pushes the constant 1 for the third stack parameter and retail never
+// reads that slot; retail's result byte lives in the surface parameter's slot (dead once the surface
+// pointer is in EBP). Result as a local with the parameter unread 126 (LTCG drops the parameter,
+// `ret 0xc`, matched caller 0xd2a50 56), plus `(void)&parameter` 126 (0xd2a50 56); the parameter read in
+// the retry test 124 (471 bytes, 0xd2a50 kept; LTCG keeps the read); the two exclusion tests as one
+// nested if 125 (same code), with the object branch first 130.
 // @retail 0x14af40
 bool function_14af40(bool include_objects, point3f const *point, vector3f const *direction,
     long ignore_object_index, bool result, void *surface, point3f *probe)

@@ -158,6 +158,11 @@ void function_71ff0(c_session_state_matchmaking *arg_0, long arg_1,
 // combined tail then per-phase publication: 449/455/484/480/441/461/476/471. Original conditional true
 // stores, result carrier and complete executable body restored.
 // Round 441: Deadline expiry owns guard/reset result; bool expiry with long/bool/short/byte reset 469/450/469/450; long expiry 463/447/463/447. Long expiry plus byte/bool reset recovers frame 0x3e4 but regresses; all original computations and body restored.
+// Round 449: primary/secondary/both entry states read at each equality
+// use 439 each; with secondary receiver declared after first guard 457
+// each; primary/both live states with conditional index producer 467 each.
+// Original snapshots, receiver lifetime and index producer restored; frame,
+// dead state stores and getter boundary remain.
 // @retail 0x71730
 bool __stdcall function_71730(c_session_state_matchmaking *arg_0)
 {
@@ -211,8 +216,8 @@ bool __stdcall function_71730(c_session_state_matchmaking *arg_0)
 			*(long *)(local_9 + 0x184) == network_session_get_maximum_players(local_2))
 			goto local_28;
 		if (*(long *)(local_11 + 8) == 0 &&
-			(local_10 > g_network_configuration.value1e4 * 1000 ||
-			 *(long *)(local_11 + 0x10) > g_network_configuration.value1e0))
+			(local_10 > g_network_configuration.value1c0[9] * 1000 ||
+			 *(long *)(local_11 + 0x10) > g_network_configuration.value1c0[8]))
 			*(long *)(local_11 + 8) = 2;
 		if (!network_session_players_match(local_1, local_2) || local_16.field_360 ||
 			local_2->player_count != *(long *)(local_9 + 0x184))

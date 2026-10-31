@@ -80,6 +80,9 @@ extern s_4e6950 g_4e6950;
 // and all four 418/414/411/385/416/411/445; retained case-23 scaler from selected input 360.
 // All regress; original body restored at retail length, coefficient reload/clamp scheduling
 // remains.
+// Round 445: Clamp-only component walk after retained scaler 367; symmetric first-product
+// lifetimes 342; both 367; symmetric biased-product lifetimes 342; walk/biased 367;
+// first/biased 342; all 357; all with forced existing clamp 357. Original body/helper restored.
 // @retail 0x33980
 void function_33980(long selector, vector3f *out)
 {

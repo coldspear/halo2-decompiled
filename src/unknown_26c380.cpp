@@ -9,7 +9,7 @@
 #include "unknown_26c380.h"
 #include "path.h"
 
-bool function_270600(s_path_location const *location, long node_index);
+bool function_270600(long node_index, s_path_location const *location);
 
 /* an edge as the traces read it: its flags, and the sectors on either side */
 struct s_sector_edge
@@ -372,7 +372,7 @@ bool function_26c590(s_pathfinding_data const *pathfinding, point3f const *origi
 						goto done;
 					}
 					if (location && (((s_sector_edge const *)edge)->flags & 0x80) &&
-						function_270600(location, iterator.edge_index))
+						function_270600(iterator.edge_index, location))
 					{
 						result->blocked = true;
 						success = (bool)hit;

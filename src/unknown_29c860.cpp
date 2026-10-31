@@ -146,6 +146,13 @@ __forceinline void function_29c9ee(vector3f const *arg_0, vector3f const *arg_1,
 // Round 208: queued output pointer/reference returns 21/21 (689 bytes); native output memcpy 2;
 // complete float trig pair 40 (692); immutable lookup pointers/helper values 2/2;
 // vector-local names/helper-value names 2/2. All restored; the second cross load/fold remains.
+// Round 49 (lane 12): every 0x11cc90 spelling (named cross before/after the acos, `0 >` test,
+// `-angle`, ternary, early return, if/else clamp, clamp inside the acos call, result local) leaves the
+// inlined loads as they are; only removing the 0x1e5450 call before them, or taking the angle before
+// that call (42), gives retail's pair. Point parameters as 2-D vectors 2; `object_get(arg_1)->tag_index`
+// 2; a named turn-angle local instead of reusing arg_4 2; the two limits in separate locals 39;
+// one-expression angle sum 34 (with separate limits 2); a named object pointer after/before the
+// actor lookup or first 2/2/13; 0x11cc90's parameters declared (b, a) 2; all three first forms 2.
 // @retail 0x29c860
 void function_29c860(long arg_0, long arg_1, point2f const *arg_2,
 	point2f const *arg_3, real arg_4, vector3f *arg_5)
@@ -236,7 +243,7 @@ __forceinline real function_29cc7e(vector3f *arg_0)
 	return normalize3d(arg_0);
 }
 
-// score 300 (was 360): the actor flag updates are the existing setters 0x1e4290 (clear 0x800)
+// score 300 (was 300): the actor flag updates are the existing setters 0x1e4290 (clear 0x800)
 // and 0x1e4260 (set 2), which retail inlines here (they are `inline` at their definitions), and the
 // side test reads the left vector, which is initialised from local_8 as sibling 0x29a190 writes it
 // (retail reads the left vector's home there and the scalar's home in the two direction sums).
@@ -251,7 +258,23 @@ __forceinline real function_29cc7e(vector3f *arg_0)
 // three other operand orders 300 each; direction.i/direction.j operands reordered 300-322 (canonical);
 // the side test as the full 2-D dot with the left vector 328; the left vector through vector3f_assign
 // 321; declared in the steering block 377; the avoidance vector at function scope 322; a separate
+// velocity temporary for the early vehicle block 415. Round 177: behavioural names for the left
+// and avoidance vectors (the avoidance name sorting first) 300 (same code: names do not break this
+// slot tie); the velocity dot grouped i + (k + j) 300 (our terms j, k, then i; retail k, j, then i);
+// the velocity dot through the existing dot3f either way 300 (j, k, then i); the 3x direction store
+// through the existing vector3f_scale 386 (retail's flag-store order exactly, aligned 101 -> 95, but
+// the steering rotation's XMM registers move and the body ends 10 bytes short), on it the rotation
+// terms swapped in either or both sums 386 (canonical), the dot3f forms 386; a no-op `* 1.f` on the
+// speed 300 (folded) and `* 1.0001f` 390 as reassociation diagnostics (no sum order moved).
 // velocity temporary for the early vehicle block 415.
+// Round 12 (m3 lane 2): local_13/local_14 renamed left/avoidance 300 (slots unchanged: names do not
+// break the tie); left_i defined right after the forward vector's normalization 358, with the left
+// vector too 357, the left vector alone there 356; the 0x5d0 flag stored after the three scaled
+// components 301 (still after them: retail stores it between the first product and its store);
+// the scaled components through vector3f_scale with the flag after/before 394/386 (2815 bytes).
+// Diagnostic (not kept): one extra avoidance store moves the slots but changes the code 319 (2827).
+// Much of the count is a one-instruction shift after the steering-direction block, where retail
+// loads local_9.i, left_i and local_9.j first and interleaves the two sums.
 // @retail 0x29cbb0
 void function_29cbb0(long arg_0, long arg_1, vector3f const *arg_2, vector3f *arg_3,
 	short *arg_4, vector3f *arg_5, bool *arg_6, bool *arg_7, short arg_8)

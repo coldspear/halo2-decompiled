@@ -367,9 +367,22 @@ short *function_e70b0(long unit_index, short *value);
 // Round 99 (lane 6): the tick store through the existing 0x1aefc0 helper (fistp into a short) 49
 // (identical code); `rate * elapsed` 49; slot cast first with the actor assigned separately 49; a
 // unit-index local for the action-state read 49; the prop stamp before the event call 133.
+// Round 3 (lane 17): the actor looked up at each use in the timer test 152 (465 bytes); a named elapsed
+// tick count in the prop test 49; the elapsed seconds named 49; a named object index for the event
+// call 49; node and prop declared at function scope 49.
 // Round 7 (m3 lane 2): matched 0x1aeb60/0x1af0a0 here give the index ECX and the data EDX as ours does;
 // the index copied into a local 49; the prop index named for its test and lookup 49; the index read once
 // through its address 49; `2 == ...` for the final mode test 49; `state->timer == 0` 49.
+// Round 11 (m3 lane 2): the two final tests and the action query as one condition (action declared
+// first) 49; the prop time product in a named elapsed value 49; the timer's zero test nested over
+// the actor flag test 49; `if (--state->ticks < 1)` 108 (445 bytes); the final mode read through a
+// second named actor lookup 49. Retail: 8 matched functions load an actor index into EDX with the
+// data base in ECX (0x1a80e0, 0x1b5aa0, 0x258660, ...), 15 into ECX (0x1aeb60, 0x1a93c0, ...); no
+// frame or prologue feature separates the two groups.
+// Round 110 (fast): the final block as a guard return 49; the action query's out value tested in place of
+// the returned pointer 49; `7 != ...` 49; `0 < state->timer` 49 (the same code each time). Diagnostic, not
+// kept: the actor address written offset first (`(index & 0xffff) * size + data`) 49, so the operand order
+// of the address expression does not decide the ECX/EDX tie either.
 // @retail 0x1afb30
 void __stdcall function_1afb30(long actor_index, s_slot *slot)
 {

@@ -77,6 +77,9 @@ PRIVATE __forceinline real function_29e3b1(point3f const *arg_0, point3f const *
     real local_2 = arg_0->z - arg_1->z;
     return (real)sqrt(local_2 * local_2 + local_1 * local_1 + local_0 * local_0);
 }
+// Round 27: the instruction order follows retail closely, but the locals sit in different frame
+// slots, the group pointer is in EBP where retail keeps EBX and retail parks the group index in the
+// incoming s_reference slot at 0x80; no form found this round.
 // score 398 (was 398): frame 0x64 now agrees; selected defaults, point bitmap, endpoint homes, root-table roles and x87 scheduling differ.
 // Earlier: frame 0x68/0x64, induction/endpoint homes and x87 scheduling differ.
 // Earlier: table-pointer roles now agree; frame 0x68/0x64, outer-loop reload placement, inner-loop registers and x87 square order remain.
@@ -141,6 +144,17 @@ PRIVATE __forceinline real function_29e3b1(point3f const *arg_0, point3f const *
 // Round 434: scan-scoped selected group/first/both/terminal/group-terminal/first-terminal/all
 // constant defaults 438/438/440/438/440/440/444; all plus scan-scoped best distance 468. Frame
 // stays 0x64; the last grows to 1609 bytes. Late group default recovers root registers but loses an entry store; restored.
+// Round 205: Consistent link-array base with outer/inner/both actual cursors 464/433/447; record cursor 433;
+// outer-record/inner-record/all cursors 500/455/436; all with shared bitmap operations 458.
+// All restored; selected-default, endpoint and bitmap homes and root-table roles remain.
+// Round 4 (lane 18, fast): the selected defaults, best distance or first default renamed to sort
+// first/last 398 each (slots don't move: retail 0x44/0x28/0x24/0x38, ours 0x3c/0x40/0x1c/0x34); the
+// group table read before the link table 414; the group bitmap cleared before the marker call 413;
+// the three defaults as one chained assignment 398; the group index declared with its read 398; the
+// marker position declared at function scope 398. Restored.
+// Round 205: Consistent link-array base with outer/inner/both actual cursors 464/433/447; record cursor 433;
+// outer-record/inner-record/all cursors 500/455/436; all with shared bitmap operations 458.
+// All restored; selected-default, endpoint and bitmap homes and root-table roles remain.
 // @retail 0x29e0f0
 bool __stdcall function_29e0f0(point3f const *arg_0, long arg_1, s_reference arg_2,
     s_29de21 *arg_3, s_29e0f9 *arg_4)

@@ -271,10 +271,20 @@ bool camera_velocity_profile_new(s_camera_velocity_profile *profile, real total_
 // conversions written in the sum 83; PIN + 2x3 with the segment times in a float array 88, with
 // per-segment {rate, acceleration} pairs 88; compile-only, all 720 orders of the six 2x3 fills, a
 // time array, a time loop and factored per-segment terms keep the same single spilled peak.
+// Round 3 (lane 17): the final clamp as one nested ternary 49 (same code); an early return when not
+// valid 100; a, b, c declared at their conversions 49; the sum in a named value, clamped, then
+// assigned 49; a named hold offset and hold length 117 (254 bytes); a named deceleration start 106
+// (262 bytes).
 // DL201: native contiguous start/peak pair copied by memcpy/memmove, second peak from
 // its original field/copied home 96/110/97/103; with complete conditional first count
 // 95/105/50/100. Original arrays, observations and six-term expression
 // restored; extra coefficient promotion and frame 0x10/0x1c remain.
+// Round 11 (lane 2), on PIN clamps with the last term as a separate += (one-file LTCG harness: retail's
+// integer code and single-exit tail, 92/92 instructions; only the coefficient homes differ, ours
+// spilling rates[2] alone): a, b, c declared at their conversions, all six += statements, the
+// result clamp as PIN: the same code; real: fills after the hold clamp 104 (268 bytes); fills after
+// the first conversion 99 (271 bytes); the sum in three statements 101 (270 bytes); all three
+// conversions after the clamps 87 (285 bytes); fills just before the sum 121 (253 bytes).
 // @retail 0x16be50
 real camera_velocity_profile_evaluate(s_camera_velocity_profile const *profile, long ticks)
 {

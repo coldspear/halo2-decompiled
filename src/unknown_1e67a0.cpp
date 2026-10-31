@@ -581,6 +581,14 @@ PRIVATE __forceinline real inverse_sqrt_1e6360(real squared)
  return inverse;
 }
 
+// Round 16 (later): the jitter block's shape, the constant's XMM ownership and the limit spills
+// are the whole difference; the plain score is 132 and the reduced image scores 310 because the
+// reduced build does not inline the magnitude helper retail inlines.
+// Round 16: the near-distance value named in a local, the comparison against it and the second
+// magnitude in the branch (plain 132 -> 130; dropped, a gain under 8); the sign factor on the left of
+// the on/off factor 131, the scale factor on the left of the jitter value 130, both 131, and the scaled
+// products added straight into the velocity 163 (1051 bytes against retail's 1077); the jitter block's
+// own body restored.
 // score 132 (was 132): 1.0 sits in xmm4 (retail xmm3) through the body; retail keeps the jitter bits in eax
 // (tests al/ah) and tests the on/off bits 1, 2, 4 before the sign bits 8, 16, 32, spilling the z on/off factor and
 // y to the limits' spill slots. Plain bits 170; on/off first with `*=` 233, with the factor on the left 233 (both
@@ -596,6 +604,11 @@ PRIVATE __forceinline real inverse_sqrt_1e6360(real squared)
 // Round 430: native definition/output fields and real view of the existing dual-use output field,
 // all seven subsets 132; ordinary bit sample on that complete field graph 170. Original declarations
 // and body restored; constant/limit XMM ownership, jitter order and spill homes remain.
+// Lane 15 r19 (fast checks need 0x24590 listed): jitter in retail's order (on/off, signs, scales,
+// `*=`) with a plain long 233 (1020 bytes; the jitter block then has retail's shape, bits in EAX and
+// retail's test order), with the volatile long 202 (1053 bytes); the blend factor as one
+// if/else-if/else chain 215 (1081 bytes); factor declared before input_fraction 165;
+// `1 + (def - 1) * blend` and `blend * (def - 1) + 1` 132/132 (identical code).
 // Round 91: velocity updates through the existing vector3f_add/vector3f_add_scaled (in/out on
 // &state->velocity; retail reloads velocity.j/k after the velocity.i store, as those give): all three
 // 182, movement add 181, projection and movement 177, jitter add 130 (1077 bytes, retail's length;
@@ -719,6 +732,11 @@ PRIVATE inline real initial_dot(const vector3f *a, const vector3f *b)
  return a->k * b->k + a->j * b->j + a->i * b->i;
 }
 
+// Round 16: retail takes the animation state in EAX, the component index in EDX, the physics
+// pointer in ECX and the output pointer in EDI, then the object index, the definition, the value
+// and the flags on the stack; this file's declaration describes another order and the callers are
+// in other files. Retail keeps the axis pointer in EBP, the sampled vector at [esp+0xc] and the
+// sine and the cosine in the dead argument slots.
 // score 155 (was 155): Frame 0x18 agrees; sampled-vector slot and rotation/output scheduling remain.
 // movement/rotation homes and cross/result lifetimes still differ.
 // Frame 0x18 agrees; sampled movement/rotation homes and SSE/output scheduling still differ.
@@ -806,6 +824,9 @@ PRIVATE inline real initial_dot(const vector3f *a, const vector3f *b)
 // Round 430: staged rotation cross/paired side crosses/both 184/153/184; those with common
 // completion 184/153/184; both with early side-output storage, with/without common completion 184/184.
 // Two-point side-product gains rejected; original helpers, storage, ordered guard and body restored.
+// Round 207: completed sample copied to velocity then scaled in place, original/rate-angle/
+// per-use scale/both 208/265/211/262; the same four through the shared float scale
+// 220/207/220/207. Original sample, field stores, angle storage and includes restored.
 // @retail 0x1e5bb0
 void function_1e5bb0(s_biped_physics_output *output, void *physics, void *animation_state, real speed_scale,
  long component_index, long object_index, void const *definition, long value, bool b, bool turning,

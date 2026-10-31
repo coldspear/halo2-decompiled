@@ -299,6 +299,9 @@ PRIVATE __forceinline void world_up_1197b0(long object_index, vector3f *up)
 // Round 230: complete object-element observations alone 326; with saved header base 294;
 // with named slot 305; with both 292; those four with per-use tag elements
 // 382/349/422/332. Original body and producer restored.
+// DL round 206: existing matrix/vector, matrix3x3/vector and axes-vector producers
+// 220/296/296; early-arm callee inline 220; producer/inline pairs 220/296/296;
+// early-arm callee forced 1340. All producer, body and external declarations restored.
 // @retail 0x1197b0
 void function_1197b0(long object_index)
 {
@@ -1014,6 +1017,9 @@ void __stdcall function_b93b0(long arg_0, long arg_1, short arg_2);
 // signed full-width third bitfield, alone/with those source words, 156/156/156/156;
 // all three signed full-width short bitfields 156. Original source record and body restored;
 // owner-query argument setup now agrees; query/sweep, selected homes and merged word reads remain.
+// Round 240: speed-failure exit/complementary response/shared double scale and their pairs/all
+// 316/227/307/319/308/305/307; all with native query count 307. Original body restored;
+// frame 0x124 agrees, quotient/query and selected workspace homes remain.
 // @retail 0x119c10
 long function_119c10(long arg_0)
 {
@@ -1208,6 +1214,12 @@ void __stdcall function_1e55d0(s_biped_physics_move *arg_0, void *arg_1, s_biped
 // Round 47: real output workspace with pointer/direct movement field 94/94; real movement workspace 94;
 // two-use velocity copy 109; read-only query result 94; split query declaration 94; late declarations
 // swapped 94; complete movement workspace 103 (frame 0x1ec). Original body restored.
+// Round 43 (lane 16): still BLOCKED-BY 0x1c4b00 (its definition is in a file held by another lane this round;
+// retail spills the found flag to a stack byte and pushes the whole dword) and the MOV/LEA order at the first
+// 0x1e5af0 call follows that callee's register setup (BLOCKED-BY 0x1e5af0, also in a held file). Squared length
+// grouped (k + j) + i / (j + k) + i 94/94 (the inner pair stays j, k); word found flag with the grouped squares
+// 16 (exact-only: left are the MOV/LEA pair, the squares and the flag's stack byte); the squared-length test
+// passed straight to the flag setter 94; the +0x17c block address at each use 94.
 // @retail 0x118700
 bool __stdcall function_118700(long arg_0)
 {

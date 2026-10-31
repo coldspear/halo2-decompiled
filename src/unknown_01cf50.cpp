@@ -3798,6 +3798,8 @@ void function_12fa0(byte const *camera, real const *projection, bool scaled, lon
 real *table_entry_data(long handle);
 long function_184000(long index, long bit);
 
+// score 332 (was 332): our body is 53 bytes shorter than retail's (944 against 997); the
+// transform lookup and the outlined helper's argument order still differ from retail's.
 // @retail 0x45ce0
 bool function_45ce0(short index, byte *out, short part, short transform_index)
 {
@@ -4982,6 +4984,8 @@ void function_141ce0(real first, real second, real third, transform4x3f *out);
 real g_5259b4;
 dword g_4b8430;
 
+// score 544 (was 544): our body is 90 bytes shorter than retail's (2316 against 2406) and the
+// setup of the draw calls still differs in the order of the operands and the stores.
 // @retail 0x4e260
 void __stdcall function_4e260(long tag, long context, long first, long second,
     long third, dword handle, byte *material)
@@ -5719,6 +5723,8 @@ PRIVATE __forceinline void draw_filter_quad(real left, real right, real top, rea
     D3DDevice_SetVertexData4f(0, left, bottom, 16777215.0f, 16777215.0f);
 }
 
+// score 694 (was 694): our body is 121 bytes longer than retail's (2628 against 2507); the
+// triangle-fan primitive constants are retail's, but the instruction sequence still differs.
 // @retail 0x46ea0
 void function_46ea0(long tag, point3f const *position)
 {
@@ -6063,6 +6069,11 @@ bool __stdcall function_3a5c0(byte const *configuration, real low, real high, lo
     bool center, bool shift, bool clip, bool skip_state, real *depth_out);
 void function_47ea0(short stage, byte flags);
 
+// score 406 (was 406): retail takes the tag in ecx and the eight arguments on the stack
+// (ret 0x20), ours takes the points in ecx and the tag in edx with seven stack arguments
+// (ret 0x1c), so every stack offset differs; retail also calls 0x14560 with the stage in
+// ecx, and holds 1.0f in the vertex-shader constants at indices 0, 5, 8, 13, 16, 21, 24
+// and 29 where ours holds it at 0, 5, 10, 15, 16, 21, 26 and 31.
 // @retail 0x4f7e0
 bool __stdcall function_4f7e0(long tag, s_501e0 const *points, long count, short bitmap,
     real cosine, real sine, bool segments, bool perspective, bool filtered)
@@ -7222,6 +7233,8 @@ PRIVATE inline void glyph_remove_first_1f5c0(bool *removed)
     g_4b62a2 = (g_4b62a2 + 1) & 0x1ff;
 }
 
+// score 342 (was 342): our body is 41 bytes shorter than retail's (1092 against 1133); the
+// clipped fill still writes the rows in another order than retail's.
 // @retail 0x1f5c0
 void __stdcall function_1f5c0(long character_index)
 {

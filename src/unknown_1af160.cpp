@@ -85,6 +85,10 @@ void function_265c30(long arg_0, long arg_1, bool arg_2);
 // these homes by weighted use count (names and declaration places never move them). Diagnostic,
 // reverted: 0x2605d0 not passing the flag pointer on to the stubbed 0x260670 gives 36 with the
 // flag's home moved, so the homes follow what LTCG knows of that callee chain (BLOCKED-BY 0x260670).
+// Round 86 (all-image fast): call-only and two-use Boolean output pointers 9/9; one-element
+// Boolean output array 9; count/Boolean declarations swapped 9; derived record declared before
+// the node 9; search result declared before the outputs 9; node and derived declarations before
+// the actor 9; const actor pointer 9. Every form has identical differences; original restored.
 // @retail 0x1af160
 bool function_1af160(long arg_0, s_1af160 *arg_1)
 {

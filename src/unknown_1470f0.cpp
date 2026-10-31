@@ -187,7 +187,7 @@ void *c_game_havok_memory::allocate16(long size, long memory_class)
 	return result;
 }
 
-// score 8 (was 36): First upper-bound branch pair and EAX bound reuse still differ; shared bounds 36;
+// score 8 (was 8): First upper-bound branch pair and EAX bound reuse still differ; shared bounds 36;
 // outer bounds 36; shared bounds with delayed fixed receiver 43; numeric bounds 36;
 // shared upper/lower 36/36; read-only bounds 36; shared bounds with exits 45.
 // Fixed membership 95; paired memberships 146; independent pool/fixed/physical bounds 106/48/48;
@@ -213,6 +213,12 @@ void *c_game_havok_memory::allocate16(long size, long memory_class)
 // Inclusive third 6 (moves 0x147160 9 -> 7 and 0x147240 19 -> 30); end named at function scope
 // with inclusive third 11; inline range helper for the first two 10; inline >= || == end 70;
 // start test nesting the named end 70; third testing == first 23.
+// Round 33: every range's start and end share EAX in retail; ours computes the named first end
+// before the jg (start in EDX) and gives the second and third ends EDX (`add edx, eax`, the same
+// third-range difference as 0x147160 and 0x147240). Third end as `m_size + (byte *)m_buffer` 8
+// (same code), as `(long)m_buffer + m_size` 8; first end inline with a barrier in the first arm 60
+// (153 bytes); first end as a long local 44 (the == folds away); first start named too 8; the
+// equality test before the >= 10; permuter, 59 tries, none lower.
 // @retail 0x147320
 void c_game_havok_memory::deallocate16(void *address, long size, long memory_class)
 {

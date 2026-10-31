@@ -518,6 +518,12 @@ long function_243b10(long key_b, bool team_only, long *second)
 // of the j/key/count/point declarations 173 (193-195 with the point read before the query); named
 // result index 173; table local inside the `marker_index != NONE` block 169 at 717 B, but matched
 // caller 0x240160 drops to 46. Original restored.
+// Round 176 (fast, each on the accumulated distance, which alone stays 173): an options local per inner
+// iteration 173 (identical); a short marker index 180; the array selected by k, then indexed, 204
+// (caller 0x240160 lost); the y-first copy helper function_2417a1 172 (the copy is then retail's; the
+// count stays in ECX and the index in EAX where retail keeps the count in EAX and spills the index);
+// sqrtf 173. The table local at the loop top or in the marker block (169, 717 B) hoists the table to
+// EDI and moves the slot to EBP from the stack, so it is not retail's allocation either.
 // @retail 0x243c00
 void function_243c00(long slot)
 {
@@ -1134,10 +1140,32 @@ void c_game_engine_markers::v21(long object_index)
 // (the players' data load stays folded while the options pointer holds EDX): the player as an indexed
 // typed pointer 119, indexed by the absolute index 120, through a data local 120; the unit's player
 // index read before the slot test 73, with the team at each call 119; permuter, 10 tries, none lower.
+// Round 33 (fast, agreeing with the full count): only the entry (index/header EAX/ECX) and the middle
+// differ. On the team at each call (119 again): the player pointer declared inside the flag block 98
+// (the options pointer still held in EDX from entry); the unit and slot both read before the type
+// test 129; the player inside the flag block with the unit first 118, with the unit and slot first
+// 126; on the kept form the player pointer inside the flag block 40 (same code). Unit first with the
+// team at each call 119 and the unit before the type test 132 re-measured as listed.
 // Round 90 (fast; the reduced image builds this 437 bytes, so relative only): `1 == ` type test 40
 // (identical); team at each call 119-equivalent (117 reduced); that with the type test flipped 117; that
 // with the player pointer taken inside the flag block 92; the player-index and flag tests joined in
 // one condition with the team at each call 117.
+// Round 176 (fast): 0x101280's object fetch (inlined here) as byte-pointer arithmetic 40 and with the
+// index term first 40 (identical code); the unused effect-team helper function_2411b1 59. On the team at
+// each call (119, 430 B: retail's middle, but the options pointer stays in EDX from entry and the
+// header/index swap remains): one options local for the mode test, the compare and the event type 120;
+// the player through event_player_get 119.
+// Round 20 (lane 15, fast; reduced image 40 here): the team at each call again 119 (the options pointer held in
+// EDX from entry; retail cannot hold it because it builds the player pointer in EDX/ECX, table then data, where
+// ours folds the data load into the add); on it: the absolute index computed before the player-index test 94
+// (432 bytes), the unit's player index read through the object getter at both reads 113 (entry becomes v24's,
+// object kept across the type test), `bool away = !flag` after the player pointer 86 (438 bytes; tail and the
+// hoisted call setup retail's, but `not cl; test cl, 1` and the EDX hold remain), `bool home = flag; if (!home)` 119.
+// Round 109 (lane 6, fast): permuter 600 s, 10 tries, none below 40; a separate local for the event block's second
+// player-index read 40 (same code); team at each call with a const player and the unit looked up before the slot
+// 119 (428 bytes); the engine-type arms swapped (`== 9` first) 48; a const player pointer 40 (same code). The
+// matched v30 (0x240ee0) keeps the players' data load unfolded with the team per arm; here that form folds it
+// into `add eax, [ecx+0x44]`, which leaves EDX free for the options pointer from entry.
 // @retail 0x240ff0
 void c_game_engine_markers::v23(long object_index, long unit_index)
 {
@@ -1898,6 +1926,14 @@ long function_242ef0(s_242ef1 arg_0, long team)
 // for the mode and engine type 60 (and caller 0x241620 stops matching); the type ternary inverted 53;
 // a guard return on the time test 53; the index declared after the mode test with the time test
 // joined 67. Diagnostic: without the final table store EBP is still used.
+// Round 176 (fast): a table pointer local for the time test and the final store 59 (the engine type
+// then takes EBX, but the options pointer moves to EBP and the table stays in EDI across the call); a
+// pointer to the player's time slot 66 (0x241620 lost); a game-time globals local 62; the game time
+// through the existing getter function_146650() at both reads, `function_146650() + rounded` in the
+// final sum, 55: retail's exact tail, only EBP left (its push shifts every later slot), so keep it in
+// any later fix; on it the cause team through ctf_player_get 55, subtype and type locals in either
+// order 55. Diagnostics: a time test with one register operand puts it in EBX and the engine type
+// shares EBX; with the game time and the table both in registers ours moves the engine type to EBP.
 // @retail 0x2430a0
 void function_2430a0(long player_index, bool flag)
 {

@@ -68,7 +68,10 @@ bool actor_has_joint_invitation(long actor_index, short type);
 long function_25d810(long object_index, long actor_index, bool create);
 bool function_25d9b0(long prop_index);
 
-// score 125 (was 125): Frame 0xc and invitation call agree; actor/node EBX/EBP roles and fallback/evaluation placement remain.
+// score 86 (was 86): the `priority > 0` gate after both branches gives retail's block order (no-invitation
+// branch last, jumping past the gate), priority in SI, view in EDI and the state spilled to the argument slot.
+// Left: actor and node swap EBX/EBP through the body, and the zero exits share `xor esi, esi; mov ax, si` where
+// retail has its own `pop ebp; xor eax, eax; pop ebx` epilogue (9 bytes short). Frame 0xc and invitation call agree.
 // Round 30 (fast, file and callees in the image; with this function alone the image is unfaithful,
 // 157 on the same source): the lookups through the existing actor_get/prop_node_get/
 // element_502424_get and prop_node_view 125 (same code, kept in place of the written-out bodies);
@@ -101,6 +104,35 @@ bool function_25d9b0(long prop_index);
 // Round 223: complete eligibility bool/byte/short/long with short priority 150/150/150/150 reduced;
 // with long priority 166/166/171/169. Minimal bool form plain 119 at 556 bytes (six below 125), rejected.
 // Original body restored; current invitation call agrees, actor/node ranks and fallback placement remain.
+// Round 20 (lane 15, fast): `short result = 0` and priority 0 at the top, loop `break`, `else if` fallback, gate with
+// `result = priority` 137 (actor EBX/node EBP as retail, both locals on the stack); without result 145; priority as
+// the result with `if (!ok) priority = 0` 127 (retail's `xor eax, eax` exit, priority spilled), with priority declared
+// first 127, long 126; the loop's `goto evaluate` kept with that gate 83 (551 bytes, but a non-positive priority
+// returned itself) and the gate's `else priority = 0` added 86 (kept, plain); result declared at the label 118;
+// `if (ok) return priority; } return 0;` 105; result at the top with each failure `return result` 150; `return ok ?
+// priority : 0` 125, on the old body 119 (retail's zero epilogue, `movsx eax, si`), with `(short)0` 118; the old body
+// with `if (ok) result = priority; else result = 0;` 118 (`mov eax, esi`); on the kept form: node declared first 86,
+// the fallback through actor->prop_index 86, priority declared first 86, no prop_index local 86, node from a
+// conditional expression 167, node set in an if/else either way round 167/167, priority 0 at the top 86, plain
+// `return 0` after the loop 119; loop-break forms with the else-if fallback and five tails 92/145/137/140/139;
+// goto forms with direct return/result/conditional/if-else result tails 105/117/125/124.
+// Round 33 (plain): no-invitation branch written first 154 (VC keeps that order); the evaluation
+// written out in both branches 265 (730 bytes, copies not merged); the evaluation inside the loop
+// body with the fallback's goto into it 125 and in the first arm with `return priority` after the
+// if/else 125 (same code each); single exit with a per-arm short result and `goto done` 124 (the
+// zero return becomes retail's `xor eax, eax`, layout unchanged); no gotos: `short priority = 0`,
+// the found path breaking out, the fallback as `else if`, then `if (priority > 0) { evaluation }`
+// 145 (578 bytes) -- the first form with retail's block order (evaluation after the loop, the
+// fallback last jumping in past the priority test), but priority is spilled and the state kept in
+// ESI (retail the other way) and the zero exit sits at the loop bottom; that without the top-level
+// init plus `if (!entry) return entry` after the loop 186 (entry spilled, frame 0x10).
+// Round 13 (fast): `short result = 0;` at the top with `if (ok) result = priority;` in the gate 117 (551 bytes:
+// actor EBX and node EBP as retail, but result gets its own slot, frame 0x10, and priority is spilled to the
+// argument slot), result declared before the invitation test 169, with `else result = 0;` 141; a separate
+// pointer for the node the evaluation uses (node copied into it in the loop, the loop's and the fallback's
+// lookups assigned to it) 110 (retail's head, actor EBX/node EBP, but that pointer spilled, frame 0x10),
+// declared first 110. Any extra value live from entry, or a split node, gives retail's actor/node registers;
+// retail gets them without a stack slot.
 // @retail 0x1b7e40
 short __stdcall function_1b7e40(long actor_index)
 {
@@ -132,31 +164,32 @@ short __stdcall function_1b7e40(long actor_index)
 				node = prop_node_get(new_prop);
 			}
 			priority = *(short *)((byte *)joint + ((s_slot_owner_entry *)actor)->joint_invitations[invitation_index].participant_index * 12 + 0xa);
-			if (priority <= 0)
-				return 0;
 			goto evaluate;
 		}
 		return (short)(long)local_1;
 	}
-	else
+	priority = 0;
+	if (actor->unknown07c != NONE && node)
 	{
-		if (actor->unknown07c == NONE || !node)
-			return 0;
 		node = prop_node_get(prop_index);
-		if (node->unknown27 < 2)
-			return 0;
-		priority = 3;
+		if (node->unknown27 >= 2)
+			priority = 3;
 	}
 evaluate:
-	s_type_5cfb45 *state = function_25d690((s_prop_datum *)node);
-	s_prop_view_fields *view = prop_node_view(node);
-	vector3f velocity;
-	function_ba1d0(node->object_index, &velocity, NULL);
-	if (node->unknown28 > 1.6f && (real)sqrt((double)(velocity.i * velocity.i + velocity.j * velocity.j + velocity.k * velocity.k)) < 1.0f &&
-		view->unknown54 < 0.31 && node->unknown28 <= 15.0f &&
-		!state->unknown64 && !function_25d9b0(actor->prop_index))
-		return priority;
-	return 0;
+	if (priority > 0)
+	{
+		s_type_5cfb45 *state = function_25d690((s_prop_datum *)node);
+		s_prop_view_fields *view = prop_node_view(node);
+		vector3f velocity;
+		function_ba1d0(node->object_index, &velocity, NULL);
+		if (!(node->unknown28 > 1.6f && (real)sqrt((double)(velocity.i * velocity.i + velocity.j * velocity.j + velocity.k * velocity.k)) < 1.0f &&
+			view->unknown54 < 0.31 && node->unknown28 <= 15.0f &&
+			!state->unknown64 && !function_25d9b0(actor->prop_index)))
+			priority = 0;
+	}
+	else
+		priority = 0;
+	return priority;
 }
 
 // score 73 (was 73): retail calls function_25d740 out of line (ECX node) and sinks the
@@ -269,6 +302,27 @@ evaluate:
 // (the lookup still inlined; only the calls' new order realigns the listing, not kept). Our LTCG
 // keeps 0x25d740 out of line in 0x1aa0d0/0x1aab50/0x1ca2d0/0x262ba0/0x264b50 and inlines it only
 // here and in 0x261510.
+// Round 20 (lane 15, fast): single exit with the slot's prop index compared in memory and the node indexed by it
+// 109 (290 bytes); the slot field read first, actor prop index compared and used, `else` arm for the far tests 88
+// (278 bytes), with the view declared beside the node and assigned late 88, with the slot field read after the actor
+// lookup 88, with the view tested in its own nested if 88; diagnostics (not kept): the file built /Ob1 changes
+// nothing (109, 0x1b7e40 unchanged), a second velocity query 108 and the view call before the near test 93 stay
+// inlined. So neither the caller file's /Ob1, the call's position nor the caller's size moves LTCG's decision here.
+// Round 110 (fast): 0x25d740 through the existing tracking_get with &tracking->view 73 (its code unchanged, still
+// inlined here); `node->unknown28 < 0.8f` 73; `!(node->unknown28 >= 0.8f)` 73; `!(state->unknown20 <= 0)` 73.
+// One-file LTCG harness (this file and src/unknown_25d690.cpp, reproduces the inlining): the site is on the edge of
+// the inliner's frequency test: one more dominating test (an `if (!active) return` diagnostic) keeps the call out of
+// line, while single exit, guard returns, the call in the 0.8 test's then-arm, `&&`-joined tests, slot field read
+// first, `>= 1`, `<`, `!(>=)`, an inverted prop compare and deeper inline lookups all stay inlined, and so do the
+// direct call and caller-size padding. In 0x25d740 a named index, tracking_get, a tracking_get early exit and an
+// `&&` lookup keep it inlined; an early return, a ternary result, if/else results and an else that clears the
+// result keep it out of line but change 0x25d740's own code (no leading xor, or a second NULL path), so retail's
+// extra coldness comes from the call site, not from the callee.
+// Round 13 (fast): the slot's data block typed through `slot->unknownc` (the slot-data-block form) 73 (same
+// code: retail reads both fields off the slot pointer); 0x25d740's body through the existing prop_ref_view 73
+// (still inlined here, its other callers unchanged), with the single-exit form 88; the single-exit form 88
+// (278 bytes); the two outer tests joined with `&&` and the call in the else arm 88. BLOCKED-BY 0x25d740
+// (LTCG inlines it at this call site only). The slot cast at each use, as 0x1b82d0 reads it, 73.
 // @retail 0x1b81c0
 short __stdcall function_1b81c0(long actor_index, s_slot *slot, bool active)
 {

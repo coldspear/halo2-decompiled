@@ -1805,6 +1805,9 @@ long function_1785c0(s_effect_object_marker const *marker, s_effect_datum *effec
 // before the position block 236 (795 bytes).
 // Round 172: the forward rows' accumulators follow row statement order (XMM5, XMM4, XMM3); statement
 // orders i,k,j / j,i,k / j,k,i / k,i,j / k,j,i 82/77/82/81/81.
+// Round 450: complete live marker fields alone/node-first/matrix-live/both
+// 215/218/223/223; with staged cross 215/218/223/223. All lose the matched caller;
+// original point, marker, normalizer and cross producers restored.
 // @retail 0x1786f0
 void function_1786f0(s_effect_object_marker *out, s_effect_marker_source const *source, short marker_index)
 {
@@ -1995,6 +1998,9 @@ static inline bool effect_location_in_zone_178c80(s_location const *location, po
 // Round 172: shared colour helper (system, A, B) 178 (0x177040 92); its parameters renamed 178
 // (identical); both type queries as the call's arguments 145 (`multiplied()` runs first); cursor computed
 // after the colour call 158 (552 bytes); matrix at function scope 178.
+// Round 450: live cluster field alone/zone/entry/both 128/165/379/379; with
+// live base 128/165/379/379. Entry-field forms outline the existing zone producer;
+// its forced expansion on live cluster/entry gives 186. Original producer and body restored.
 // @retail 0x178c80
 void function_178c80(real scale, s_effect_datum *effect, s_particle_system_datum *particle_system, s_effect_particle_system_definition *definition, real unknown, bool field_b4)
 {
@@ -2996,11 +3002,26 @@ void __stdcall function_17a380(s_effect_datum *effect)
 // effect index 128; system looked up first 114. On the spawn form: colours after the cursor 90, mode
 // first 90, mode after the colours 89, colour B in the call 129, b4 first 111, early return 94, shared
 // colour helper (system, A, B) 90; per-call-mode colour/scope/b4/next variants 107-122.
+// Round 9 (lane 2, fast; 0x176f60 matches unless given): spawn cursor 90; the cursor assigned before the
+// colour reads 89; spawn cursor with the mode read per call 109 (0x177040 then takes the effect index in
+// EAX and the particle system in ECX, 0x176f60 25); with 0x178c80's colour block (colours read at the
+// call, `multiplied` named) 116 (325 bytes, 0x176f60 25); that block with the mode per call 101 (332
+// bytes, 0x176f60 25). The one-file harness gives the effect index a register too, so it cannot screen
+// this convention.
 // Round 172: LTCG takes this convention from the body's allocation. Mode read per call (retail's shape,
 // frame 0x54) 108: the effect pointer is computed in EAX and both indices become register arguments;
 // parameters swapped 93 (cached, identical)/120 (per call); per call with the index read through its
 // address 127; definition before the next index 114; system looked up first 119; shared colour helper
 // (system, A, B) 92.
+// Round 210: Native immutable settings value with cursor/tint/node combinations
+// 109/109/108/108/109/109/108/108. The full value expands frame 0x4c to 0x84 instead of retail
+// 0x54 and every form loses matched caller 0x176f60 through the generated input convention.
+// Original settings pointer, cached mode, query carriers, cursor and complete body restored.
+// Round 46 (lane 9), on the spawn-cursor form (89 here): colour B read first 90; next index read after the
+// definition call 96, with colour B first 96; both colours declared inside the type-query block 90 (aligned 27:
+// the loop is then retail's except the cached mode push; left are the system in EDI, colour A in EBX, colour B
+// spilled and the type object in ESI, retail ESI/spilled/EDI/EBX), that with the mode read per call 109 (register
+// effect index, 0x176f60 25), with the mode declared after the colour call 117, with a signed mode 90.
 // @retail 0x177040
 long __stdcall function_177040(long particle_system_index, long effect_index)
 {
@@ -3042,7 +3063,7 @@ long __stdcall function_177040(long particle_system_index, long effect_index)
 	return next_index;
 }
 
-// score 12 (was 176): only rows x and y of the node point transform differ: retail sums them as
+// score 12 (was 12): only rows x and y of the node point transform differ: retail sums them as
 // left*y + forward*x + up*z (row z as written), the function-wide reassociation order. Round 170: the
 // single exit (`result = true; goto done;`) gave the early BL, and 0x152450's `next` player search the rest.
 // Before round 170: frame 0x50 agrees; early false BL, bitmap/count/unit carriers and point/advance scheduling remain.
@@ -3102,6 +3123,14 @@ long __stdcall function_177040(long particle_system_index, long effect_index)
 // point and delta declared at the loop top/first/unit scope/entry 12 each; location index before the
 // unit 15; 0x179fb0's mode-0 iterator 12 (0x179fb0 46); a `players` pool local 20; while-form search
 // 234.
+// Round 9 (lane 2, one-file harness): VC orders each row's three products by when the point helper's
+// coordinate locals were defined (latest first); the helper reading z, x, y in that order plus one more
+// scalar local gives retail's three rows exactly, but breaks matched 0x179fb0, so the cause is in this
+// caller. Extra scalar locals rotate only row z (one: forward/up/left, two: left/forward/up, three or more
+// back); pointer locals, renames, statement orders of the scale block and all six term orders move
+// nothing. Real trials: radius at unit scope 161; definition radius named and used in the test 112;
+// squared radius at unit scope 161; absent-node arm first 149 (823 bytes); position copy in the node
+// arm 163 (836 bytes).
 // Round 172: rows x/y follow the first-assignment order of the point transform's x/y/z locals (z, x, y
 // gives retail's rows x/y but loads z first, 11, and breaks matched 0x179fb0/0x17a380); row z follows the
 // symbol count. Point copied then transformed in place 230; through a position local 257; returned

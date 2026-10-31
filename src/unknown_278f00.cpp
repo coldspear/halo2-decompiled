@@ -161,6 +161,8 @@ bool function_a7670(long object_index);
 // restored; original field observations, both eager scans, retries and release graph retained.
 // Round 211: completed first-membership long/dword ordinal, direct/named result, cursor/indexed
 // cleanup, scores 182/197/259/263/182/197/259/263. Original executable form restored.
+// DL204: reverse first/second/both membership indices 260/256/245; reverse first cursor
+// alone/with reverse second 310/328; indexed-cleanup counterparts 241/336/252. Original restored.
 // @retail 0x278f00
 void function_278f00()
 {

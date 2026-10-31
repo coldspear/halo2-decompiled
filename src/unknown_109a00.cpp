@@ -239,6 +239,9 @@ static __forceinline bool carried_object_motion_apply(long object_index, vector3
 // Round 16: the change through the existing in/out scale helper 10; the delta negation through it 10;
 // both 172; the object velocity written out without its pointer local 238; the output copy read from
 // the object 10. The same point-velocity helper loads the linear x first in matched 0x109e00.
+// Round 89: shared object-velocity receiver 199; second output pointer 163; nonrotating receiver 162;
+// change renamed scaled_change and displacement renamed offset 10 each; second linear pointer 164;
+// const change and const scale 10 each; force-inline point-velocity helper 10 (0x109e00 still matched).
 // @retail 0x109a00
 bool function_109a00(long object_index, vector3f *delta, bool rotate, vector3f *velocity)
 {
@@ -425,6 +428,14 @@ PRIVATE inline void carrier_body_angular_velocity_get(s_carrier_body const *body
 // with existing center conversion 151/154/149. Existing staged cross alone 112, with complete
 // transfers and center conversion 149. Original copies, search, products and caller restored;
 // object/entry input registers, physics-record spill and center/projection schedule remain.
+// Round 33 (fast, agreeing with the full count; 0xb7060 checked each time): with the center through
+// carrier_vector_from_havok (149) the object index arrives in EAX as retail, but the entry pointer
+// takes EBP and the component EBX (retail EBX/EBP), so the entry index stays on the stack (ebp is never
+// a register argument) and 0xb7060 goes 2 -> 11. On that form: the entry declared after the component
+// index 149, before the object 151; the entry as `entries + entry_index` 149; the search loop indexing
+// component->bodies[i] directly (no element pointer) 123 (928 bytes, the found flag moves to a
+// parameter slot, same EBX/EBP swap). Without the center change: that loop indexing 235, with the
+// entry after the component index 146.
 // Round 236: signed/unsigned matching-body result, native/late default and existing center converter 231/239/253/246/231/239/253/246.
 // Original executable body restored.
 // @retail 0x109660

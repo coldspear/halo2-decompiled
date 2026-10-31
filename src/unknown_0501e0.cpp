@@ -35,6 +35,15 @@ static __forceinline void world_vector_to_view(real arg_0, vector3f const *arg_1
         ++output;
     }
 }
+// score 221 (was 221): transform term order right/up/forward written point first and
+// coefficient first 221 each; the transform as three statements 304, which does use retail's
+// sum tree (forward*depth + up*height) + right*width; blend term order and squared-sum order
+// 221 each; depth limits written at their uses 230; orthographic dot product in point and
+// coefficient order 221 each and depth first 220. What still differs: the loop form keeps the
+// sum tree (right*width + up*height) + forward*depth while retail has forward*depth +
+// up*height + right*width; retail materialises the coefficients of the first view in registers
+// and keeps the second point's offsets in the frame, ours folds the coefficients into the
+// products and keeps the second point's width in a register; frame 0x18 versus 0x14.
 // score 221 (was 221): frame 0x18 versus 0x14; retail keeps both transformed points in
 // registers and the second point's offset (with its scaled copy) in the frame, ours gives
 // the second view's x a frame slot of its own at [esp+8].

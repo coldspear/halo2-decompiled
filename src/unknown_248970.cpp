@@ -51,15 +51,14 @@ public:
 		s_247fd0 *arg_3, transform4x3f const *arg_4, dword arg_5);
 };
 
-// score 198 (was 227): activation AL and stacked location agree; frame 0x0c/0x14,
+// score 198 (was 198): activation AL and stacked location agree; frame 0x0c/0x14,
 // retained head/position homes and x87 cleanup differ.
 // Earlier metadata/head/count homes differed.
-// retail returns the activation flag in AL with five stacked words where our
-// declaration takes six; the declaration and its only caller live in another file.
-// score 227 (was 227): activation AL and stacked location agree; frame 0x10/0x14,
+// Earlier convention mismatch: activation was stacked with six words, while
+// retail receives it in AL with five stacked words.
+// Earlier score 227: activation AL and stacked location agree; frame 0x10/0x14,
 // metadata/head/count homes and x87 cleanup differ.
 // Earlier: retail's convention since round 67 (flag in AL, location stacked, 0x175270
-// retail's convention since round 67 (flag in AL, location stacked, 0x175270
 // the child loop advances a 0xb8-stride cursor over the child table instead
 // of recomputing field_34 + i * 0xb8, as retail does; field_4 is now read before the metadata
 // call and the flag is stored after the position copy, as retail does.
@@ -217,6 +216,11 @@ public:
 // Round 317: Child byte-offset induction with readonly metadata/live count/independent ordinal
 // subsets 243/243/198/198/243/243/198/198. Plain 198 with live tag count kept;
 // original scalar math, allocation/link stores and callback tuple preserved.
+// Round 319: Existing salt-first link on the byte-offset graph, live/early/late count,
+// distinct or shared allocation/link receiver 285/286/286/285/286/286; separate
+// allocation result with live/early count 282/283. All restored; frame and x87 homes remain.
+// Round 321: Whole-scan maximum on the retained child byte-offset graph; short viewer/closed coordinate phase/child-count snapshot subsets: 251/250/251/250/241/246/241/246.
+// Round 321: Frames stay 0x0c or 0x10 versus 0x14; original influence publication, live count, distance tree and body restored.
 // @retail 0x248970
 void function_248970(s_particle_location_datum *arg_0, bool arg_5, real arg_1, s_particle_system_datum *arg_2,
 	real *arg_3, transform4x3f const *arg_4)
