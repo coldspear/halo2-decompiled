@@ -3184,7 +3184,7 @@ PRIVATE __forceinline void set_filter_blending(bool additive)
     D3DDevice_SetRenderState(D3DRS_ZBIAS, 0);
 }
 
-// score 1083 (was 1109): frame 0x2c agrees; small permission now has retail byte tests,
+// score 1083 (was 1083): frame 0x2c agrees; small permission now has retail byte tests,
 // but mode-bound/save roles, state expansion and scalar homes differ.
 // Earlier: Frame 0x2c agrees; capability/save roles and state expansion remain.
 // frame 0x2c agrees; saved registers, mode flags and state-call expansion differ.
@@ -3264,6 +3264,10 @@ PRIVATE __forceinline void set_filter_blending(bool additive)
 // Round 234: Packed fraction byte/word, RGB byte/word/dword, alpha word/dword and combined native
 // channels on the long/bool capability graph: 903/852/1112/853/853/1101/1107/1111. All restored;
 // capability/save roles and state expansion remain.
+// Round 449: cutoff floor before state setup, fixed-only/full decomposition,
+// with ordinary/scoped normalization reciprocal: 1197/1197/1127/1127; each
+// with exponent computed before setup 1121/1121/1151/1151. Original scalar
+// lifetimes restored; mode-bound register and state expansion remain.
 // @retail 0x3a5c0
 bool __stdcall function_3a5c0(byte const *configuration, real low, real high, long mode,
     bool center, bool shift, bool clip, bool skip_state, real *depth_out)

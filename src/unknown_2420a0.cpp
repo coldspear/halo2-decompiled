@@ -1166,6 +1166,11 @@ void c_game_engine_markers::v21(long object_index)
 // engine type `== 9` with the arms swapped 48; on the team at each call, the players' data read into a local
 // before the absolute index 120 (the data load still folds into the add); the player-index and flag tests
 // joined in one condition with the absolute index, player and team inside 93.
+// Round 109 (lane 6, fast): permuter 600 s, 10 tries, none below 40; a separate local for the event block's second
+// player-index read 40 (same code); team at each call with a const player and the unit looked up before the slot
+// 119 (428 bytes); the engine-type arms swapped (`== 9` first) 48; a const player pointer 40 (same code). The
+// matched v30 (0x240ee0) keeps the players' data load unfolded with the team per arm; here that form folds it
+// into `add eax, [ecx+0x44]`, which leaves EDX free for the options pointer from entry.
 // @retail 0x240ff0
 void c_game_engine_markers::v23(long object_index, long unit_index)
 {

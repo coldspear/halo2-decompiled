@@ -63,6 +63,9 @@ short *function_e70b0(long unit_index, short *value);
 long function_1469f0(real seconds);
 
 #pragma intrinsic(_ReadWriteBarrier)
+// score 13 (was 13): the slot reference still loads into EDX after the actor's index
+// arithmetic, where retail loads it into ECX before it; reading the reference into a named
+// local before the actor's arithmetic (a bool or a copy) moves the load but costs the body.
 // score 13 (was 13): retail reads the slot reference before actor arithmetic and the object table
 // after index arithmetic; ours has the opposite order in each case.
 // Slot data block 13; without the barrier 90; action helper result 13; actor/state/result 17;
@@ -139,6 +142,9 @@ short __stdcall function_1bef40(long actor_index)
 
 static __forceinline long real_to_long(real value);
 
+// score 19 (was 19): the delay's doubling and its +3 still sit one slot later than retail
+// (after the seed store and the conversion store); both draws first, the swapped operands and
+// the inline draws all cost more. The reset's store order is fixed in include/slot_handler.h.
 // score 19 (was 19): the frame and the x87 code agree. Left: the first draw's doubling and +3 sit
 // one slot later in retail (after the seed store and the conversion store); retail stores the reset's
 // NONE fields after its first three zero stores and before 0x4ac/0x504 (ours after all five); and

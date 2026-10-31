@@ -2128,7 +2128,9 @@ long function_199fd6(void);
 long function_19a279(void);
 void function_1905bf(long controller, bool flag);
 
-// score 93 (was 93): the shared return follows the cold cases rather than the base call;
+// score 11 (was 93): every instruction is retail's apart from the prologue: ours pushes EDI after the
+// two early tests (shrink-wrapped, the early exits enter the epilogue past `pop edi`), retail pushes it
+// at entry. Earlier note (at 93): the shared return follows the cold cases rather than the base call;
 // the inherited handler result is widened into EBX rather than assigned into BL.
 // with a bool result every instruction is retail's; retail's one exit
 // follows the base call and the not-signed-in block comes last, ours puts the exit last.
@@ -2155,102 +2157,130 @@ void function_1905bf(long controller, bool flag);
 // 111; the not-signed-in arm ending in its own return with the goto cases 137. Harness only: the
 // not-signed-in block first (with return or goto) 133/128; the signed path returning the base call
 // directly 125 (result folded away); `else if` without the online local 125.
+// Round 21 (lane 14): the matched siblings' handled-result form (0x2c9501, 0x237f2a: `result = true` in
+// the handled paths, `if (!result) result = base(event);`) puts the exit after the base call and both
+// tail merges in retail's direction: with the early `return true` 77, with the early test inside it
+// 51, with param case 2 setting the result before its false call and after its true call 11 (kept).
+// On it: the cases in reverse source order (identical code before it: VC sorts them); param case 2's
+// result after the if/else 136, first in an `else if` chain 51, last 137, after each call 136, inner
+// `return result` / `return true` 94 / 139; sequential `if (!result)` after the early test 11 (same
+// code); the early test as the result's initial value 11 (same code); body-first early test 11 (same
+// code); early `return true` 59 (merges flip); any inner `return` (not-signed-in, param 1/d, type 2,
+// the 0x19a7e9 path, param 0/c, both blocks of a merged pair) stops the shrink-wrap but flips both
+// merges 48 (with arm or result-order changes 48-139); result initialised true with a separate
+// handled flag 142.
 // @retail 0x250b1e
 bool c_session_lobby_screen::v10(s_widget_event *event)
 {
+	bool result = false;
+
 	if (!network_session_manager_session_unready() || window_manager_channel_in_use(1))
-		return true;
-	long result = 1;
-
-	long controller = event->controller_index;
-
-	if (TEST_FIELD_BIT(((s_player_slot_sign_in_view *)g_54e8e0)[controller].signed_in))
 	{
-		switch (event->type)
+		result = true;
+	}
+	else
+	{
+		long controller = event->controller_index;
+
+		if (TEST_FIELD_BIT(((s_player_slot_sign_in_view *)g_54e8e0)[controller].signed_in))
 		{
-		case 2:
-			if (teams[controller].valid)
+			switch (event->type)
 			{
-				change_team(controller, NONE);
-				return result;
-			}
-			break;
-		case 4:
-			if (teams[controller].valid)
-			{
-				change_team(controller, 1);
-				return result;
-			}
-			break;
-		case 5:
-			switch (event->param)
-			{
-			case 0:
-			case 0xc:
-				if (teams[controller].valid)
-				{
-					function_250cda(controller, false);
-					return result;
-				}
-				if (function_19a902())
-				{
-					function_25106c(event->controller_index);
-				}
-				break;
-			case 1:
-			case 0xd:
-				if (teams[controller].valid)
-				{
-					teams[event->controller_index].valid = false;
-					teams[event->controller_index].team = NONE;
-				}
-				else if (function_592f0() && function_19a902())
-				{
-					function_25122f(event->controller_index);
-				}
-				else
-				{
-					function_2511b6(event->controller_index);
-				}
-				return result;
 			case 2:
 				if (teams[controller].valid)
 				{
-					function_250cda(controller, false);
+					change_team(controller, NONE);
+					result = true;
 				}
-				else
+				break;
+			case 4:
+				if (teams[controller].valid)
 				{
-					if (function_19a902())
-					{
-						function_199f34();
-						if (function_19a7e9(event->controller_index, 10))
-						{
-							return result;
-						}
-					}
-					function_250cda(event->controller_index, true);
+					change_team(controller, 1);
+					result = true;
 				}
-				return result;
+				break;
 			case 5:
-				function_2510aa(controller);
+				switch (event->param)
+				{
+				case 0:
+				case 0xc:
+					if (teams[controller].valid)
+					{
+						function_250cda(controller, false);
+						result = true;
+					}
+					else if (function_19a902())
+					{
+						function_25106c(event->controller_index);
+					}
+					break;
+				case 1:
+				case 0xd:
+					if (teams[controller].valid)
+					{
+						teams[event->controller_index].valid = false;
+						teams[event->controller_index].team = NONE;
+					}
+					else if (function_592f0() && function_19a902())
+					{
+						function_25122f(event->controller_index);
+					}
+					else
+					{
+						function_2511b6(event->controller_index);
+					}
+					result = true;
+					break;
+				case 2:
+					if (teams[controller].valid)
+					{
+						result = true;
+						function_250cda(controller, false);
+					}
+					else
+					{
+						if (function_19a902())
+						{
+							function_199f34();
+							if (function_19a7e9(event->controller_index, 10))
+							{
+								result = true;
+								break;
+							}
+						}
+						function_250cda(event->controller_index, true);
+						result = true;
+					}
+					break;
+				case 5:
+					function_2510aa(controller);
+					break;
+				}
 				break;
 			}
-			break;
-		}
-		result = c_class_1473c9::v10(event);
-	}
-	else if (event->type == 5 && (event->param == 0 || event->param == 0xc))
-	{
-		if (function_199fd6() > 0 && !function_19a902() && function_19a279() == 3)
-		{
-			bool online = function_6c7e0();
-
-			function_1905bf(event->controller_index, online);
 		}
 		else
 		{
-			function_236299(2);
+			if (event->type == 5 && (event->param == 0 || event->param == 0xc))
+			{
+				if (function_199fd6() > 0 && !function_19a902() && function_19a279() == 3)
+				{
+					bool online = function_6c7e0();
+
+					function_1905bf(event->controller_index, online);
+				}
+				else
+				{
+					function_236299(2);
+				}
+			}
+			result = true;
 		}
+	}
+	if (!result)
+	{
+		result = c_class_1473c9::v10(event);
 	}
 	return result;
 }
@@ -2489,6 +2519,15 @@ static __forceinline long local_player_find(long const *local_list, long player)
 // with a separate counter for the second loop 93, for the second and third loops 93; the separate
 // counter alone 93. The players[i] reload after the voice query is retail's view of 0x53b40's side
 // effects (ours keeps the value across the call), so it may sit outside this file.
+// Round 21 (lane 14): the second loop's text_a renamed 95 (same code: names don't order these
+// slots); the four widget indices written in place in the second loop without the helper 95 (same
+// code: they are plain spilled locals); the first loop's search through local_player_find 256 (933
+// bytes, the NONE test stays); a counter per loop with the search index declared per loop 93 (with
+// the separate counters ours is -8 elem1/bitmap_b, -0xc player/no_team, -0x10 shown count, -0x14
+// bitmap_a, +0xc text_b, +0x1c text_a; retail -8 elem1/bitmap_a, -0xc shown count, -0x10 text_b,
+// -0x14 player/no_team, +0xc text_a, +0x1c bitmap_b); no_team from the char team 97. The 8 extra
+// bytes are the last loop: ours keeps the screen in EBX for all five calls, retail gives EBX to
+// bitmap_a and loads the screen into ECX, then EDI after text_b's call.
 // @retail 0x25042d
 void function_25042d(c_session_lobby_screen *screen, long valid, s_session_flags_view *session, long *players, long *local_list, long count)
 {
@@ -2887,6 +2926,13 @@ PRIVATE inline void squad_item_set_team(s_widget_item *item, short team)
 // goto 206; game-first bitmap selection 156. Diagnostic: with a constant index the row loop's find_text
 // inlines as in retail, so the variable-index call stays out of line on find_text's own cost: lead,
 // 0x22ee17 taking a short index (src/unknown_22e27b.cpp, another lane's file this round).
+// Round 21 (lane 14): find_text(short) with its cast dropped (diagnostic) leaves the row call out of
+// line (116) and breaks four matched callers (0x24ffc9, 0x250155, 0x2501c0, 0x2508a8): retail's takes a
+// long, so the lead is closed; the row index uncast 116 (873 bytes, still called); game-first bitmap
+// selection 156 (the dispatch is retail's, but ours hosts the shared index 1 and 3 blocks in the
+// category switch where retail hosts them in the valuea8 switch); diagnostic without the find_text(3)
+// lookup 327 (the row call stays out of line, so it isn't the inline budget); the row text through
+// find_child directly 240; with row-scoped text/bitmap locals 235; row-scoped locals with find_text 100.
 // @retail 0x253339
 void c_network_squad_browser_screen::v3()
 {
