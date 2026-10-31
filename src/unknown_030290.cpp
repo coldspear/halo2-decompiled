@@ -546,6 +546,10 @@ real function_30bf0(vector3f *v);
 // Round 446: Scale consumer with scalar/native output staging 42/88; complete input snapshot
 // alone/with scalar/native staging 88/88/88; separate normalization output
 // alone/with input snapshot/scalar staging 88/88/88. Original shared helpers restored.
+// Lane 6 round 111: MATCHES with retail's parameter order (axis, vector: retail writes through the
+// second argument, so the 0x31c80 caller changes its +0xb8 vector, not +0xac) and cross3f_staged writing
+// straight into vector; needs the matching one-line declaration change in src/unknown_0350e0.cpp, so it
+// is held until that file's owner agrees.
 // Round 47 (lane 16, fast with 0x30bf0/0x31c80): normalize_inline for the first normalization 61
 // (224 bytes); the result stored through the existing vector3f_assign 42 (same code); the existing
 // out-of-line 0x30bf0 for it 88 (197 bytes); cross3f_staged second product with vector3f_assign 42.
