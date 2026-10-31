@@ -255,6 +255,8 @@ void __stdcall function_2c0d60(vector3f const *previous_direction, long actor_in
 // Round 220: Paired exhaustive confidence results bool/byte/word/long 914/914/928/942f; shared real dot
 // then both tests 870/870/909/892f (unchanged reduced control 866, full 899). All regress against
 // the calibrated control; original confidence defaults, query storage, qualifiers and body restored.
+// Round 321: Mask-owned output selection with word obstacle/byte sphere/Boolean moving subsets 0-7: 948/947/960/959/949/948/963/962f (control 866, full 899).
+// Round 321: Frame/actor/unit homes remain; all original Boolean, masks, qualifiers and body restored.
 // @retail 0x2c0d60
 void __stdcall function_2c0d60(vector3f const *previous_direction, long actor_index, byte flags,
     s_path_settings const *volatile settings, s_obstacle_list *obstacles, s_obstacle_list *blocking_obstacles,

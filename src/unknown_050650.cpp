@@ -247,6 +247,8 @@ static inline real actor_looking_normalize2d(point2f *vector)
 // needs reference x then aim y first, which one dot cannot spell. Both through normalize2d 122 (inline declaration
 // 122; kept out of line even from a non-/Ob1 file 122); single tree with aim member copies y,x 10 / x,y 12; helper
 // defined after the caller single/named 6/2; single tree with the dot's y term first 6, reference-first 4.
+// Round 91: native fast normalization with horizontal term/operand orders 12/12/12/6/4/6/6;
+// the existing magnitude helper in the private normalizer 6; all restored.
 // @retail 0x296d60
 PRIVATE bool function_296d60(real cosine, vector3f const *reference, vector3f const *aim, bool three_dimensional)
 {
@@ -665,7 +667,7 @@ bool function_1ffbd0(long actor_index, long weapon_index, short barrel_index,
 	void *unknown0, void *unknown1, void *unknown2, void *unknown3);
 bool __stdcall function_1ffe00(long actor_index, long object_index);
 
-// score 290 (was 290): frame 0x8c agrees; Boolean homes, point/case-tail transport and aiming workspace remain.
+// score 276 (was 290): frame 0x8c agrees; Boolean homes, point/case-tail transport and aiming workspace remain.
 // Earlier: frame 0x8c and movement-record addressing agree; Boolean role homes and point/case-tail transport differ.
 // frame 0x8c and movement-record addressing agree; Boolean role homes and point/case-tail transport differ.
 // Boolean role homes and case-specific point/reference transport differ.
@@ -717,6 +719,23 @@ bool __stdcall function_1ffe00(long actor_index, long object_index);
 // all five as `point = ...;` plain 306 (aligned 248 -> 131, but 1388 bytes: the copies tail-merge and the
 // remembered-prop/actor-direction tail moves after the last case), the state+0x30 copy alone 296, each other
 // one alone 375-379 (fast); point_valid given a longer name 290 (homes unchanged).
+// Round 29 (lane 11, plain checks; --fast reads 301): both state points as struct assignments 276 (kept;
+// retail's `add edi, 0x10/0x30` copies); the state+0x30 one alone 296; on 276 the marker position as well 277
+// (1416 bytes), case 3's point 289, case 5's point 293; point_valid renamed to sort after result 290 (on the
+// old base, homes unchanged); the two bool declarations reversed 276, `point_valid = result = false` 278 (homes
+// unchanged). Left: retail keeps result at the lower byte (0xa) and point_valid at 0xb, and writes the
+// remembered-prop code once per case (case 1's copy re-tests state < 1 and cross-jumps into case 2's at the
+// 0x1e3b00 call), where ours shares one label after the switch.
+// Lane 14 r22 (plain checks): case 1 with its own remembered-prop copy (`state >= 1 && state <= 2`
+// arm, then `state < 1 || unknown00 == NONE` to done) 309 (1496 B, no cross-jump); both cases with
+// their own copy and no shared label 309; `bool result = false; bool point_valid = false;` 278;
+// point_valid set once at the aim-at-point label instead of in cases 3/5/6 281 (1424 B; the Boolean
+// homes become retail's: retail stores it at 0x296c67, where cases 3/5/6 jump and case 6 falls in,
+// and cases 1/2 enter after the store); with that, `point_valid = result = false` 279 (the entry
+// then agrees through both flag stores). Left: retail lays the remembered-prop, actor-direction,
+// normalize, output and return code right after case 2 (case 1 cross-jumps into it, case 0 and 4
+// into its normalize step) and the aim/weapon code after case 6; its failure exit stores
+// result = false before returning.
 // @retail 0x2967b0
 PRIVATE bool function_2967b0(long actor_index, s_type_952051 *specification,
 	bool aiming, vector3f *direction, bool *has_target_point, point3f *arg_0e6828)
@@ -772,10 +791,7 @@ PRIVATE bool function_2967b0(long actor_index, s_type_952051 *specification,
 						(marker.matrix.position).y,
 						(marker.matrix.position).z);
 				else
-					real_point3d_set(&point,
-						(*(point3f *)((byte *)state + 0x10)).x,
-						(*(point3f *)((byte *)state + 0x10)).y,
-						(*(point3f *)((byte *)state + 0x10)).z);
+					point = *(point3f *)((byte *)state + 0x10);
 				goto aim_at_point;
 			}
 			long object_index = reference->object_index;
@@ -783,10 +799,7 @@ PRIVATE bool function_2967b0(long actor_index, s_type_952051 *specification,
 			if (((1 << object->type) & 3) && object->player_index != NONE)
 				function_cafc0(object_index, &point);
 			else
-				real_point3d_set(&point,
-					(*(point3f *)((byte *)state + 0x30)).x,
-					(*(point3f *)((byte *)state + 0x30)).y,
-					(*(point3f *)((byte *)state + 0x30)).z);
+				point = *(point3f *)((byte *)state + 0x30);
 			goto direction_from_actor;
 		}
 		goto remembered_prop;
@@ -908,6 +921,11 @@ done:
 	return result;
 }
 
+// score 9 (was 9): Round 30 (lane C): the prologue still builds the actor offset in ESI and folds
+// the table base into it (`add esi, edx`); retail computes the offset in EAX and forms the actor
+// with `lea esi, [eax + edx]`. New forms: a data-base local with a masked slot local, a byte
+// offset local and the `&array[index]` subscript form (9 each); an `unsigned short` slot local
+// gives 38 (`movzx esi, cx`) and was reverted.
 // score 9 (was 9): only the prologue differs: retail builds the actor offset in EAX
 // (`mov eax, ecx`) and moves the actor to ESI with `lea esi, [eax + edx]`; ours builds it in ESI.
 // Tried: a specification pointer local 9; an if/else chain without the early return 9; the valid

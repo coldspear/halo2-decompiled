@@ -160,6 +160,17 @@ void c_animation_channel::clear()
 // early/retail 68/68; defaults through copy_from 45/45; complete native
 // replacement assignment/copy_from 75/52. All lose five matched caller controls;
 // original body restored. Saved graph and identifier carriers remain.
+// Round 97 (lane 8, fast with 0x1cb410/0x1086e0/0x10fa80 and the other callers): flags declared before
+// graph (callers load ECX, then EDX, then EAX), definition and all 15 calls, 36 (same code); that with
+// retail's store order 42 (graph still an ESI argument; 0x1cb410 14, 0x1086e0 2); retail's order with
+// a dword flags parameter 42; with an early `return false` guard 42; that with unknown0e stored before
+// graph 42. In every retail-order form ours stores the id before graph (the id load takes ECX), so ESI
+// holds only graph and becomes its argument register; retail reuses ESI for the id after the graph store.
+// Round 32 (lane 11, fast with the six matched callers; retail's callers load ECX first, then EDX,
+// then EAX, but the matched callers already do so with this declaration, so no reorder was tried):
+// `long const` graph parameter 36 (same code); single-exit result 49 (127 bytes, callers lose); the
+// id copied right after the NONE pair 41; unknown0e stored before graph 43; rate stored before the
+// frame 42. Diagnostic only: size-preference pragma 56 (120 bytes).
 // @retail 0x1c6470
 bool c_animation_channel::set(long graph_tag_index, word flags, c_type_709360 animation_id, long unknown08,
 	char unknown0c, char unknown0d, char unknown0e)
@@ -767,6 +778,12 @@ long animation_events_dispatch(s_graph_tag *graph, s_animation *animation, dword
 // eight masks 97. Every one-use result form is restored. Original shared result, callback
 // observations, parameter aliases and state graph retained; word-load schedule and second callback
 // reload remain.
+// Round 22 (lane 13; aligned difflib count 15 at 97: the flags-word load after the byte clear, the
+// second-dispatch callback reload, the identity spill before the rate branch and the third
+// dispatch's argument registers): next frame computed before the position store 97 (aligned 18);
+// the callback sampled once into a named local from the volatile read 132 (frame 0x10); a named
+// loop-frame value for both 97 (same code); flag 1 as `((dword)flags >> 1) & 1` 97 (same code);
+// the rate reset before the identity store 98.
 // @retail 0x1c66a0
 void __stdcall c_animation_channel_advance(c_animation_channel *channel, real frame, s_animation_state *state,
 	animation_event_callback callback, long user)

@@ -952,6 +952,12 @@ bool function_108530(long device_index, long name)
 // duration and ramp times in xmm1-3 (ret 0xc) and 0x108670 13 -> 42. That last form shows LTCG passes
 // an unmodified float in a register only when the callee holds it from entry: retail spends no
 // register on the ramp-down time in the clamp phase, which frees xmm6 for the initial velocity.
+// Round 22 (lane 13): both doubling factors constant-first (`2.0f * acceleration`) 121; the ramp-down
+// zero clamp first 121; on the per-branch cruise-velocity form (134, which also hoists retail's 2.0
+// into xmm3 and gives its tail, with the initial velocity loaded late into xmm5 and the distance in
+// xmm6) the initial-velocity store first in the branch 134; the delta and distance locals after the
+// reset stores 121; the target pinned before the position 141 (507 bytes, target then passed in a
+// register; 0x108670 13 -> 28).
 // @retail 0x107ab0
 void device_motion_start(s_device_motion *motion, real target, real duration, real ramp_up_time,
 	real ramp_down_time, real final_velocity, real initial_velocity)

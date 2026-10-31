@@ -611,6 +611,8 @@ PRIVATE __forceinline void graph_weapon_types_request(s_graph_tag *graph, long m
 // parameter slot). Found names declared mode/class/type 419; type/class/mode 403 (loads in retail's order, graph
 // then kept in EBX with graph+0x34 in EBP); fallback query through the existing animation_id local 399 (same
 // code); graph pointer declared const 399 (same code); type/class/mode with a named inherited graph 403.
+// DL209: Returned graph reference with whole input/found/result record-view subsets 0-7: 399 each.
+// Original receiver and all records restored.
 // @retail 0x1cc3f0
 bool s_animation_state::animation_lookup(s_animation_names *names, s_animation_names *found, long mode, long weapon_class,
 	long weapon_type, long set, long lookup_flags, c_type_709360 *result)

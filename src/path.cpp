@@ -192,8 +192,8 @@ bool __stdcall function_2c41b0(long actor_index, s_type_f17a25 *state, short cou
 	s_path_step_view *out, bool *complete, long *object_index, long *type, bool *flag);
 bool function_1a8220(long index, short a, short b, long unknown, short c, short d, short e);
 
-bool function_26f150(short type, point3f const *start, point3f const *end,
-	point3f const *alternate_start, point3f const *alternate_end);
+bool function_26f150(short type, point3f const *start, point3f const *alternate_start,
+	point3f const *end, point3f const *alternate_end);
 
 PRIVATE short function_272020(s_pathfinding_data const *pathfinding,
 	s_path_node_key_view const *node, s_path_link_view *links, s_type_f17a25 const *state);
@@ -369,6 +369,14 @@ bool function_270750(byte *buffer, long unknown, s_actor_point_target const *tar
 }
 
 // score 315 (was 315): Frame 0xe8 versus retail 0xe4, acquisition, flags and scalar homes remain; geometry now uses shared differences.
+// Round r4 (lane 17): our extra frame word is the links cursor (strength-reduced long link count); retail indexes
+// links[link_count] with a short count. Short link count 368 (1368 bytes, frame 0xe4); with count assigned after
+// the init loop and special set false-then-true 389; count after the init loop 379; separate increment after the
+// copy 369; shifted flag-seven bit in the link test 369 (folds back to test 0x80); split increment with
+// false-then-true special 380; the distance test as a call of 0x210a30 553 (called out of line, caller 0x270930
+// lost), with a forceinline declaration 553. Retail inlines 0x210a30 here (the delta block and its xmm1/xmm2/xmm0
+// sums are that function's body, with 0x210850 inlined inside it); `inline` on its definition (diagnostic, reverted)
+// inlines it here 447 at 1288 bytes but 0x210850 stays a call; inline on both 554 and loses 0x210a30/0x270750/0x270930.
 // Earlier: Frame 0xe8 versus retail 0xe4; maximum/node acquisition, scalar homes, flags and vector scheduling differ.
 // Earlier: the 0xe4 frame and state register now agree; initial load order, clearing, flag width and vector scheduling differ.
 // Tried: pathfinding field at each use 459; bounded short initialization count 406; both 451; edge memset 408;
@@ -1060,32 +1068,11 @@ PRIVATE void function_271fd0(s_type_f17a25 *state, short node_index, short cost)
 	}
 }
 
-/* a flag field read as word bits: retail reads these flags with a load, a
-   shift and a test of the low bit */
-struct s_flag_word_bits
-{
-	word bit0 : 1;
-	word bit1 : 1;
-	word bit2 : 1;
-	word bit3 : 1;
-	word bit4 : 1;
-	word bit5 : 1;
-	word bit6 : 1;
-	word bit7 : 1;
-	word bit8 : 1;
-	word bit9 : 1;
-	word bit10 : 1;
-	word bit11 : 1;
-	word bit12 : 1;
-	word bit13 : 1;
-	word bit14 : 1;
-	word bit15 : 1;
-};
-
 /* Surface records interpret their payload differently by type. Retail's
    vertex indices are unsigned words: its comparisons with long NONE do not
    reject 0xffff. Only destination sector words have an effective NONE test.
    Link type stores write the low short; the upper short stays untouched. */
+// fills links with the moves out of a node: its surface links, then its edge ring
 // score 383 (was 383): Frame 0x30 versus retail 0x34; flag-mask, edge-index and endpoint homes differ.
 // Earlier surface word-bit view 452 (from 475).
 // Frame 0x2c/0x34, data/count registers and endpoint homes remain. Signed edge byte 464; direct parameter 452;
@@ -1197,21 +1184,23 @@ PRIVATE short function_272020(s_pathfinding_data const *pathfinding,
 						vector3f delta;
 						vector3d_from_points3d(&pathfinding->vertices[surface->unknown04],
 							&node->entry_point.point, &delta);
-						if (delta.k * delta.k + delta.j * delta.j + delta.i * delta.i > 0.09f)
+						if (delta.i * delta.i + delta.j * delta.j + delta.k * delta.k > 0.09f)
 						{
 							break;
 						}
 					}
 					if (!(surface->unknown0c & 1) && surface->unknown10 != surface->unknown12)
 					{
+						point3f const *from_vertex = &pathfinding->vertices[surface->unknown04];
+						point3f const *end_vertex = &pathfinding->vertices[surface->unknown08];
 						point3f start, end;
-						function_2104b0(surface->unknown10, &pathfinding->vertices[surface->unknown04], &start);
-						function_2104b0(surface->unknown12, &pathfinding->vertices[surface->unknown08], &end);
+						function_2104b0(surface->unknown10, from_vertex, &start);
+						function_2104b0(surface->unknown12, end_vertex, &end);
 						bool traversable = false;
 						for (short type = 0; type < 6; ++type)
 						{
 							long bit = 1 << type;
-							if ((state->settings.unknown08 & bit) && function_26f150(type, &start, &end, NULL, NULL))
+							if ((state->settings.unknown08 & bit) && function_26f150(type, &start, NULL, &end, NULL))
 							{
 								traversable = true;
 								break;
@@ -1226,8 +1215,9 @@ PRIVATE short function_272020(s_pathfinding_data const *pathfinding,
 							break;
 						}
 					}
-					s_path_link_view *link = &links[count];
 					point3f const *link_point = &pathfinding->vertices[surface->unknown08];
+					point3f const *link_end = &pathfinding->vertices[surface->unknown0a];
+					s_path_link_view *link = &links[count];
 					*(short *)&link->type = surface->type;
 					link->index = surface_index;
 					link->node_index = surface->unknown0e;
@@ -1237,7 +1227,7 @@ PRIVATE short function_272020(s_pathfinding_data const *pathfinding,
 					link->point.point = *link_point;
 					link->point.output_index = surface->unknown12;
 					link->unknown2e = surface->type == 6;
-					vector3d_from_points3d(link_point, &pathfinding->vertices[surface->unknown0a], &link->vector);
+					vector3d_from_points3d(link_point, link_end, &link->vector);
 					++count;
 					break;
 				}
@@ -1265,8 +1255,8 @@ PRIVATE short function_272020(s_pathfinding_data const *pathfinding,
 					s_path_link_view *link = &links[count];
 					link->index = surface_index;
 					*(short *)&link->type = 2;
-					link->node_index = next_node;
-					link->flags = nodes[next_node].flags | 1;
+					link->node_index = surface->unknown04;
+					link->flags = nodes[link->node_index].flags | 1;
 					link->point.point = *point;
 					link->point.output_index = output_index;
 					link->vector = *g_4687a4;
@@ -1290,17 +1280,18 @@ PRIVATE short function_272020(s_pathfinding_data const *pathfinding,
 					}
 					long flags = state->settings.unknown04;
 					if (!(((flags & 0x400) && (surface->unknown0c & 1)) ||
-						((flags & 0x800) && TEST_FIELD_BIT(((s_flag_word_bits *)&surface->unknown0c)->bit1)) ||
+						((flags & 0x800) && (surface->unknown0c & 2)) ||
 						((flags & 0x1000) && (surface->unknown0c & 4))))
 					{
 						break;
 					}
+					point3f const *point = &pathfinding->vertices[surface->unknown08];
 					s_path_link_view *link = &links[count];
 					link->index = surface_index;
 					*(short *)&link->type = 5;
-					link->node_index = next_node;
-					link->flags = nodes[next_node].flags;
-					link->point.point = pathfinding->vertices[surface->unknown08];
+					link->node_index = surface->unknown04;
+					link->flags = nodes[link->node_index].flags;
+					link->point.point = *point;
 					link->point.output_index = output_index;
 					link->vector = *g_4687a4;
 					link->unknown2c = true;
@@ -1319,8 +1310,7 @@ PRIVATE short function_272020(s_pathfinding_data const *pathfinding,
 	   Its count check follows insertion; keep that behavior here. */
 	if ((nodes[node_index].flags & 1) || (count == 0 && node->parent == NONE))
 	{
-		long first_edge = *(long const *)nodes[node_index].unknown4;
-		long edge_index = first_edge;
+		long edge_index = nodes[node_index].first_edge;
 		do
 		{
 			s_path_edge_view const *edge = (s_path_edge_view const *)&pathfinding->edges[edge_index];
@@ -1349,7 +1339,7 @@ PRIVATE short function_272020(s_pathfinding_data const *pathfinding,
 			}
 			edge_index = edge->next_edges[reverse];
 		}
-		while (edge_index != first_edge);
+		while (edge_index != nodes[node_index].first_edge);
 	}
 	return count;
 }
@@ -1375,18 +1365,40 @@ short function_272700(s_type_f17a25 *state, long node_index)
 // Indexed unit-scale segment/offset differences 16; all three named squares 62; native point publication 31;
 // complete start/end values 139/131; named projection 16; indexed segment plus all named squares 62;
 // all named squares plus named projection 62. Original complete body and noinline declaration retained.
+// score 0 (was 16): matches retail: the point on the segment from start to end closest to the attractor, or the
+// nearer end when the projection falls outside the segment; the segment's squared length is summed in the order
+// i, j, k and the projection in the order j, k, i, the orders retail uses.
+// score 16 (was 67): retail computes the segment i, j, k and sums (i + j) + k for the length and (j + k) + i for the projection, ours j, k, i and (k + j) + i for both; tried: `dot3f(&delta, &delta)` for the length 16, `dot3f(&delta, &offset)` 16, the projection written out in y, z, x order 36, all three written out 67, parameters reordered (start, end, attractor, out) 16; compile-only harness: every written-out sum order and grouping 27-64, all 24 parameter orders and the offset computed at the top no better.
+/* Squared length of a vector, with the components summed in the order i, j, k. */
+static inline real squared_length_ijk(vector3f const *v)
+{
+	real sum = v->i * v->i;
+	sum += v->j * v->j;
+	sum += v->k * v->k;
+	return sum;
+}
+
+/* Dot product of two vectors, with the components summed in the order j, k, i. */
+static inline real dot3f_jki(vector3f const *a, vector3f const *b)
+{
+	real sum = a->j * b->j;
+	sum += a->k * b->k;
+	sum += a->i * b->i;
+	return sum;
+}
+
 // @retail 0x272740
 PRIVATE void function_272740(point3f const *attractor,
 	point3f const *start, point3f const *end, point3f *out)
 {
 	vector3f delta;
 	vector3d_from_points3d(start, end, &delta);
-	real length_squared = length_sq3f(&delta);
+	real length_squared = squared_length_ijk(&delta);
 	if (length_squared > 0.0f)
 	{
 		vector3f offset;
 		vector3d_from_points3d(attractor, start, &offset);
-		real t = dot3f(&offset, &delta) / length_squared;
+		real t = dot3f_jki(&offset, &delta) / length_squared;
 		if (t < 0.0f || t > 1.0f)
 		{
 			*out = *end;
@@ -1404,6 +1416,8 @@ PRIVATE void function_272740(point3f const *attractor,
 	}
 }
 
+// score 0 (was 8): matches retail: the weight of the point on the segment closest to the attractor, and that point's
+// distance to the attractor; the segment's squared length is summed in the order k, i, j, the order retail uses.
 // score 8 (was 97): retail computes the segment i, k, j and sums its square as (k + i) + j; ours computes j, k, i and sums
 // (k + j) + i. Tried: the weight in float (no double local) 88 -> 82; weight declared first 81; written-out sums in every order
 // 79-94; the segment, offset and both lengths through vector3d_from_points3d/length_sq3f/dot3f 21; the length test against g_45dbd8
@@ -1414,6 +1428,15 @@ PRIVATE void function_272740(point3f const *attractor,
 // Indexed unit-scale difference helper for the segment or all differences 8/8; all three named segment squares 83;
 // all three named component differences plus the native setter 8; complete start-point value 117; named projection 8;
 // complete native point publication 30; complete start-point value plus named projection 117. All restored.
+/* Squared length of a vector, with the components summed in the order k, i, j. */
+static inline real squared_length_kij(vector3f const *v)
+{
+	real sum = v->k * v->k;
+	sum += v->i * v->i;
+	sum += v->j * v->j;
+	return sum;
+}
+
 // @retail 0x272810
 PRIVATE real function_272810(s_type_f17a25 const *state, s_type_c3b527 const *start,
 	point3f const *end, real *distance_out)
@@ -1427,7 +1450,7 @@ PRIVATE real function_272810(s_type_f17a25 const *state, s_type_c3b527 const *st
 	function_210690(start->output_index, &input->attractor_point, &local_attractor);
 	vector3f delta;
 	vector3d_from_points3d(&start->point, &local_end, &delta);
-	real length_squared = length_sq3f(&delta);
+	real length_squared = squared_length_kij(&delta);
 	point3f closest;
 	if (length_squared > g_45dbd8)
 	{

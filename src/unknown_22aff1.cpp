@@ -70,6 +70,56 @@ PRIVATE __forceinline real function_22aff5(real arg_0)
 }
 
 #pragma intrinsic(memcpy)
+// score 3 (was 3): Spacing-scalar-before-vertex loading remains; frame 0x88 and every home agree.
+// Earlier: Repeated-translation scalar/vertex input-load order remains; frame homes, rounded offsets and spacing XMM roles agree.
+// Earlier: repeated-draw spacing XMM roles and vertex-translation
+// input-load scheduling remain; frame homes and rounded-offset memory operands agree.
+// Earlier at 121: frame homes differ: retail keeps vertical_scale at +0x08
+// (vertices at +0x0c), horizontal_scale in height's slot, the vertical offset in
+// width's and the horizontal offset in arg_3's; ours swaps the two axes and the
+// height/width homes and puts vertical_scale in arg_3's slot. Retail also reads both
+// offsets from memory at every product where ours caches each in a register (4
+// bytes short). Offsets as one point2f 121 (plain locals 146, arg_3 reference 141);
+// declarations reordered (axes, height/width, vertical_scale before the vertices)
+// 121 each; locals renamed 121; scales computed inside the loop 120, as a point2f
+// 138; offset x before y 466; offset at loop or function scope 121; vertex pointer 121.
+// Round 72: one (real) conversion after each ternary 154 (vertex sums go x87); offsets
+// assigned in if/else 121; origin-first, offset-first sums 121; edge-offset helper
+// inline/forceinline 509/121; plain scalars 146 and an inline transform taking the
+// offsets by address 146 (both load the offsets into xmm as ours does); the vertex loop in
+// a forceinline helper 146. Every SSE form loads the rounded offsets into registers.
+// Native offset vector 121; destination cursor 423; vector plus cursor 423;
+// vertical/horizontal/both full-width side predicates 447/138/450; bounded short
+// vertex ordinal 431; native vector plus short ordinal 431. Original body retained.
+// complete vertex value before array store 446; both completed coordinate scalars before stores 121;
+// uniform named axis products at each row 121; uniform origin addition stages at each row 119; constant
+// axis initialization at declaration 136; explicit offset branches with native point workspace 121; width
+// used directly by repeated draw spacing 121; immutable palette with body cursor step 121.
+// Uniform two-row horizontal/vertical product and pair-sum operand orders 121 each;
+// complete input-color component publication 518.
+// Matched selection/transform separate declaration states default/inline/noinline,
+// all eight nondefault pairs 121 each; caller frame homes and rounded-offset memory/XMM
+// residency remain. Original helper declarations and complete body retained.
+// Entry validity, bitmap admission and completed-draw terminal guard graphs: eight forms
+// all 121; original nested admission lifetimes restored.
+// Round 78: point pointer stores/loads 450; read-only point pointer 121; indexed real offset 121;
+// destination vertical staging 480; axis initialization order 122; with axis declarations 122;
+// component order 120; plus early vertical-scale declaration 120. Original body restored.
+// Complete transformed horizontal/vertical/both input values 473/470/489; native origin 499;
+// horizontal+origin/vertical+origin/all transform inputs/all plus anchor 518/515/541/560.
+// Input copies enlarge the frame and do not recover offset memory operands; original inputs restored.
+// Round 315: Existing horizontal/vertical/both axis setters 116/119/68; vertex combinations
+// 121/116/119/68 and all anchors 68. On the recovered memory-offset graph, independent rounded scalars
+// 14; dimension/scale declaration combinations 68 or 14; rounded-point setter 143. Body-stepped
+// palette 14; constant ordinal between conversions 12; spacing/translation commutations 12; completion
+// before palette initialization 7; original arithmetic restored 7. Keep both existing axis setters,
+// independent twice-used offsets, the constant ordinal lifetime and completion publication. Existing
+// helper body and every marked call input unchanged.
+// Existing centering/repeat/construction setters, subsets 1-7: 369/342/384/7/369/342/384; all with half-spacing 384.
+// Producer-local real/integer repeat-count parts 3/7, isolated producer scopes 3/7; real part retained after width conversion.
+// Half-spacing and repeated-add input commutations 7; early real-span variants 3, restored. Coordinate pointer/completed sum/fixed do loop 3 each; array cursor 74.
+// Keep only the real repeat-count part at its original product; every arithmetic group, helper and marked call input remains original.
+// Round 46: Two-stage spacing/vertex accumulation 3/3; repeated-translation unsigned-long/short/word/byte ordinals 4/74/74/74; immutable spacing/spacing role name 3/3. Original body restored.
 // draws a bitmap widget: its quad from the anchored bounds, then the mode's palette, repeated or mirrored passes
 // @retail 0x22aff1
 void function_22aff1(long arg_0, byte const *arg_1, byte const *arg_2, real const *arg_3)

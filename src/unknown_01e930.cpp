@@ -423,6 +423,10 @@ PRIVATE inline __int64 bink_read_tsc(void)
 // `g_55ece8.format` (stays a call, 10 not in EBP) 245; that plus long width/height in 0x23e340 and its
 // declaration 252; do/while retry loop 315 (1061 bytes, unrotated, D3DDevice_IsBusy a call); the same with the
 // attempts branch ending in `continue` 315; do/while plus the format-field query 311. Original body restored.
+// Round 109 (lane 6, fast; the body re-checked against retail field by field, no value difference): the size as
+// `(flags & 0x100) ? ...` with the movie flags still from `large` 275; both through the mask, no `large` 269; the
+// retry counter declared after the block pointer 260, before it 260; `!(seconds < 0.1f)` 244 (same code). The x87
+// `fcomp qword`/fnstsw compare and the 1.0f stores stay non-SSE while the file has no /arch:SSE.
 // @retail 0x156090
 void function_156090(char const *name, dword flags)
 {

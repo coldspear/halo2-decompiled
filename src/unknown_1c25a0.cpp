@@ -822,6 +822,9 @@ void function_1c54b0(char const *variants, long object_index)
 // ebx/ebp swap).
 // Round 42 (a compile-only build reproduces all four; 158 forms screened there): entity count read at each use 4,
 // with the flag after the call 18; world local read at each iteration 4; entity local 4; nested tests 4.
+// Round 89, with the flag after the discard call: entity-array pointer 75; island_index renamed
+// active_island 18; increment in the outer for clause 18; scoped object, entity or flags locals 18 each;
+// inner while 18; const entity count 18; function-scope flag cleared after the index update 63.
 // @retail 0x1c50c0
 void function_1c50c0(void)
 {
@@ -1092,6 +1095,10 @@ struct s_1c4040
 // first 30; island-array store without the volatile cast 27; long active 30; fixed island read through g_51e9a4
 // (world local only for the array choice) 31 with retail's AL/ECX ranking but the world load hoisted into EDX
 // before sub esp; every world read through g_51e9a4 32.
+// Round 90: declaration-first paths in three adjacent translation units, singly and combined, 8 each.
+// In the diagnostic custom regime: fixed-island direct read with a two-use retry local 31; the
+// complementary array-direct read 31; adding a two-use active local 31; world declared before the
+// record 31; block-scoped world 32. Original body and declaration order restored.
 // @retail 0x1c4040
 bool function_1c4040(long attempt, bool active, bool any_object, bool even_if_unknown, long excluded_component_index)
 {

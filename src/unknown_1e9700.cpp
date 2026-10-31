@@ -70,6 +70,10 @@ void function_1ea770(byte code, long player_index, s_statborg *statistics, long 
 	*(dword *)g_4e9ae8 |= 0x20;
 }
 
+// score 107 (was 107): this round: the player maximum read as a nested initialise/compare/assign
+// gave 109, the same nested read for the team maximum 117 and the player maximum alone 112.
+// Still the enable reloads and the maximum-register homes: retail keeps the old maximum in ECX
+// and the -1 comparison in EAX, ours merges the enable into DL and the maximum into EAX.
 // score 107 (was 107): no frame; enable reloads and maximum-register homes differ.
 // Four meaningful inputs agree; the converter consumes ECX and preserves player EDX.
 // Earlier: the two maximum

@@ -1134,6 +1134,8 @@ void function_2118c0(void)
 // as b * 8 + x 150; a [3][8][8] table 150; a row += 8 loop, a row induction
 // variable, inline row accessors, w's computed in the loops 150-180 (all rows
 // become pointer IVs); previous at the k level 22; tb before ta 20.
+// Round 55: a local 3D table pointer/reference 150/150; function-scope/split wrapped
+// indices 14/14; split float declarations 14; early band reset 14; sample/function-scope row 14/14.
 // @retail 0x211cc0
 void function_211cc0(void)
 {
@@ -1835,7 +1837,7 @@ PRIVATE __forceinline bool audio_target_is_current(byte *actor, long object_inde
     return false;
 }
 
-// score 277 (was 527): 2265 bytes against 2243. The 0x40 test's failure keeps
+// score 277 (was 277): 2265 bytes against 2243. The 0x40 test's failure keeps
 // its own `reload definition; eligible = false; jmp` block where retail jumps
 // into the shared `eligible = false; reload` tail (and its no-actor path into
 // the 0x20 failure), and the success exit is laid out before the failure exit
@@ -1855,12 +1857,39 @@ PRIVATE __forceinline bool audio_target_is_current(byte *actor, long object_inde
 // bool/long friendliness 549/545/549/545/551/610/544/610 reduced. Boolean pair restores
 // frame 0x2c and first +0x37, but plain 530 at 2273/2243 regresses; restored.
 // Original frame, observation points and all helper/call inputs retained.
+// Round 44 (lane 16, plain counts): retail's 0x80 no-actor/squad-NONE branches and the 0x100
+// switch default jump to the `eligible = false; reload definition` tail (only squad-entry-null
+// goes to the reload alone), so retail stores eligible again there; ours sends all of them to the
+// reload. Tried: `else eligible = false` in the 0x80 group plus `default: eligible = false` 277
+// (VC drops both stores, same code); the 0x80 result in its own bool 283 (BL, flags no longer in
+// BX); the switch result in its own bool 289 (DL); the 0x80 group as a forced-inline bool helper
+// 299 (LTCG then inlines 0x203330); the 0x40 test as `!(actor && (a != NONE || b != NONE))` 277
+// (same code); the loop's success return in the else arm after the advance code 277 (same code).
 // Round 18 (lane 14, fast; this function's reduced-image control is 453 at 2273 bytes against the full
 // build's 277): `object[0x39d] <= 0` gives retail's `ja` but not its target, 453; the 0x40 test with the
 // actor test negated as a whole 453 (same code); the 0x80 block as an `else if` with the 0x100 test after
 // it 453; the 0x40 failure as the else arm 638 (frame 0x28); `<= 0` with the failure arm braced 453.
 // Everything before the 0x40 failure block matches but for branch targets: ours reloads the definition
 // before `eligible = false`, retail stores first and so shares the 0x1a block's tail.
+// Round 30 (lane 11, plain; aligned diff 29 at 620/617 instructions): `object[0x39d] <= 0` 277 (retail's
+// `ja`, aligned 28; the 0x40 block and the exits are the rest); the 0x80 failure as an else arm with the
+// squad lookup's clear inside the then arm 277 (aligned 30); the last eligibility block nested in the
+// 0x40 block's `if (eligible)` 277 (same code), inside the 0x40 test's else arm 277 (same code); the 0x40
+// result as an assignment with the later tests under `if (eligible)` 652. Diagnostic: the success exit
+// written after the failure exit with a label 277 (same code: VC places the success exit first whatever
+// the source order); a compile-only harness keeps the exit order and the success block's load order
+// (weight, tag value, tag pointer; retail loads the tag pointer first) for a break with a retest, a found
+// flag, `tag_index[0]`, a copied tag and a weight pointer local.
+// Round 49 (lane 16, plain): the 0x80 group with no early clear and `else eligible = false` on
+// both failures 271 (the no-actor and squad-NONE exits then reach retail's shared clear-and-reload
+// tail, but the squad-entry-null exit does too and the group's early clear is gone; 2260 bytes);
+// that with the failure arm first 271; with the squad bit as a ternary 271; with `default:
+// eligible = false` in the 0x100 switch 271; the clear moved inside the actor arm before the
+// lookup with an outer else 277 (all three exits right, the clear lands before the call); early
+// clear plus outer else 277 (the else is dropped). Retail keeps the early clear and the redundant
+// failure clears, which ours removes as known-false stores. Diagnostic: the eligible flag's
+// address escaping sends the 0x40 failure into the shared tail (as retail) but reshuffles the
+// whole function (614/664).
 // @retail 0x20d8c0
 short function_20d8c0(long source_index, s_audio_priority_table *table, byte const *request,
     long object_index, long target_index, long previous_index, long *tag_index, real *weight)

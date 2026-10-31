@@ -1282,11 +1282,11 @@ long function_cbd50(long unit_index, short weapon_index);
 // score 164 (was 164): this round found no gain - retail keeps index*12 as a value (lea/shl) and re-reads
 // the unit through that offset for both depletion queries, and it writes the first depletion with setle;
 // the byte-offset entry with re-derived queries gives 325 and the if-form depletion gives 330.
-// score 164 (was 164): this round found no gain - retail keeps the pool pointer in EAX and the data in
+// this round found no gain - retail keeps the pool pointer in EAX and the data in
 // EBP, materialises index*12 and rematerialises the unit pointer for the first query, while ours keeps
 // the unit in EAX, folds index*3 with a scale of 4 and builds the result with a branch instead of setle;
 // the byte-offset header, a pool local, re-read queries and retail-shaped flag joins all score the same or worse.
-// score 164 (was 164): frame eight agrees; entry pool/state registers, signed-count joins and result
+// frame eight agrees; entry pool/state registers, signed-count joins and result
 // Round 141: retail returns the result byte unnormalised (a bool) and keeps the depletion in BL with the
 // interruptibility in memory; round 75's first-sets/second-clears depletion 330, with a bool result
 // 361 (1243 bytes, aligned 132 -> 102: retail's setle and second test, but depleted in memory and
@@ -1344,6 +1344,11 @@ long function_cbd50(long unit_index, short weapon_index);
 // Round 85: `unit_index = *unit_reference;` at entry (0x1130f0's form) with a plain 0xc70b0 argument
 // 271; an object-headers local with if-form depletion and bool/byte result 336/325, with a byte depletion
 // 336; the headers local with the `&&` depletion, bool result and byte depletion 334.
+// Round 210: Boolean success with depletion/interruptibility bool-short, bool-long, short-bool,
+// short-short, short-long, long-bool, long-short and long-long 315/187/209/314/208/189/315/188.
+// Native pairs reserve frame twelve and 1269 bytes; entry pool/state allocation and count joins
+// remain. Original byte success, canonical statuses, signed counts, queries and argument handling
+// restored.
 // @retail 0x110ab0
 bool __stdcall function_110ab0(long unit_index)
 {
@@ -1543,6 +1548,10 @@ bool __stdcall function_110ab0(long unit_index)
 // callers unchanged, frame still 8), plus an object-headers local 478; with a short depletion 506, short
 // depletion and overlay 510, both with the headers local 495; the depletion written through a forceinline
 // `byte *` helper 474 (same code).
+// Round 209: Base-permission observation before both read-only held queries, bool/byte/short/long
+// 451/451/471/473; with the early overlay observation 506/495/512/504. Short/long overlay forms
+// recover frame twelve but regress to 1833/1825 bytes. Overlay moves were exact-match-only.
+// Original observations, paired queries, results, dispatch and complete body restored.
 // @retail 0x1103a0
 bool __stdcall function_1103a0(long unit_index, long requested, bool allow)
 {
@@ -1870,6 +1879,10 @@ PRIVATE __forceinline void project_112070(vector3f const *v, vector3f const *for
 // code); the overlay loop as `while` 790 (same code), as `for` with the play call under its own `if` 882,
 // the play call under its own `if` in the do-loop 790 (same code), a `for` that skips empty ids with
 // `continue` 882.
+// Round 209: Main/blend-pair/all native channel value construction 790/790/790; immutable repeated
+// curve values alone/main/pair/all 790 each; all with immutable animation IDs 790. Complete
+// comparison listings unchanged. Original constructors, helpers, inputs and float grouping
+// restored; frame 0xcc versus 0xd4 and first-angle/overlay expansion remain.
 // @retail 0x112070
 void __stdcall function_112070(long unit_index, dword const *node_mask, long node_count,
 	real_quaternion_transform *transforms)

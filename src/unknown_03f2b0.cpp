@@ -452,6 +452,9 @@ void function_144f0(long tag, short stage, long fallback, short fallback_index, 
 void function_1cf50(void);
 
 #pragma inline_depth(0)
+// score 100 (was 100): this round: no new form. Still BLOCKED-BY 0x144f0 (held file): retail calls
+// it with tag/stage/fallback in EAX/ECX/EBX and three stack arguments, our tree uses the standard
+// six-argument convention, so the call site and the colour/draw schedule after it differ.
 // score 100 (was 100): no frame; hoisted zero and material-call convention, then color/draw scheduling differ.
 // Earlier: the record index is scaled by 0x40 in retail and by 0x4 here, and the table retail reads is not the one this tree reads
 // Current stride agrees; the hoisted zero, callee convention and color/draw

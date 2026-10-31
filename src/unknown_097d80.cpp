@@ -122,6 +122,23 @@ struct c_aggregate : c_child
 // their matches, so it needs a non-LTCG object of its own. Child cursor walked in loop 1 45; children
 // read without the pointer cast 45; source pointer copied first 45; get_info output at function
 // scope 45; produced declared at loop scope 143.
+// Round 22 (lane 13; aligned difflib count 38, nearly all the 4-byte frame offset, plus request/child
+// cursor EBP/EBX and the loop-2 cursor temp EDX/ECX): total declared before error 45; the starts
+// store before the child read 45; the dispatch gate as nested ifs 45; a const dispatch cursor 45;
+// the cleanup item read into its local before the test 89 (368 bytes). BLOCKED by the build flag:
+// the retail frame needs `produced` to share a slot, which only a non-LTCG object gives.
+// Lane 16 r48 (fast): the collection loop in a block of its own 45 (frame 0x8024); the cleanup bound
+// named from the block 65; the cleanup loop bounded by starts[3] 45; `*source` read once before the
+// collection loop 145 (389 B); the item cleared before its release 59. Retail's slot 0x10 holds
+// produced, then the dispatch cursor and the cleanup countdown (strength-reduced loop temporaries),
+// which our LTCG build gives slots of their own.
+// Round 33 (lane 10): loop 1's child and error tests nested 45 (identical); loop 2's inner walk over
+// a block pointer range 128 (389 bytes); v5's count output as a `long &` 45 (identical); loop 2's
+// cursor declared at function scope 45 (identical); produced declared at the top of loop 1's body
+// and zeroed in the call's block 55. A compile-only /FAs build without /GL gives retail's 0x8020
+// frame (produced, loop 2's cursor and loop 3's count in one slot) and leaves request in EBP (retail
+// EBX) and the end bound loaded first; the starts store first, nested tests, a source copy, the
+// bounds declared end first, a block-pointer walk and a `!error` gate don't move either there.
 // @retail 0x97d80
 long c_aggregate_450cf4::function_97d80(dword *source, s_request *request)
 {

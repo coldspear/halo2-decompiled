@@ -276,6 +276,25 @@ PRIVATE __forceinline void vertex_decode_23ac30(short x, short y, short z,
 // the whole gap); with the format read into a long local for the switch 175; the coordinates through a
 // coordinate pointer and the node through the full base expression 107 (636 bytes); the decode written
 // in both arms of the node test 261.
+// Round 11 (m3 lane 2), one-file LTCG harness (base convention reproduced; format 4 indexed flips it:
+// the switch temp and every case's base take EDI and the node EBX, so the node is coloured before
+// the format-4 base once that base stays live to the late node read): formats 2/3/4 pointer or
+// indexed in all 12 combinations, format 2 indexed gives the same code as its pointer; `if (node !=
+// NULL)` and braces on the indexed form flip. Real, format 3 indexed with format 4 indexed and its
+// node stored before the decode: 73; with format 2 indexed too 73; with `node != NULL` 73; with
+// `return` for `break` 73; with the default case first 73.
+// Round 177, all with format 4 indexed through a `vertices` local (175: the source moves to the stack, the
+// node to EBX, the switch temp and every case's base to EDI; otherwise exactly retail's code): the node
+// parameter renamed to sort after the array local (vertex_node, a_node) 175/175 (same code); `if (!node)
+// break;` before the format-4 node store 175; a `wants_node` bool for the five node tests 193 (636 bytes);
+// `switch (buffer->format - 1)` with cases 0-3 175; the decode helper `inline` instead of `__forceinline` 521
+// (kept out of line).
+// Round 112 (fast; 0x14a8e0 70 with the convention kept, 269 when it flips): format 4 through a `vertices`
+// local with the node read through a pointer formed after the decode 175 (624 bytes, flipped); the node test
+// around the decode (decode and node store in one arm, decode alone in the else) 261 (696 bytes); format 3
+// indexed with the format-4 pointer 60 (as before: two points); `vertices + index` as the pointer 62 (same
+// code); the node byte read through a byte cast of the indexed record 175. A /Gd compile-only first pass
+// reloads every parameter per case here, so it shows nothing about the flip.
 // @retail 0x23ac30
 void function_23ac30(s_vertex_source_23ac30 const *source, long index,
 	s_vertex_bounds_23ac30 const *bounds, point3f *point, long *node)

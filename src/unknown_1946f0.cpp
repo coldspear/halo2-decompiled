@@ -85,7 +85,7 @@ static __forceinline void decode_direction(long index, vector3f *direction)
 	direction->k = z * face->axes[2].k + y * face->axes[1].k + x * face->axes[0].k + face->origin.k;
 }
 
-// score 4 (was 47): what still differs is the magnitude sum's first pair: ours sums j*j + i*i, then k*k,
+// score 4 (was 4): what still differs is the magnitude sum's first pair: ours sums j*j + i*i, then k*k,
 // retail j*j + k*k, then i*i (the decoded k is now popped and reloaded as in retail). Round 127: the
 // file's decode-path normalizer (normalize_decoded_direction, grouped k*k + (i*i + j*j)) in place of
 // normalize3d, 47 -> 4 (0x195070 56 -> 6); on it: the groupings i*i + (j*j + k*k) (0x294050's
@@ -160,6 +160,18 @@ static __forceinline void decode_direction(long index, vector3f *direction)
 // double magnitude with sqrt/sqrtf 118/118. Out-of-line magnitude query 118/118
 // is unresolved and excluded. Ordered two-sided magnitude tests, dot/length 92/92.
 // Original normalization restored; final-component forwarding remains.
+// Round 51 (compile-only, which reproduces both sums): the commutative x87 order follows the order
+// the direction's fields are first assigned (a flat sum runs in the reverse of it; k stays on the x87
+// stack only when assigned last), and retail's orders need k assigned before j here (i, k, j with the
+// flat dot3f sum) and before i in 0x195070 (j, k, i), but the decode assigns i, j, k. Sums i+(j+k),
+// (j+k)+i, flat ijk/jki, (i+k)+j, j+(i+k): k kept and first in each; with a diagnostic block boundary
+// k is reloaded but still first in its pair; decode rows in other orders move the stores; the
+// normalizer's scale statements in all six orders: identical; equal arm first with the struct copy:
+// k kept; decode returning the vector by value: extra copies; the existing normalize3d in both
+// decoders 47 here, 177 in 0x195070 (384 bytes).
+// Round 213: existing default vector setter 140; setter with equal arm first 140; native fallback value
+// 185; native fallback with equal arm first 185; named angle offset 86; named scaled angle 86; named
+// quantized angle 86; named offset and scale 4; original executable source restored.
 // @retail 0x194d30
 void function_194d30(s_bitstream *stream, vector3f const *up, vector3f const *forward)
 {

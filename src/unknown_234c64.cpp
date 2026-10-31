@@ -294,6 +294,10 @@ void c_window_channel::v9()
 // 3; value construction 3; one-element request array 3; one-element message array 3; local names 3;
 // native result declared early 3; immutable result 3. All bodies and declarations restored; the
 // request-address reload remains.
+// Round 321: Native message storage with admission scope/early screen/zero-store boundary subsets: 3/3/3/3/5/5/5/5.
+// Round 321: The address reload still differs; original derived request, callback and virtual dispatch restored.
+// Round 56: inline definition 3; array-decay id 3; user-mask/channel/window locals 3/3/3;
+// explicit pending receiver 3; explicit callback dereference 3; explicit setter receiver 3.
 // @retail 0x23531c
 void c_window_channel::v10()
 {

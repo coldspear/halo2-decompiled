@@ -170,9 +170,20 @@ PRIVATE __forceinline void function_248076(dword *arg_0, real &arg_1)
 // Round 314: Independent sample outputs with direct/named scales and computation/entry declarations:
 // 70/70/70/70; in retail timestamp order 133/133/133/133. Original sample workspace restored; folded
 // compare and downstream register rotation remain.
+// Round 31 (lane 10): retail's field_10 copy sits ahead of the fifth draw's seed load and store,
+// which no scheduler could cross (both are stores through unrelated pointers), so retail's source
+// order is field_10 first, and the fold after the fstp is the build's, not the source's. On field_10
+// first: the seed through a named pointer 133 (876 bytes); the cache update storing the flags before
+// the record 129 (863); the sample as `(real)_random(...) / 65535.f` 133; the field_10 copy cast to
+// real 133; the cached record read into a typed local for the compare 133.
 // Lane 15 r19: field_10's value read into a real local before the fifth draw and stored after it 144
 // (876 bytes, through XMM0); the cache update's two stores swapped 141 (864 bytes), with field_10 first
 // 129 (863 bytes); the child datum or the pool record address by byte arithmetic 70/70 (same code).
+// Round 112 (fast): field_10 copied after the cache update 147 (878 bytes: the fstp then meets the compare
+// and splits it), with the compare operands swapped 147; the fifth sample as `(real)(dword)_random(...) *
+// (1.0f / 65535.0f)` 70 (same code as 0x82e52f's), with field_10 after the cache update 147, with field_10
+// first 133. Everything after the compare is a scratch-register rotation that starts at field_10's temp
+// (ECX here once the seed pointer is dead, EDX in retail's order while it is live).
 // @retail 0x247fd0
 void function_247fd0(s_247fd3 *arg_1, s_particle_system_datum *arg_2,
 	point3f const *arg_3, vector3f const *arg_4, dword arg_5, s_247fd0 *arg_0)

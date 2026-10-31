@@ -144,6 +144,9 @@ PRIVATE __forceinline real function_29e3b1(point3f const *arg_0, point3f const *
 // Round 434: scan-scoped selected group/first/both/terminal/group-terminal/first-terminal/all
 // constant defaults 438/438/440/438/440/440/444; all plus scan-scoped best distance 468. Frame
 // stays 0x64; the last grows to 1609 bytes. Late group default recovers root registers but loses an entry store; restored.
+// Round 205: Consistent link-array base with outer/inner/both actual cursors 464/433/447; record cursor 433;
+// outer-record/inner-record/all cursors 500/455/436; all with shared bitmap operations 458.
+// All restored; selected-default, endpoint and bitmap homes and root-table roles remain.
 // Round 4 (lane 18, fast): the selected defaults, best distance or first default renamed to sort
 // first/last 398 each (slots don't move: retail 0x44/0x28/0x24/0x38, ours 0x3c/0x40/0x1c/0x34); the
 // group table read before the link table 414; the group bitmap cleared before the marker call 413;
