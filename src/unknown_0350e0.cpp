@@ -2484,7 +2484,9 @@ long __stdcall function_4ac30(s_cached_input_list *state, s_cached_input *output
 
 PRIVATE __forceinline real motion_random_step(double value, double step)
 {
-    double random = random_unit_fraction(g_4e7408);
+    // a float, so the 1.0f below stays a float constant as in retail (`fsub dword [1.0f]`); no rounding store is
+    // emitted, so the x87 keeps the fraction unrounded
+    real random = (real)random_unit_fraction(g_4e7408);
     real next = (real)(step * (random + random - 1.0f) + value);
     return next < -1.0f ? -1.0f : next > 1.0f ? 1.0f : next;
 }
@@ -2504,15 +2506,19 @@ PRIVATE __forceinline point2f motion_project_point(point3f const *point)
     return result;
 }
 
-// score 529 (was 561): the logic matches retail block by block; what is left is register allocation and scheduling.
-// Retail's loop keeps one pointer per (base, stride) group starting at state+0x18, view+0x104, view+0x120 (offset[1]),
-// view+0x158 and state+0x2c; we start at state+0x88, view+0xec and view+0x11c, so the whole loop differs in registers
-// and spill slots (frame 0x60 vs 0x38). Retail also reads the velocity back from memory for the speed limit (we reuse
-// the registers and spill them), keeps the random step and the old value alive on the x87 stack (fmul st(2) / fadd st(1)
-// where we copy and pop), computes dz, dy, dx before the three products, and reads the flags byte at state+0x94 for
-// the cycle bit (a byte read scores 538 but is a type pun, not kept). Tried: a speed-limit helper (560, same code),
-// factor order in the random step (no change), the lane order of offset and of the view fields (no change), dz/dy/dx
-// from the stored position (587), phase read before the cycle test (+7 over the per-branch read).
+// score 517 (was 529; 561 before that): the logic matches retail block by block (walked statement by statement against
+// 0x37260-0x37a50: offsets, argument order, condition directions, the z,x,y random order and the clamps all agree); what
+// is left is register allocation and scheduling. Retail's loop keeps one pointer per (base, stride) group starting at
+// state+0x18, view+0x104, view+0x120 (offset[1]), view+0x158 and state+0x2c. Reading the strength before the cycle test
+// and storing the fade before the phase now give the first two as retail; the offset group still starts at view+0x11c
+// (offset[0]) with every order of its loads and stores (6 spellings, 520-525), and the frame is 0x60 vs 0x38. Retail also
+// reads the velocity back from memory for the speed limit (we reuse the registers and spill them), keeps `step` on the
+// x87 stack and multiplies with `fmul st(2)` where we emit `fld st(2); fmulp st(1)` (the product's operand order makes no
+// difference), computes dz, dy, dx before the three products, and reads the flags byte at state+0x94 for the cycle bit
+// (a byte read scores 538 but is a type pun, not kept). Tried: a speed-limit helper (560, same code), factor order in the
+// random step (no change), the lane order of offset and of the view fields (no change), dz/dy/dx from the stored
+// position (587), phase read before the cycle test (+7 over the per-branch read), structs for the state and view
+// layouts (517 with the two reorders, 536 without; the byte offsets are kept).
 // @retail 0x37260
 bool __stdcall function_37260(byte *state, real step, byte const *parameters)
 {
@@ -2546,20 +2552,23 @@ bool __stdcall function_37260(byte *state, real step, byte const *parameters)
     do
     {
         real phase;
+        // the strength is read before the cycle test and the fade is stored before the phase: in this order the
+        // compiler starts its loop pointers at state+0x18 and view+0x104, where retail's start
+        real strength = *(real *)(state + 0x88 + i * 4);
         if (cycle)
         {
             phase = *(real *)(state + 0x18 + i * 4);
             if (*(real *)(view + 0x140) > phase) phase += 1.0f;
             phase -= *(real *)(view + 0x140);
-            *(real *)(view + 0x104 + i * 4) = phase;
             real centered = phase * 2.0f - 1.0f;
-            *(real *)(view + 0xec + i * 4) = (1.0f - centered * centered) * *(real *)(state + 0x88 + i * 4);
+            *(real *)(view + 0xec + i * 4) = (1.0f - centered * centered) * strength;
+            *(real *)(view + 0x104 + i * 4) = phase;
         }
         else
         {
             phase = *(real *)(state + 0x18 + i * 4);
+            *(real *)(view + 0xec + i * 4) = strength;
             *(real *)(view + 0x104 + i * 4) = phase;
-            *(real *)(view + 0xec + i * 4) = *(real *)(state + 0x88 + i * 4);
         }
         real distance = phase * range + *(real *)(state + 0x78);
         real radius = (real)(tan(g_485640 * 0.5f) * distance);
@@ -3868,6 +3877,16 @@ extern dword g_4b843c;
 // ja, ja, jbe-to-else with the `or 2` falling through.
 // Tried: a local `flags` stored to g_4ba014 after each step (293: the compiler drops the intermediate stores), flags as a ternary or a
 // negated condition (289, same), `(byte)` / `!= 0` / bool casts on the first bit test (278, same).
+// Second pass (logic walked against 0x31170-0x31518: every branch, mask, pass argument and the tail agree, so what is left is code
+// shape): (5) retail reads the flags twice for the last pass (`test byte ptr [g],1` then `mov edx,[g]; shr edx,1`) where we
+// load once; 0x3fdf0 shows the same quirk. (6) 0x4a1e0's own prologue (retail 0x4a1e0-0x4a28f) reads source from eax (+0x50..+0x68),
+// camera from ecx (`mov dx,[ecx]`) and resource from edx (`cmp edx,-1`), exactly as retail's caller loads them (0x311b4-0x311c3), so
+// the call-site difference is the stub's register mapping, not this function. Tried: the bit sets through an inlined copy of
+// 0x30ca0 (`if (v) g |= 1 << n; else g &= ~(1 << n)`, 278, same code; the real 0x30ca0 is called, not inlined, from 0x32350), the
+// `!enabled || bit0` branch order (278), a `moving` bool folded into one ternary store (278), a volatile-cast read of g_485a40
+// to provoke the store before the branch (no change to the store). A dword bit-field view of g_4ba014 (cast of its
+// address, not kept) scores 274 and 264 with the inlined sets, but still drops the store before `test bl,bl` and turns the bit-0
+// read into `mov al,[g]`; no spelling tried reproduces that store, so the 54-byte shortfall (and the shifted compare after it) stays.
 // @retail 0x31170
 void function_31170(long tag, s_view_camera *camera, long resource, s_view_source *source, bool enabled, real scale)
 {
