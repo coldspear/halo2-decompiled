@@ -2637,7 +2637,7 @@ void function_119280(long object_index, dword flags, s_damage_report const *repo
 #pragma inline_depth(255)
 
 /* reports damage to the object it hit (units and type 12 objects); callers set up its register arguments
-   last to first, and retail's callers lea the report, then the accumulator, then the data */
+   last to first, and retail's 0xdc0a0 leas the report, then the accumulator, then the data */
 // @retail 0xd9490
 void function_d9490(s_type_1e6529 const *data, s_damage_region_accumulator const *accumulator, s_damage_report *report,
 	long object_index)
