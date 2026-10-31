@@ -846,11 +846,19 @@ extern long *g_51e9cc;
 /* the biped's physics callback: its crouch, kill volumes, its character
    physics move, and the ground (structure, instanced geometry or object)
    its contact rests on */
-// score 350 (was 383): Frame 0xb8 and length 1481 agree; component/index carriers, native homes,
-// the first call boundary and later contact/store scheduling differ. Native workspace names 383;
-// word flags 377, with names 377; shared velocity norm 383; unsigned key 383; full-width physics
-// result 361; object case first 383; flags/norm/key 377; clamp admission 392, with flags 386;
-// owned crouch 383, with clamp/flags 386; wide physics/flags 371; wide physics/clamp 350 (kept).
+// score 42 (was 310): walked against retail block by block (calls, argument order, offsets, constants, conditions,
+// case bodies): the only behaviour difference was the final flags bit-7 clear, which retail also runs when the
+// biped has no havok component (0xddf46 is the NONE branch's target, 0xdd9bf); it is now outside the if.
+// What still differs: crouch sum loads the biped's crouch first (retail 0xddb25 loads crouch_change first; swapping
+// operands, `crouch_change += ...` unchanged) and the crouch store comes after the flags `and` (retail before it,
+// 0xddb4b/0xddb53; moving the `and` first 52); case 5 stores unknown35c before testing the surface flag (retail
+// tests first, 0xddcc8-0xddcd0; a flag local 218, storing it after the if 197); case 4 holds the lookup's address
+// in a lea instead of esi (0xddd8e, a holder pointer local unchanged) and orders the unknown364/edi reload
+// differently (0xdddbd-0xdddc3); `or byte [0x349], 0x10` is scheduled after the unknown380 loads (retail 0xddeda).
+// Fixed here: `bool physics` (long 291 -> bool 253), the permutation byte masked at its use (253 -> 47),
+// unsigned key (47 -> 46), `PIN(contact...) == contact` (46 -> 45), i, k, j square sum (45 -> 42), word flag masks.
+// Earlier rounds (350 and up): word flags, shared velocity norm, unsigned key, full-width physics result, case
+// order (the compiler lays the cases out itself: 1/5/4 and 5/4/1 give the same bytes), clamp admission, owned crouch.
 // @retail 0xdd990
 void __stdcall function_dd990(long arg_159e6d)
 {
@@ -862,12 +870,12 @@ void __stdcall function_dd990(long arg_159e6d)
 		s_biped *root = BIPED_GET(function_baf80(arg_159e6d));
 		real crouch_change = function_dd7d0(arg_159e6d);
 		real height_change;
-		long physics;
+		bool physics;
 
 		function_e30c0(arg_159e6d);
 		if (!(*((byte *)root + 0xc1) & 1) && function_1ec500(arg_159e6d))
 		{
-			*((byte *)&biped->flags_348 + 1) |= 0x80;
+			biped->flags_348 |= 0x8000;
 			if (*((byte *)g_4e6948 + 0xc) != 4)
 			{
 				s_type_1e6529 data;
@@ -888,7 +896,12 @@ void __stdcall function_dd990(long arg_159e6d)
 			velocity.k -= height_change;
 			function_b7740(arg_159e6d, &velocity, NULL, false);
 			function_1c4b00(arg_159e6d, &velocity, NULL, 1);
-			if (velocity.i * velocity.i + velocity.j * velocity.j + velocity.k * velocity.k > 0.0001f)
+			/* retail sums i, k, j in that order (0xddad7-0xddaf7) */
+			real speed_squared = velocity.i * velocity.i;
+
+			speed_squared += velocity.k * velocity.k;
+			speed_squared += velocity.j * velocity.j;
+			if (speed_squared > 0.0001f)
 			{
 				function_b9b90(arg_159e6d, false);
 				function_b7360(arg_159e6d);
@@ -896,11 +909,11 @@ void __stdcall function_dd990(long arg_159e6d)
 			}
 		}
 		biped->crouch = PIN(crouch_change + biped->crouch, 0.0f, 1.0f);
-		*((byte *)&biped->flags_348 + 1) &= ~8;
+		biped->flags_348 &= ~0x800;
 		physics = function_e4680(arg_159e6d);
 		if (havok_component_any_rigid_body_active(component) || physics || !(TEST_FIELD_BIT((biped->flags_c0 >> 6) & 1)))
 		{
-			*((byte *)&biped->flags_348 + 1) &= ~0x10;
+			biped->flags_348 &= ~0x1000;
 			function_b9dd0(arg_159e6d, &biped->unknown368);
 			if (!(TEST_FIELD_BIT((biped->flags_c0 >> 8) & 1)))
 			{
@@ -921,10 +934,10 @@ void __stdcall function_dd990(long arg_159e6d)
 				function_1e5a60(&biped->physics_mode, &result, &input);
 				contact = result.contact_index;
 				if (!(*((byte *)biped + 0xc1) & 1) && contact != NONE &&
-					contact == PIN(contact, 0, component->unknown88.size))
+					PIN(contact, 0, component->unknown88.size) == contact)
 				{
 					byte *entry = (byte *)component->unknown88.data + contact * 0x48;
-					long key = *(long *)(entry + 4);
+					dword key = *(dword *)(entry + 4);
 					bool found = false;
 
 					if (key != NONE)
@@ -932,7 +945,7 @@ void __stdcall function_dd990(long arg_159e6d)
 						long index = key & 0xffff;
 						long surface = (key >> 16) & 0x1fff;
 
-						switch ((dword)key >> 29)
+						switch (key >> 29)
 						{
 						case 1:
 							biped->unknown35c = NONE;
@@ -969,8 +982,8 @@ void __stdcall function_dd990(long arg_159e6d)
 								s_biped *object = BIPED_GET(object_index);
 								byte *model = g_4e3b44[*(long *)(BIPED_DEFINITION_GET(object) + 0x38) & 0xffff].bytes;
 								byte *region = *(byte **)(model + 0x74) + (surface & 0x1f) * 0x10;
-								long permutation = (char)(*(byte **)(region + 0xc))[(surface >> 5 & 0xff) * 8 + 5] & 0xff;
-								dword position = (((char)region[4] << 8) | permutation) << 16;
+								long permutation = (char)(*(byte **)(region + 0xc))[(surface >> 5 & 0xff) * 8 + 5];
+								dword position = (((char)region[4] << 8) | (permutation & 0xff)) << 16;
 								s_lookup lookup;
 
 								if (lookup.initialize(object_index))
@@ -1019,7 +1032,7 @@ void __stdcall function_dd990(long arg_159e6d)
 					biped->unknown380 = *(point3f *)(entry + 0x1c);
 					biped->unknown374 = *(vector3f *)(entry + 0x28);
 					function_1201a0(&biped->unknown374, g_4687b0);
-					*((byte *)&biped->flags_348 + 1) |= 0x10;
+					biped->flags_348 |= 0x1000;
 					biped->unknown368 = biped->unknown380;
 				}
 				function_e2fa0(arg_159e6d, result.unknown0c, *(byte **)((byte *)component + 0x70) + 0xc);
@@ -1029,12 +1042,12 @@ void __stdcall function_dd990(long arg_159e6d)
 				}
 				else
 				{
-					*(byte *)&biped->flags_348 &= ~1;
+					biped->flags_348 &= ~1;
 				}
 			}
 		}
-		*(byte *)&biped->flags_348 &= 0x7f;
 	}
+	biped->flags_348 &= ~0x80;
 }
 
 struct s_type_94656b;
