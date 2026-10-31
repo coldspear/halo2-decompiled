@@ -4058,6 +4058,9 @@ static __forceinline long nonnegative_15ce70(long value)
 // subtype as if/else 475; the ternary clamp alone 541 (retail's setle/dec/and, but 2126 B);
 // the if/else subtype alone 543 (retail's branches, 2110 B); `minimum < penalty ? penalty :
 // minimum` for the delay 471 (identical).
+// Round 241: uniform presence/self/both decisions 575/559/560; with native statistics
+// ordinal 572/552/544; both with override join 560, also staged decoding 560.
+// Original body restored; frame 0xe4/0xe0 and attacker/category/NONE homes remain.
 // @retail 0x15ce70
 void function_15ce70(long attacker_index, long victim_index, bool betrayal, byte damage)
 {
