@@ -2399,10 +2399,19 @@ void __stdcall function_b77d0(long object_index, vector3f const *linear_velocity
 /* the dead biped's ragdoll: when it falls over (+0x34b 0 to 1) its bodies
    get a push along the killing blow, spread from the hit body; a fallen
    one settles and goes to sleep (2); one that gets up again stands */
-// score 774 (was 774): Frame 0x4c agrees; incoming index/result homes, flag widths and unrolled distance scan differ.
-// Single result exit 861, entry result plus exit 861; native Boolean flag bits 801, with result exit 879;
-// position after mass query 796; complete reciprocal 774; complete vector producers 774; workspace role names 774;
-// body count at every use 773; separate scan ordinals 774, with count fields 773; complete offset vectors 776. All restored.
+// score 540 (was 568; the old 774 was stale): the logic was walked against retail block by block and agrees
+// (conditions, field offsets and widths, constants 1.0/0.001/0.7/0.65/2.0/0.3, call order and arguments, three
+// loops). The flag tests are TEST_FIELD_BIT (retail `shr; test r8, 1` at 0xe1079, 0xe109d, 0xe10a8, 0xe118c).
+// Still differs: retail returns through one exit with result on the stack (init 0 at 0xe0f1c, stored 1 at
+// 0xe108c/0xe0fa5/0xe0ff6, `mov al, [esp+0x5c]` at every tail, in the argument's home slot), keeps the argument on
+// the stack (ebp = [esp+0x58], biped in ebx, frame 0x4c, `ret 4`) and loads +0x34b with movsx (0xe0f11). Retail also
+// stores (flags_348 >> 9) & 1 to a byte local [esp+0x13] at 0xe1142 that nothing reads (a dead local or a dead second
+// parameter of function_e16b0 is eliminated in ours). Retail walks a pointer in the mass and farthest loops and
+// re-reads rigid_bodies.size after the velocity call.
+// Tried: one `return result;` exit with `break`s and a `(char)` switch 552 (ours then takes the argument in eax,
+// frame 0x50, and 0xdd360 goes 280 -> 281); flags_348 copied to a word local 552; hit position as three reals 568;
+// result declared first (same). Earlier lane forms (names, order, exits): single result exit 861, complete
+// reciprocal, workspace role names, body count at every use, separate scan ordinals, complete offset vectors.
 // @retail 0xe0ef0
 bool __stdcall function_e0ef0(long arg_159e6d)
 {
@@ -2425,7 +2434,7 @@ bool __stdcall function_e0ef0(long arg_159e6d)
 		}
 		definition = BIPED_DEFINITION_GET(biped);
 		model = g_4e3b44[*(long *)(definition + 0x38) & 0xffff].bytes;
-		if (*(long *)(model + 0x24) == NONE || ((biped->flags_348 >> 10) & 1))
+		if (*(long *)(model + 0x24) == NONE || TEST_FIELD_BIT((biped->flags_348 >> 10) & 1))
 		{
 			return false;
 		}
@@ -2435,11 +2444,11 @@ bool __stdcall function_e0ef0(long arg_159e6d)
 			*((byte *)&biped->flags_348 + 1) |= 1;
 			return true;
 		}
-		if ((*(dword *)(definition + 0x1f0) >> 11) & 1)
+		if (TEST_FIELD_BIT((*(dword *)(definition + 0x1f0) >> 11) & 1))
 		{
 			return true;
 		}
-		held = ((biped->flags_134 >> 27) & 1) && !((biped->flags_348 >> 9) & 1);
+		held = TEST_FIELD_BIT((biped->flags_134 >> 27) & 1) && !TEST_FIELD_BIT((biped->flags_348 >> 9) & 1);
 		if (!function_138fa0(!held))
 		{
 			*((byte *)&biped->flags_348 + 1) |= 2;
@@ -2449,7 +2458,7 @@ bool __stdcall function_e0ef0(long arg_159e6d)
 			long primary = function_10f720(arg_159e6d, true);
 			long secondary = function_10f720(arg_159e6d, false);
 
-			if (!((biped->flags_134 >> 27) & 1) && (primary == 2 || secondary == 2))
+			if (!TEST_FIELD_BIT((biped->flags_134 >> 27) & 1) && (primary == 2 || secondary == 2))
 			{
 				return true;
 			}
@@ -2471,7 +2480,7 @@ bool __stdcall function_e0ef0(long arg_159e6d)
 		{
 			s_havok_component *component = havok_component_get(biped->havok_component_index);
 
-			if ((component->unknown04 >> 11) & 1)
+			if (TEST_FIELD_BIT((component->unknown04 >> 11) & 1))
 			{
 				vector3f direction;
 				long value;
