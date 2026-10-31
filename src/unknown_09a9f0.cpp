@@ -401,6 +401,14 @@ void c_turret_entity_definition::v21(s_entity *entity)
 // object read then has a predecessor without the header address; but the memory re-test is not threaded
 // and the result is long in EBX); the same clearing the local then publishing it 45 (179 bytes); with a
 // bool result first 53. Not kept: a field cleared in a test and re-tested.
+// Round 30 (lane 11, fast; none kept): early bool with the deleted arm first and the object, attach
+// and update through the entity's stored index 82 (157 bytes: the stored index is forwarded, header
+// still shared); result decided at the header test, object block under `if (result)` 72 (threaded
+// early, header shared, result spills); clear-in-test then memory retest on the bool result 53 (177
+// bytes: retail's data reload and recomputed index, with EBX for the data, but the retest stays and
+// EBP caches the last argument); object read as a raw byte offset from the pool data 77 (folded back
+// into the shared header address); the in/out mask parameter's own address instead of the local copy
+// 87 (152 bytes; the copy is retail's).
 // @retail 0xa5a60
 bool c_object_type_definition::v22(s_entity *entity, long b, s_entity_info *info, long d, long e, long f)
 {

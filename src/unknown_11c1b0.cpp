@@ -94,6 +94,13 @@ void function_16e2c0(long arg_0);
 // Round 233: phase-local tag table 73; loaded-index snapshot 126; published BSP value 50;
 // entry-list value 50; tag/index 122; tag/BSP 50; index/entries 126; all four 126.
 // Original index/result lifetimes and global read-backs retained; entry slot and BX/EDI remain.
+// Round 30 (lane 11, fast): the saved index read from the global at the top 130 (own slot, registers
+// still swapped); the saved index set in an if/else after the callback loop 120; the current index read
+// inside the block after the range test, the copy right after it, 58 (457 bytes: BX/EDI and the zero
+// extension become retail's and the copy takes the argument's home, but the global read follows the
+// range test); the copy at the top in either direction 128/128 (retail's registers and early store,
+// own slot). Leads: the registers follow whether the current index is live across the range test
+// without an early store; only the argument's home is still missing from the copy-at-top form.
 // Round 92 (--fast, reproduces 50): the requested index read once through the argument's address
 // (`short const *ref = &arg_0; short requested = *ref;`) with the saved index defined at entry 128
 // (own slot: the argument's home is no longer shareable); the address read with the saved index still

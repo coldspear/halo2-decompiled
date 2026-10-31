@@ -2063,22 +2063,23 @@ static __forceinline long function_9d453(long arg_0, short arg_1)
 	return local_0;
 }
 
-// score 155 (was 155): this round's head-block forms (the 0x13c value truncated to a short and
+// score 155 (was 155): Frame 0x1c agrees; indexed lookup, object/offset homes and low-mask ownership differ.
+// Earlier score 155 (was 155): this round's head-block forms (the 0x13c value truncated to a short and
 // compared against both NONE forms, in nine source shapes) all score 149, and naming the object
 // index in a local, so the object address keeps retail's SIB base, scores 148 - a gain of seven
 // that the keep rule drops, so the original body stands.
-// score 155 (was 155): this round's head-block forms (the 0x13c word truncated to a short and
+// Earlier score 155 (was 155): this round's head-block forms (the 0x13c word truncated to a short and
 // compared against both NONE forms, so the tail keeps retail's ax/cx) score 149, a gain of six that
 // the keep rule drops, so the original body stands.
-// score 155 (was 155): this round's source permuter over the body found no better form (24 tries,
+// Earlier score 155 (was 155): this round's source permuter over the body found no better form (24 tries,
 // best 148 differing instructions, equal to the baseline 148, no confirming build), so the body is
 // unchanged; the four-slot loop still carries one value more than retail (ours reloads [esp+0x14] in
 // the loop head), the 0x400 block keeps its short in EAX where retail uses EDX/CX, and the reduced
 // image's global and thunk addresses differ.
-// score 155 (was 155): this round read the diff groups again: the four-slot loop carries one value
+// Earlier score 155 (was 155): this round read the diff groups again: the four-slot loop carries one value
 // more than retail (ours reloads [esp+0x14] in the loop head), the 0x400 block keeps its short in
 // EAX where retail uses EDX/CX, and the reduced image's global and thunk addresses differ.
-// score 155 (was 155): object/offset homes and low-mask allocation remain;
+// Earlier score 155 (was 155): object/offset homes and low-mask allocation remain;
 // Round 9 (lane 10): retail holds the 0x400 block's short in EAX (stores 0x90 before the result update);
 // its value as a ternary 201; its declaration after the field reads 168; set in if/else 201; both slot
 // masks at the loop head 285 (1041 bytes); first slot mask long 168.
@@ -2201,6 +2202,9 @@ static __forceinline long function_9d453(long arg_0, short arg_1)
 // countdown: 210/210/231/231/210/210/231/231. Original ordinal and countdown restored; frame 0x1c
 // agrees, object/offset homes and low-mask allocation remain.
 // Round 441: Boolean fixed request groups parent/position/both/tail/parent-tail/position-tail/all 285/271/289/178/286/272/290; both dynamic child predicates 223. Original request tests, observations and executable body restored; object/offset and low-mask homes remain.
+// Round 448: Decoded two-bit child request in dword/long/word/byte, masked and
+// unmasked shift domains 284/284/284/284/287/287/287/287.
+// Original body and helpers restored; Frame 0x1c agrees; indexed lookup, object/offset homes and low-mask ownership remain.
 // @retail 0x9d450
 long c_unit_type::v27(long arg_0, long arg_1, long arg_2, long arg_3)
 {
