@@ -980,7 +980,7 @@ short function_219110(s_set_ref *ref, short offset, dword *used_mask, short prev
 void sound_playback_set_chunk(long sound_index, long definition_index, char pitch_range_index, char permutation_index, short chunk_index);
 long __stdcall function_125e60(s_looping_track_sound *sound);
 
-// score 14 (was 77): only the record initialization's store schedule differs (the playback reload, the 0xa4
+// score 14 (was 14): only the record initialization's store schedule differs (the playback reload, the 0xa4
 // byte and the loop-flag byte move up) and the flag set is a plain store where retail ORs it in.
 // Earlier: Float/result/random spill homes and initialization scheduling differ.
 // Round 76: bounds pointer 74; with mask 132; direct previous 80; initialization swap 77; result name 74;
@@ -1005,6 +1005,10 @@ long __stdcall function_125e60(s_looping_track_sound *sound);
 // pitch sum orders 26 x4; renames for slot order 26 x5; direct distance 190; track declared at entry 111;
 // chained fade zeros 13 (stores in the wrong order); links declared after the record 14; handle before its
 // byte 14; flags before track index 14; resets before the fade zeros 14; callbacks before time 16.
+// Lane 17 round 5: links through a fresh pool lookup 245; chained fade zeros 13 (again); byte reset before the
+// chunk index 14 (no change: the scheduler, not source order, places these stores); track index and flag zero
+// before the source copy 35 (the copy stops the zero being folded, so the flag is ORed as in retail, but the
+// stores move above the copy); chained ring links 16; source copy after the ring links 192.
 // @retail 0x21b940
 long function_21b940(long looping_sound_index, long definition_index, long pitch_range_index, short track_index, short state, dword *seed)
 {
@@ -1248,7 +1252,8 @@ struct s_looping_detail_request
 	short tracking_data_size;
 };
 
-// score 138 (was 138): return result first restores entry load allocation; source-copy scheduling and first-player expansion remain.
+// score 127 (was 138): return result first restores entry load allocation; the first-player expansion remains (retail
+// calls 0x14dde0, ours inlines it), and the audible arm keeps the detail in EDI where retail reloads it.
 // Round 8: the first-player query stays inlined whatever the else arm's shape: the next-player step
 // through the out-of-line 0x14de10 (diagnostic) 97 with the query still inlined; the skip loop as a
 // for, `while (skip-- > 0)`, an inverted count test and a guarded do-while all unchanged (154 fast).
@@ -1281,6 +1286,12 @@ struct s_looping_detail_request
 // Round 319: Enclosing player-count lifetime with test-produced result, inactive-first
 // arm and native publication-order subsets 165/210/173/208/164/210/172/208
 // (reduced control 141, full 138). All restored; query expansion remains.
+// Lane 17 round 5 (plain): out-of-line 0x14de10 for the skip step 97 at 495 bytes (retail inlines that step; not
+// kept); counted-up skip loop 138; camera looked up at each use 157; flags before result in the else arm 138;
+// type before the source clear 137; mode before type 134 (prefix exact to +0x7c); with it, detail address taken
+// 134 (diagnostic); offset copy after the callbacks 132, between flags and index 133; with that, the position sum as
+// offset + camera 132 (retail's operand order); with that, size before flags 132, result before the request stores
+// 127 (kept: mode before type, offset after callbacks, offset + camera, result first), audible after the camera 133.
 // @retail 0x21cc60
 bool looping_sound_prepare_detail(s_type_a82d9f const *detail, long looping_sound_index, s_looping_detail_request *request)
 {
@@ -1290,20 +1301,20 @@ bool looping_sound_prepare_detail(s_type_a82d9f const *detail, long looping_soun
 	s_type_99c531 *source = &request->source;
 	*source = sound->source;
 	source->unknown02 = 0;
-	request->type = 0x10;
 	request->mode = definition[4] ? 0 : 2;
+	request->type = 0x10;
 	if (sound->source.audible == 1)
 	{
 		source->audible = 1;
 		vector3f offset;
 		function_21ce60(detail, &offset);
 		function_21bfb0(looping_sound_index, detail->sound_definition_index, (s_sound_marker const *)&offset, source);
-		request->offset = offset;
+		result = true;
 		request->flags = 0x2f;
 		request->looping_sound_index = looping_sound_index;
 		request->callbacks = &g_44a130;
+		request->offset = offset;
 		request->tracking_data_size = sizeof(offset);
-		result = true;
 	}
 	else
 	{
@@ -1321,7 +1332,7 @@ bool looping_sound_prepare_detail(s_type_a82d9f const *detail, long looping_soun
 			s_local_camera *camera = local_camera_get(player);
 			vector3f offset;
 			function_21ce60(detail, &offset);
-			vector3f_add((vector3f const *)&camera->position, &offset, (vector3f *)&source->spatial.position);
+			vector3f_add(&offset, (vector3f const *)&camera->position, (vector3f *)&source->spatial.position);
 			function_11bed0(&source->spatial.location, &camera->position);
 			source->spatial.compressed_forward = vector3d_compress(g_4687a8);
 			source->spatial.velocity = *g_4687a4;

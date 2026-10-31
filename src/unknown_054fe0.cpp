@@ -1158,6 +1158,16 @@ static inline bool session_member_get_qos(s_network_observer *observer, c_class_
 // getter 109, with the host and the counters before it 112 (session on the stack); qos at
 // function scope 67.
 // Round 46: Predicate-produced QoS result bool/byte/short/long, native and library copies: all eight 188 (230 bytes, outlined member helper). On that graph, forced observer/member/both/all helper boundaries 188/67/67/67; original helpers and body restored.
+// Round 35: target found with a diagnostic: host read after the observer branch, parameters in the order
+// (session, latency) at the definition and its one call, and the member check re-reading member_count
+// instead of reusing the loop's load give a byte match (0x658c0 and 0x65770 still match) when the re-read
+// is forced through a volatile cast (diagnostic only, reverted). Without the re-read: host after the
+// observer + (session, latency) 86, (session, latency) alone 89. Re-read attempts on that graph, each 86:
+// count through a membership-block pointer; `session->member_count > member_index`; count in a helper
+// local; bound test nested apart from the flag test; helpers defined after the function; the channel
+// helper's session read once through its address (re-reads in a compile-only build, not under LTCG); the
+// same in the outer qos helper; helpers with external linkage. A store through latency ahead of the check
+// also removes the reuse (compile-only), so retail's check sees member_count as possibly changed.
 // @retail 0x64480
 void network_session_get_member_latency(s_session_member_latency *latency, c_class_58d20 *session)
 {
@@ -1379,6 +1389,11 @@ static void network_session_interface_update_local_properties(c_class_58d20 *ses
 // 249/249/240/240 and ordinal-bit removal 262/262/245/245. All restored; owner/count/zero
 // allocation and requested-record induction remain.
 // Round 46: Cache-change result bool/byte/long 184 each; completed-property result 184; both results bool/byte/long 184 each; both plus complete name-selection predicate 184. Original body restored.
+// Round 35 (fast gives 184 here too): team clamp through a PIN macro 184 (identical code); team in a long
+// local 191 (sign-extends at the load; retail extends only for the > 7 compare); `team >= 8` 184 (still a
+// byte compare); team read from the field at each use 206 (917 bytes); the no-current form again 198 (owner
+// edx, `test`, cursor +0x1138 as retail; the zero takes esi in the second loop and the name count stays in
+// memory), with the PIN clamp 198.
 // @retail 0x65cb0
 void network_session_interface_update_player_properties(c_class_58d20 *session)
 {
@@ -1873,6 +1888,13 @@ struct s_summary_player_sort_entry
 // Scalar type with member-index capture 393; with existing membership provider 353; provider/index
 // 393; provider/index with statistics/getter 380/369. Frames 0xaa0/0xaa4 still miss 0xaa8; all restored.
 // Round 46: Complete admission predicate returning bool/byte/short/long 505/576/576/576; nested state/type then range-result producers 380/442/442/441. Frames 0xa9c/0xaa0/0xaa4; original body and cursor restored.
+// Round 35: retail sets output->state with a conditional move (cmovne at +0x23c), so this body needs
+// /arch:SSE, which this file lacks (lead only; no flag change). The listing is positional and ours is about
+// six instructions short in the prologue, so retail-shaped local fixes raise the count until the three homes
+// exist: id/key through the file's session_get_id made inline 390 (stays a call), __forceinline 393 (1323
+// bytes; retail's per-destination null tests); full-session arm as `long used` plus a switch on the mode
+// with `case 1: case 2:` 355 (1291 bytes; retail's movsx and single player_count load); both 380; the file's
+// live-state getters for variant/mode/option 390 (1259 bytes).
 // Round 5 (lane 18): the 12-byte frame gap is three stack values ours lacks: &session->value18 (read
 // back for the type), the membership at +0x4c and the member index read before the flags are cleared;
 // name, identity, counts, mask and players all go through the membership pointer, as an inlined

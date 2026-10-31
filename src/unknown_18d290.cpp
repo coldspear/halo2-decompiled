@@ -132,6 +132,17 @@ bool function_bafb0(long object_index, long ancestor_index);
 
 bool function_14ddc0(long local_player_index);
 
+// score 44 (was 44): this round: the split mask as a long value with the existence test kept
+// separate gave 92 (the flat shape loses retail's nested branches); the mask test written into the
+// condition 52 (188 bytes, retail's length) and the same with the existence re-tested after the
+// call 52 (the compiler folds the redundant test away); the object parameter copied into a local
+// 44 (same code); the entry read directly instead of through 0x14ddc0 59 (loses retail's `cmp -1`);
+// a local entries pointer before the loop 93; a while loop 244. Still the existence byte in
+// AL where retail keeps it in BL and re-tests it, with the loop index in EBX and unit in EDI.
+// This round, again: a permuter run was stopped during its baseline build (no result). Retail keeps
+// the existence byte in BL across the 0x155760 call and re-tests it after the split mask, which
+// frees EBX for the object argument and leaves ESI for the unit; our compiler folds the re-test
+// away, keeps the flag in AL and reloads the object from the stack.
 // Round 19: unchanged; only the helper-call chain reproduces retail's BL re-test (89 at 203 bytes:
 // the table pointer spills and the index takes ebp) and every cached-entry form folds the re-test
 // away (72-80); the existence byte and the loop/unit registers remain.

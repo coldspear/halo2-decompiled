@@ -37,7 +37,7 @@ bool function_22acb4(long);
 void function_1396c7(long, point2f *);
 void function_2d140(long, real const *, long, long, s_filter_vector const *);
 
-// score 6 (was 64): only the schedule of two bound conversions differs: retail converts the
+// score 6 (was 6): only the schedule of two bound conversions differs: retail converts the
 // bottom bound after the first two right-bound stores and the top bound after the first left-bound
 // store; ours converts each before them. Round 18 (lane 14): the bitmap tag read through the
 // sequence/sprite structs 0x22ae21 uses, with the index declared in each count branch (zero tests
@@ -80,6 +80,12 @@ void function_2d140(long, real const *, long, long, s_filter_vector const *);
 // on them the point/result/x,y declarations moved or default first 157 each (identical), the result
 // initialised to NONE at its declaration 172 (alone 134); the bounds converted in retail's dd2, dd6,
 // dd4, dd0 order 123, with the reciprocals first 143, with the per-case sums too 159.
+// Round 12 (m3 lane 2; exact one-link harness: this file with 0x13a532's, 0x1396c7's, 0x22acb4's and
+// 0x2d140's files): grid as 18 separate statements 6; grid as a vertex struct {x, y, u, v} 6; bounds as
+// two real_bounds 6; bounds as an s_float_rect 6; each bound converted just before its first grid row 7.
+// Harness only: top/bottom converted after grid row k (k = 1..6) moves each conversion after all three
+// stores of a row, never between (positional 6-9); the blends among the grid rows 7-104; the global
+// stores before the point/reciprocals/conversions/grid 206/181/93/77 (positional).
 // @retail 0x22b8e2
 void function_22b8e2(s_22b8e2 const *arg_0, long arg_1, color4f const *arg_2)
 {
