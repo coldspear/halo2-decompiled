@@ -290,6 +290,11 @@ PRIVATE inline void shape_copy_header(s_shape_header const *source, s_shape_head
 // Round 27 (lane 11, real builds): the sphere helper forced inline 57; its parameters (point, sphere,
 // plane, depth) 57, (sphere, point, depth, plane) 57, (point, sphere, depth, plane) 57; the sphere
 // passed as `shapes->spheres + index` 57.
+// Round 22 (lane 13; aligned difflib count 37, all in the sphere test: difference registers z/y,
+// copies of the scale for x and y, the hoisted 1.0 and the plane-dot registers): the scale helper
+// taking the factor by const reference 57 (0x2461a0 4 -> 50); the radius added first in plane->d
+// 57; the best-* locals declared in reverse 59; plane declared before depth in the loop 57;
+// best_depth declared first 60.
 // @retail 0x245ef0
 bool function_245ef0(s_shapes const *shapes, point3f const *point, s_shape_result *result)
 {

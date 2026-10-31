@@ -193,6 +193,11 @@ PRIVATE inline void decal_project_corner_17d9a0(transform4x3f const *matrix, rea
 // then retail's but for the first cross product, which loads e0.i where retail copies e1.j's
 // register); natural cross order 182 and retail's corner-1 product operand orders 182 (both identical
 // code: in this form every product loads the matrix field first whatever the source order).
+// Round 129: in the corner helper, the table row as `positive + axis * 2` 138; a named long row
+// index 140 (aligned 152 -> 121: later corners' product operand orders move toward retail's); with
+// y stored before x 140 (aligned 119); row index named in axis-first order 140 (aligned 121); both
+// coordinates read through the row index into named values 176 (970 B). Retail's lookup is
+// `shl eax,1` + two movsx loads, y copied through xmm0 and stored first.
 // @retail 0x17d9a0
 void function_17d9a0(transform4x3f const *matrix, real const *bounds, s_decal_quad_17d9a0 *quad)
 {

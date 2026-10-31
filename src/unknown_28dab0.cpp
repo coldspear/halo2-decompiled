@@ -177,6 +177,11 @@ void __stdcall swarm_delete(long arg_0);
 // its NONE/zero stores remain); on that, the allocation in its own local with the result set on success
 // and the delete path as an else 89; the limit read first and replaced when nonpositive 94; the result
 // declared after the tag with the tag-field test nested 92.
+// Round 45 (lane 16): the delete path returning NONE directly 96 (first +0xb, the result then shares
+// EBP from the start); the NONE result assigned in the failed-test arm of an if/else 92 (NONE made after
+// the first call); the success block returning on its own 95 (`--fast`, callee caveat); retail's store
+// order with the if-form limit and the delete path returning NONE 92 (plain, first +0xb); the
+// result as an unsigned dword 44 (plain, same code).
 // @retail 0x28dab0
 long __stdcall function_28dab0(long arg_0, s_28dab2 const *arg_1)
 {

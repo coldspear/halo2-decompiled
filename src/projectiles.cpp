@@ -631,6 +631,19 @@ s_projectile_material_response g_547660;
 // 40/40/40/40/21/21/21/21; the counted form reaches 145 bytes but rotates index/material/scan homes.
 // That aggregate parameter is exact-only and restored. Its ordinal zero before admission/lookup,
 // direct/NULL lookup 50/50/51/54. Original scalar parameter, unused reference, callers and body restored.
+// Round 31 (lane 10): with the existing c_type_47f957 by value (callers wrap the index), retail's
+// structure is the unguarded counted for (zero, one count test, base load after it); ours then
+// coalesces the material with the imul temporary in ECX (retail `lea edi,[ecx+edx]; test edi,edi`),
+// which moves index/counter/response to DI/EDX/ESI: pointer cursor 50, indexed 50 (137 bytes), with
+// `if (count > 0)` around it 23 (145, repeated test), count in the loop test 70, named base 53/55;
+// harness (exact for all of these): the existing global_material_get in the condition or body with
+// six loop forms, both compare orders, member/class parent update and declaration orders 21-52 (21
+// only with the repeated guard); short/class walk copies 21-71; counter/count widths, operator==,
+// &a[i], fallback ternary, counter declared outside 34-58.
+// More harness forms: do/while on the result 21-33; a NULL-initialised function-scope material 21-50;
+// `while ((material = get) != NULL)` with `if (result) break;` before or after the parent read
+// 21-68 (gives retail's counter ECX and material EDI, but a second parent read); lookup tested
+// before the result 46.
 // @retail 0xfd4c0
 s_projectile_material_response *__stdcall projectile_get_material_response(s_projectile_definition const *definition,
 	short material_index)

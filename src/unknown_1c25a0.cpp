@@ -822,6 +822,9 @@ void function_1c54b0(char const *variants, long object_index)
 // ebx/ebp swap).
 // Round 42 (a compile-only build reproduces all four; 158 forms screened there): entity count read at each use 4,
 // with the flag after the call 18; world local read at each iteration 4; entity local 4; nested tests 4.
+// Round 89, with the flag after the discard call: entity-array pointer 75; island_index renamed
+// active_island 18; increment in the outer for clause 18; scoped object, entity or flags locals 18 each;
+// inner while 18; const entity count 18; function-scope flag cleared after the index update 63.
 // @retail 0x1c50c0
 void function_1c50c0(void)
 {

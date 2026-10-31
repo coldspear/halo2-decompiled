@@ -61,8 +61,8 @@ struct s_transition_collision
 };
 
 // @retail 0x26f150
-bool function_26f150(short type, point3f const *start, point3f const *end,
-    point3f const *alternate_start, point3f const *alternate_end)
+bool function_26f150(short type, point3f const *start, point3f const *alternate_start,
+    point3f const *end, point3f const *alternate_end)
 {
     real speed = 0.f;
     if (type >= 0 && type < 6 && ((s_transition_globals *)g_4e034c) && ((s_transition_globals *)g_4e034c)->count > 0)
