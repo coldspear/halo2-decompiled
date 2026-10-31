@@ -1005,7 +1005,7 @@ struct s_game_engine_globals_connections_view
 };
 
 /* builds a player's row of the scoreboard at a position */
-// score 73 (was 170): everything before +0x397 matches; in the time and connection columns VC adds the
+// score 73 (was 73): everything before +0x397 matches; in the time and connection columns VC adds the
 // score width before the name width (ours `add cx, word ptr [score]`, retail `add cx, bx` and the
 // score through `lea`), so their scratch registers differ.
 // Earlier (score 170, was 170): this round's reduced-image listing (1227 bytes, frame 0x6d0 against retail's
@@ -1164,6 +1164,12 @@ struct s_game_engine_globals_connections_view
 // time width, then name width from the score flag, then score width 79; the 0x2d before the widths
 // in both sums 73 (same code); the time column's left as score left + score width 73 (same code);
 // the connection entry passed directly 73 (same code).
+// Round 25 (plain): time column stored left, right, top, bottom 75; that order in the time and
+// connection columns 75; name width first defined as 0xd8 and then reduced by the time and score
+// widths, in two statements 73 or one 73; connection entry written in the call (no pointer local) 73
+// (identical, kept). Screened alike (same code): sum text order, casts, parenthesised partial sums, width
+// declaration order x assignment order x name-width expression x ternary/if, bool/byte/char column flags.
+// Only a short score width gives retail's time block (162 above: its entry and width test are wrong).
 // @retail 0x1603f0
 void game_engine_player_row_build(short const *position, real alpha, long player_index, word const *name, long place,
 	long score, long seconds, bool hide_connection, bool show_icon, bool hide_place, color3f const *color, bool dim,
@@ -1275,11 +1281,9 @@ void game_engine_player_row_build(short const *position, real alpha, long player
 	row->connection.valid = false;
 	if (!hide_connection)
 	{
-		s_68a90_entry *entry =
-			&((s_game_engine_globals_connections_view *)g_4e9ae8)->connections[player_index & 0xffff];
-
 		quality = 1;
-		if (function_68a90(entry, &quality))
+		if (function_68a90(&((s_game_engine_globals_connections_view *)g_4e9ae8)->connections[player_index & 0xffff],
+			&quality))
 		{
 			bounds.left = position[0] + (short)time_width + (short)name_width + (short)score_width + 0x2d;
 			bounds.top = position[1];
@@ -1366,7 +1370,7 @@ PRIVATE inline long score_string_list_1608e0()
 	}
 	return result;
 }
-// score 680 (was 689): frame 0x790 versus retail 0x79c; early player/panel roles, the scroll clamp (one
+// score 680 (was 680): frame 0x790 versus retail 0x79c; early player/panel roles, the scroll clamp (one
 // limit conversion in retail) and coordinate/color homes remain.
 // Earlier (score 689, was 689): baseline frame 0x78c versus retail 0x79c; early player/panel roles and coordinate/color homes remain.
 // this round's reduced listing shows the frame at 0x790 against retail's 0x79c
@@ -1511,6 +1515,12 @@ PRIVATE inline long score_string_list_1608e0()
 // volatile 721 (2858 bytes, aligned 411/426); height and fade count not volatile 752 (2826 bytes,
 // aligned 405/428); title bounds field by field from x/y or from row_position 680/680; the origin
 // point with neither volatile 720 (2858 bytes, aligned 391/406: the best structure so far).
+// Round 25 (fast, equal to the full build here): retail keeps the fade count in its own slot (0x44, not
+// reloaded), a dim byte (0x58, 0 stored early and 1 later), the masked player index (0x5c) and a byte with
+// dead stores at each inlined 0x15eaf0 (0x17); its team-name block is the existing 0x19eae0 with 0x1a0180
+// inlined in it (name[0] cleared twice). Dim as false then set 680; team name through 0x19eae0 874 (kept out
+// of line, 2682 bytes); team activity through 0x15eaf0 681; dim false declared after the place 681; masked
+// player index named for the pointer and the score lookups 717, with the early dim 708.
 // @retail 0x1608e0
 void __stdcall function_1608e0(long player_index, s_score_panel_1608e0 *panel, real alpha)
 {
@@ -1819,6 +1829,10 @@ PRIVATE __forceinline void score_text_161420(byte const *widget, long valid)
 // call to the existing 0x13edb0 425, with indexed team 416 (not inlined, 1754/1767 B); indexed team
 // with a short counter 252; player row pointer per iteration 148 (1832 B), with indexed team 140
 // (1851 B, aligned 251).
+// Round 25 (fast, equal to the full build here): the drawer named at the top of the text helper 122; that with
+// the indexed team loop 148; drawer and text bounds both named 122, with the indexed team loop 148; drawer
+// named plus a team row pointer per iteration 120 (the note's 120 form; the name adds nothing). The player
+// text loop shows the same receiver-after-push order as the team loop.
 // @retail 0x161420
 void function_161420(long player_index, real alpha)
 {
