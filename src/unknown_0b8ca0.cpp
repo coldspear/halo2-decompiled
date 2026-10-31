@@ -226,6 +226,8 @@ __declspec(noinline) void __stdcall function_b9b90(long object_index, bool disab
 // The view's own physics bits 4; the tail written out in both arms 106; disable tested first 4;
 // both index reads through the havok object getter 51; a word index 14; in a one-file LTCG
 // build the data stays in eax for every lookup spelling, even with the update tail deleted.
+// Round 55: no noinline 4; inline target 4; inline activation/update/list-update declarations 4/4/4;
+// component reference 4; const object and type 4; explicitly masked getter index 4.
 // @retail 0xb9b90
 void __stdcall function_b9b90(long object_index, bool disable)
 {
