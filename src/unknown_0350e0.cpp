@@ -66,7 +66,11 @@ PRIVATE __forceinline vector3f rotate_axis_vector(matrix3x3 const *matrix, vecto
     return result;
 }
 
-// score 356 (was 372): both axes are read straight from g_485618 as retail does (no local copies of
+// score 356 (was 372): second pass walked retail 0x39e50-0x3a540 formula by formula and found no behaviour
+// difference: both matrices (forward axis angle step*0.5 from 0x485624.., up axis angle step*0.3 from 0x485630..,
+// constants 0.5 / 0.3 / 1.0 read from the XBE), all nine entries of each, and the up*k + left*j + forward*i sum order
+// of the vector rotation (0x3a148-0x3a2f0, 0x3a37c-0x3a526) agree with the source. Only scheduling and registers differ.
+// Original note: both axes are read straight from g_485618 as retail does (no local copies of
 // the axis, which was the whole 16 points). Retail interleaves the two matrices' sin/cos and spills
 // differently (frame 0x90 vs 0x98), and stores each rotated component to g_467104 straight from
 // xmm with the input vector copied component-wise; here the vectors are copied through integer
