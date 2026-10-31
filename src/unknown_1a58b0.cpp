@@ -796,7 +796,11 @@ void function_25aba0(long actor_index);
 
 
 
-// score 58 (was 58): only the state-one pop and the `= {0}` workspace remain (aligned 7); earlier: actor/result ESI/EDI (0x1a7b30's result arrives in ESI,
+// score 29 (was 58): the kind-2 failure pop is `dec [mem]` where retail loads, decrements and stores
+// around the stamp, and the choice-failure pop is split where retail uses `dec [mem]` (aligned 8).
+// The choice arm's pop before its stamp is not retail's order there: it is kept only because its 5
+// extra bytes balance the kind-2 pop's 5 missing ones, so put the stamp first again once the kind-2
+// pop splits. Before this round only the state-one pop and the `= {0}` workspace remained (aligned 7); earlier: actor/result ESI/EDI (0x1a7b30's result arrives in ESI,
 // retail EDI), the state-one level pop (ours `dec [mem]`, retail load/dec/store around the handler
 // store), the `= {0}` workspace (retail clears it as a memset, rep stosd x16) and 0x1a8080's argument
 // set-up order differ. memset plus 0x1a8080 as (type, owner, level) leave only the entry registers and
@@ -864,6 +868,17 @@ void function_25aba0(long actor_index);
 // workspace clear 330/292/292/292. The common value changes loop and frame allocation; original
 // 0x4c frame, six pops and aggregate workspace restored. State-one split decrement and zero-fill
 // remain.
+// Lane 14 r20: the workspace cleared by memset alone 134 (957/957, aligned 8: only the state-one
+// pop); with the state-one pop first 137, the kind-2 pop first 134, the choice pop first 46 (aligned
+// 8); a grid of 31 stamp/pop orders over the state-one, kind-2, choice and next-handler arms 43-137
+// (state-one, kind-2 and choice pops first 43, all four 45); the state-one / kind-2 / rest as an
+// if/else chain 119 with retail's stamp-first choice arm (only the kind-2 pop differs), 29 with the
+// choice pop first (kept); on the chain the six kind-2 statement orders 29-46/119-134, the
+// next-handler pop first 31, the not-enabled arm chained too 29, only the kind-2 arm chained 29, the
+// kind-2 check inverted 29/119, `continue` kept in the kind-2 arm (with or without the state-one
+// one) 46; `while (level >= 0)` 206 (rotated). Of the state-one and kind-2 pops exactly one fuses:
+// the arm that falls through to the loop end fuses, and when both `continue` the state-one one
+// does; retail splits both.
 // Round 127 (lane 4), on the kept body (every pop but the state-one arm's already as retail: the
 // shared enabled-failure and choice==stamp arms `dec [mem]`, kind-2, level++ and next-handler arms
 // load/dec/store): `level` declared before the owner lookup 60; `level` set to zero just before
@@ -950,9 +965,8 @@ void __stdcall function_1a7cc0(long actor_index)
 		{
 			handler->unknown8 = g_46f348;
 			level--;
-			continue;
 		}
-		if (handler->kind == 2)
+		else if (handler->kind == 2)
 		{
 			t_slot_start check = (t_slot_start)((s_slot_handler_2 *)handler)->update40;
 
@@ -965,54 +979,56 @@ void __stdcall function_1a7cc0(long actor_index)
 			handler->unknown8 = g_46f348;
 			current->state = 2;
 			level--;
-			continue;
-		}
-
-		s_slot data = {0};
-		short choice = ((short (__stdcall *)(long, short, s_slot *))((s_slot_handler_1 *)handler)->choose)(actor_index, level, &data);
-
-		if (choice == g_46fbe4)
-		{
-			handler->unknown8 = g_46f348;
-			level--;
-			continue;
-		}
-
-		short next_type;
-		s_slot_handler *next_handler;
-
-		if (choice == g_46fbe8)
-		{
-			next_type = owner->slots[level + 1].type;
-			next_handler = g_46eeb8[next_type];
 		}
 		else
 		{
-			next_type = choice;
-			next_handler = g_46eeb8[choice];
-		}
-		if (next_handler->unknown8 == g_46f348 || (next_handler->mask & g_4ee4ec) != g_4ee4ec ||
-			!(g_557c40[next_type >> 5] & (1 << (next_type & 0x1f))))
-		{
-			handler->unknown8 = g_46f348;
-			level--;
-			continue;
-		}
-		if (choice == g_46fbe8)
-		{
-			level++;
-			continue;
-		}
+			s_slot data;
+			memset(&data, 0, sizeof(data));
+			short choice = ((short (__stdcall *)(long, short, s_slot *))((s_slot_handler_1 *)handler)->choose)(actor_index, level, &data);
 
-		short local_0 = actor_behavior_get_insert_level(choice, (s_slot_owner_entry *)owner, level);
+			if (choice == g_46fbe4)
+			{
+				level--;
+				handler->unknown8 = g_46f348;
+				continue;
+			}
 
-		if (local_0 != NONE && function_1a80e0(actor_index, choice, &data, local_0))
-		{
-			level = local_0;
-			continue;
+			short next_type;
+			s_slot_handler *next_handler;
+
+			if (choice == g_46fbe8)
+			{
+				next_type = owner->slots[level + 1].type;
+				next_handler = g_46eeb8[next_type];
+			}
+			else
+			{
+				next_type = choice;
+				next_handler = g_46eeb8[choice];
+			}
+			if (next_handler->unknown8 == g_46f348 || (next_handler->mask & g_4ee4ec) != g_4ee4ec ||
+				!(g_557c40[next_type >> 5] & (1 << (next_type & 0x1f))))
+			{
+				handler->unknown8 = g_46f348;
+				level--;
+				continue;
+			}
+			if (choice == g_46fbe8)
+			{
+				level++;
+				continue;
+			}
+
+			short local_0 = actor_behavior_get_insert_level(choice, (s_slot_owner_entry *)owner, level);
+
+			if (local_0 != NONE && function_1a80e0(actor_index, choice, &data, local_0))
+			{
+				level = local_0;
+				continue;
+			}
+			next_handler->unknown8 = g_46f348;
+			(local_0 < 4 ? &owner->slots[local_0] : NULL)->state = 2;
 		}
-		next_handler->unknown8 = g_46f348;
-		(local_0 < 4 ? &owner->slots[local_0] : NULL)->state = 2;
 	}
 }
 

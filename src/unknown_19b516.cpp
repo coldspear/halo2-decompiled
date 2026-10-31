@@ -165,7 +165,7 @@ void c_widget::v16()
 	}
 }
 
-// score 2 (was 12): only the loop's shared tail differs: retail copies the previous widget to ESI and tests
+// score 2 (was 2): only the loop's shared tail differs: retail copies the previous widget to ESI and tests
 // ESI, ours tests EAX before the copy (`test eax, eax; mov esi, eax`).
 // Before round 9, score 12 (was 20): only the entry differs: retail finds the first widget in EAX/EDX, saves ESI after it
 // only the entry differs: retail finds the first widget in EAX/EDX, saves ESI after it
@@ -196,6 +196,17 @@ void c_widget::v16()
 // instructions); head copy as the body's first statement or in an if/do-while: base code; the widget
 // passed to a forceinline search helper: base code; an out-of-file previous-or-last function is not
 // inlined at /O1 (called). Retail's entry result stays a scratch value copied in the shared loop head.
+// Round 11 (lane 2): retail's head is the widget phi (copies from EAX on every incoming edge, merged);
+// the step as an if/else into the widget (last_sibling in the else arm) gives exactly that tail, but the
+// entry then either keeps its own rotated test on the scratch value (helper entry) or is computed into
+// ESI and threaded into the body (if/else entry). Real: helper entry + if/else step 35 (92 bytes); if/else
+// entry and step 12; `widget = previous; if (!widget) widget = last` entry with if/else step 41 (86
+// bytes); `break` with the focus after the loop, if/else step 37 (94 bytes); head-copy candidate with an
+// if/else step 2 (same code). Harness grid (entry helper/ternary/if-else/inverted if-else/assigned then
+// fallback/from a `this` widget x step helper/ternary/if-else/inverted/named previous x while/guarded
+// do-while, 60 forms): only helper/helper gives 2; the walk written with its own local in the step, an
+// inner do-while in the step, and the search in the loop condition do not keep the entry scratch; a 600 s
+// permuter run (55 tries) found none below 2.
 // @retail 0x22ec1b
 void c_widget::v17()
 {

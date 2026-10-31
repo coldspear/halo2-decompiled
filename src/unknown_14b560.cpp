@@ -808,7 +808,7 @@ static inline bool player_datum_iterator_next_inlined(s_data_datum_iterator *ite
 	return datum != 0;
 }
 
-// score 43 (was 55): the record pointer is kept in EBX here and in EDI in
+// score 43 (was 43): the record pointer is kept in EBX here and in EDI in
 // retail, and the two are used the other way round after the index is masked;
 // the walk differs (retail's starts from the unit with the root preset to NONE and keeps its entry test,
 // the shape of 0xbaf80 inlined; ours is pinned out of line there: BLOCKED-BY 0xbaf80).
@@ -833,6 +833,10 @@ static inline bool player_datum_iterator_next_inlined(s_data_datum_iterator *ite
 // test), with the merged exits 109; a forced-inline copy of the walk (diagnostic) 106; nested 0x34c test 56; named
 // root object 56; the parent walk as a for loop 44; root declared before the unit object 46; the walk with its
 // load in the loop test 171; one class-dispatch test for both exits 49; else-if after the root exit 44.
+// Round 47: unit read before the player local 44; the root walk as a do/while from the unit 109;
+// the iterator step through the existing data_datum_iterator_next_inlined 44; exits storing the
+// unit local 182; the parent declared before the root 44. Retail inlines 0xbaf80 here (it calls
+// it elsewhere); ours keeps it out of line, pinned in another lane's file: BLOCKED-BY 0xbaf80.
 // @retail 0x14df40
 bool __stdcall function_14df40(long *unit_index)
 {
@@ -1285,7 +1289,7 @@ static inline s_players_globals *players_globals_14f2e0()
 
 /* gives a player its unit (the unit kept for it, the unit waiting to be
    reused, or a new unit at a starting location) and resets its spawn state */
-// score 46 (was 75): NONE materialization and the zero/flag store schedule differ; success BL agrees.
+// score 46 (was 46): NONE materialization and the zero/flag store schedule differ; success BL agrees.
 // Round 39: joint/dependent output initialization 75/75; chained word/flag clears 75/75;
 // result before/after the final reset 60/75; after field_198/before the user tests 46/46;
 // early result with chained NONE 48; with chained words/flags or flags first 46/46/46;
@@ -1312,6 +1316,16 @@ static inline s_players_globals *players_globals_14f2e0()
 // its call 43. Screened, all `mov`: one-declaration/separate/chained outputs, nested result test,
 // mode-first or negated tests, long/char mode locals, byte-typed mode, a mode predicate, unit
 // initialised NONE, reused flag first, location declared first, long location, swapped bit arms.
+// Round 47: with the timers' memset the only real difference left is that `mov eax, -1` (masked
+// diff one line, 43). Ours loads the mode byte into AL at the join before folding it into
+// `cmp byte [edx+0xc], 4`, so the next -1 is a mov; any word/dword compare, or no mode test,
+// gives `or`. Real trials: outputs declared and set at the top 275; set just before the test
+// 268; declared at the top, set in the block 46; timers' memset 43; nested result and mode tests
+// 46. Diagnostics: 0xb8540 (a stub) replaced by a matched call 244 / removed 259, both still mov.
+// Compile-only screens, all mov: byte cast, nested, negated, De Morgan, named bool, long cast,
+// swapped operands, mode local, `result == false`, unit/result declaration order, unit NONE,
+// options pointer local, kept index cleared after its test, hidden-bit local, result set before
+// 0x14cad0; bitfield/unsigned/char mode fields in a small model.
 // @retail 0x14f2e0
 bool __stdcall function_14f2e0(long player_index)
 {
@@ -2047,6 +2061,11 @@ struct s_player_creation_record
 // through the earlier player pointer 37; the change test as `controller != old_controller` 33; the requested
 // controller read after the current one 38; the set arm's player store after the globals updates 34; the set
 // arm first 47 (as the earlier assignment-first arms).
+// Round 47: the body reduced to the bare call (diagnostic) still calls 0x14f270, so its refusal
+// is 0x14f270's own cost for a variable argument, not this caller's size. With the plain call:
+// 0x14f270 with a globals local per arm 267; that plus `inline` 267; through player_get plus
+// the locals 267; its arms swapped 267 (0x14f270 itself 15); the locals with the current
+// written-out block 33. Retail also expands both calls in 0x152f80 (ours calls the variable one).
 // Round 319: Empty-old-controller reset bypass with live old-field reads, install-first
 // arm and shared globals receiver, all eight subsets 42 each (650/650 bytes,
 // first +0x210). All restored; opposite recursive expansion and requested homes remain.
@@ -2230,6 +2249,12 @@ static __forceinline long player_round_ticks(real value)
 // both slots with direct decay and either request extent; late unit-slot acquisition and native
 // unsigned word slot domains; fast 764/769/825/827/871/923/792/856/765/745/745/827.
 // Original body and existing helper restored.
+// Round 47: retail fills two 0x20-byte requests (types 0x1b and 0x16 at +0x44/+0x64) where
+// ours reuses one, and retail calls 0x151b80 at both sites and 0xccd20 out of line, where ours
+// expands the first 0x151b80 (constant false) and 0xccd20 (retail expands 0xccd20 at its other
+// two callers; its callee 0xb8540 is a stub here). Block-scoped requests 804 (frame 0x6c, 2842
+// bytes, not packed); two function-scope requests 804; the lunge cooldown through the file's
+// game_seconds_to_ticks_round 701; that with two requests 804; the 0x80 test nested 701.
 // Round 239: complementary readiness/admission/lunge ownership, seven nonempty
 // subsets and the complete byte graph, all eight 701. Original producers, request
 // storage, fields, call tuples and complete body restored; frame remains 0x4c.
@@ -2649,6 +2674,16 @@ static inline bool player_datum_iterator_next(s_data_datum_iterator *iterator)
 // Round 433: Existing first iterator with direct data observations, returned datum ownership and
 // exhaustion-first arms; direct-data forced expansion; fast 103/103/103/102/102/102/102/103.
 // Original body and existing helper restored.
+// Round 47: the EDI global is g_4e8c20 promoted from the entry read to the final
+// `unknown9e = false` (reloaded after the loop calls): LTCG sees a path with no possible
+// write of it (unknown9f set, no loop trips), retail reads it fresh at the end and keeps
+// globals in ESI. Final store through the getter 103; with the `= 6` store too 103;
+// `if (!failed)` final store 103; status block reading the global at each use 103; second
+// loop's own iterator 155; one unit_index for 0xcc170's out value and the last unit 103/103.
+// Diagnostics, not kept: final store to another global 91; an opaque call after the
+// status block 91 (retail prologue); g_4e8c20's address taken 91 but 21 matches lost;
+// 0x16bc00 built without link-time code generation 90 but 98 lost; 0x6b380 through a
+// pointer 146; 0x6b380 as the record-pool step on its +4 fields 103.
 // @retail 0x14cdd0
 void function_14cdd0(void)
 {

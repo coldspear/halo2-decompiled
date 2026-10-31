@@ -548,6 +548,14 @@ void function_3dd10(long object_index, bool force);
 // Round 439: complete supplied/default/converted color result, loop/entry lifetimes and
 // field/indexed clamps with field/result dual publication: 261/261/291/286, repeated at entry.
 // Frame grows to 0x60; original object-output pipeline, scans and all float trees restored.
+// Lane 14 r20: the first scan as `for (j = 0; j < choice_count; j++)` with `continue` for an
+// ineligible choice 637 (the compile-only build keeps it rolled with retail's jle/jl exits; the LTCG
+// build unrolls it by 4, 1310 bytes), with the inverse in the found block 638; the selection loop
+// breaking out and the blend after it under `j < choice_count`, the inverse between them, 176 (the
+// test isn't threaded); the same under a found flag 280; the inverse in the found block (132, again)
+// with the first scan's mask, weight and last stores reversed 134. A compile-only screen shows the
+// unroll needs the float add: an integer sum or no sum leaves the `<` loop rolled. Calling the
+// existing 0x131c20 (HSV flag) in the found block is not inlined, 374 (again).
 // Round 128: inverse at the top of the found block again 132 (round 55's form: left are the not-found
 // exit's own 1.0 reload, the variant byte read after the blend's fstp, and the first scan's exits);
 // on it the first scan as a signed for loop 638 (unrolled, 1309 bytes), the same with the weight, the
@@ -721,6 +729,14 @@ color3f *function_131c20(color3f const *a, color3f const *b, dword flags, real t
 // the destination taken as &base[count] 91; the two pointer increments swapped 91.
 // Source pointer derived from the destination inside the loop, so that the source induction
 // variable is never used in the preheader 186.
+// Lane 14 r20: a plain `for (i = 0; i < count; i++)` with `&base[count + i]` and `result = true`
+// in the body 149 (563 bytes: VC hoists the result store into the preheader and keeps the source
+// pointer only in its stack slot, as retail, but the false result takes BL with EBX pushed at
+// entry, so the two false exits merge, and the destination still takes EDI); the same inside the
+// count guard 148; with `result = true` before that loop 107; a destination array `base + count`
+// indexed by i 164; the destination pointer stepped at the end of the body 161; red scaled by `*=`
+// and green and blue as `value *` 91 (identical code: VC picks the mulss operand order itself); the
+// destination formed after the count test 99 (again).
 // Round 86: scalar component copy 139; blend-only count 169; scale-only count 170;
 // blend-only function array 173; scale-only function array 139; shared inner counter 105;
 // shared function pointer 91; advancing outer entry pointer 203. Original body restored.

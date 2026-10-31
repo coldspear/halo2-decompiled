@@ -276,6 +276,13 @@ PRIVATE __forceinline void vertex_decode_23ac30(short x, short y, short z,
 // the whole gap); with the format read into a long local for the switch 175; the coordinates through a
 // coordinate pointer and the node through the full base expression 107 (636 bytes); the decode written
 // in both arms of the node test 261.
+// Round 11 (m3 lane 2), one-file LTCG harness (base convention reproduced; format 4 indexed flips it:
+// the switch temp and every case's base take EDI and the node EBX, so the node is coloured before
+// the format-4 base once that base stays live to the late node read): formats 2/3/4 pointer or
+// indexed in all 12 combinations, format 2 indexed gives the same code as its pointer; `if (node !=
+// NULL)` and braces on the indexed form flip. Real, format 3 indexed with format 4 indexed and its
+// node stored before the decode: 73; with format 2 indexed too 73; with `node != NULL` 73; with
+// `return` for `break` 73; with the default case first 73.
 // @retail 0x23ac30
 void function_23ac30(s_vertex_source_23ac30 const *source, long index,
 	s_vertex_bounds_23ac30 const *bounds, point3f *point, long *node)

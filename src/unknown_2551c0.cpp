@@ -139,6 +139,8 @@ short __stdcall function_2551c0(long actor_index)
 // bytes; its inlined body perturbs the early cross products and both dots): its state local declared at
 // the function top 70; found before the best score 72; forward and best direction declared first 70; trace
 // first in the loop 70; direction first in the loop 70.
+// Round 20 (lane 15, fast): `0.f < length` 43 (same code); the best update as direction, found, score 48 and as
+// direction, score, found 47; the distance part named (`reach`) 56 (815 bytes); the loop as `i != 8` 109 (814 bytes).
 // @retail 0x2551f0
 bool __stdcall function_2551f0(long actor_index, s_slot *slot)
 {

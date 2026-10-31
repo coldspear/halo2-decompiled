@@ -314,6 +314,9 @@ __inline void transform_point(s_camera const *camera, point3f const *p, point3f 
 // Round 436: row compound accumulators through translation/at publication/first pair 238/238/262;
 // parallel compound rows through translation/at publication/first pair 238/238/262;
 // output accumulation through translation/final two contributions 238/262. All original helper/body restored.
+// Round 446: Existing vector scale/rotation stage with direct/native point publication 222/295;
+// with translation copy 264/690; aggregate vector input gives the same four scores.
+// Original point helper restored; simplest frame 0x1c, combined value form outlines.
 // @retail 0x30830
 long function_30830(point3f const *a, s_camera const *camera, vector3f const *d, point2f const *scale, bool perspective, bool negate, point2f *out)
 {
@@ -540,6 +543,9 @@ real function_30bf0(vector3f *v);
 // the normalized workspace with ordinary/staged first 68/68; direct staged output
 // with ordinary/staged first 42/42; native axis value with direct staged output 103.
 // Original distinct workspaces restored; x87 input order and SSE carriers remain.
+// Round 446: Scale consumer with scalar/native output staging 42/88; complete input snapshot
+// alone/with scalar/native staging 88/88/88; separate normalization output
+// alone/with input snapshot/scalar staging 88/88/88. Original shared helpers restored.
 // @retail 0x31b40
 real function_31b40(vector3f *vector, vector3f const *axis)
 {

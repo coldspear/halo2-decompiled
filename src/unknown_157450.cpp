@@ -3488,25 +3488,6 @@ void function_19e0f0(word const *string, long size, word *buffer, s_event *event
 
 int unicode_string_vsnprintf(word *buffer, long maximum_count, const word *format, ...);
 
-// score 82 (was 82): frame 0x200 and buffer ESI/ret 8 agree; failure exits and event clear schedule differ.
-// Earlier: frame 0x200 and buffer ESI/ret 8 now agree; failure exits
-// and the event text-zero store schedule differ. Separate fallback buffers for ending,
-// waiting, both, complete, ending/complete, waiting/complete, all: 186/185/158/167/185/186/214.
-// Common bool result 82; one success goto 82; direct parameter reads 82 (kept, plain).
-// Natural immediate failure 148; event direct return 220; explicit rejected failure 148.
-// Round 298: event-admission return result 199; entry result 94; both 200;
-// entry text workspace 82; with admission/result/both 199/94/200; native long
-// admission result 189. All restored; separate failure-result paths remain.
-// Round 225: suppression/text nested decision trees, either order, split sentinel/zero,
-// with or without complete notice-type capture: 82/104/104/82/82/104/104/82.
-// Original result graph restored; distinct failure exits and event clear schedule remain.
-// The explicit rejected failure gives retail's block layout but puts the result in al (retail
-// dl), moving the user index to ecx and merging the else-arm tails. With it: byte result 148
-// (setne); if/else fall 148; long state 151; every success returned 189 (ret 0xc); result first
-// 150; short user index 193; text at function scope 148. The flag through engine_options() 82.
-// Round 239: complete complementary bool/byte/short/long return results
-// 232/232/253/218; positive byte/short/long 217/194/196; complementary bool
-// at entry 232. Original single-exit result, buffer convention and body restored.
 // @retail 0x15f120
 bool function_15f120(long player_index, word *buffer, long size, long suppress_score)
 {
@@ -3514,7 +3495,6 @@ bool function_15f120(long player_index, word *buffer, long size, long suppress_s
 	bool result = false;
 	if (game_engine_get())
 	{
-		word text[256];
 		short state = function_xaee93d()->value6c;
 		if (state == 1)
 		{
@@ -3526,17 +3506,25 @@ bool function_15f120(long player_index, word *buffer, long size, long suppress_s
 				if ((!(byte)suppress_score || (g_4e9af0.players[user_index].index != 25 && g_4e9af0.players[user_index].index != 5 && g_4e9af0.players[user_index].index != 26 &&
 					g_4e9af0.players[user_index].index != 6 && g_4e9af0.players[user_index].index != 27 && g_4e9af0.players[user_index].index != 7)) && string_handle != NONE && string_handle != 0)
 				{
+					word text[256];
 					text[0] = 0;
 					function_1a0180(settings->string_list, string_handle, text);
 					function_19e0f0(text, size, buffer, 0);
 					result = true;
-					goto done;
+				}
+				else
+				{
+					buffer[0] = 0;
 				}
 			}
-			buffer[0] = 0;
+			else
+			{
+				buffer[0] = 0;
+			}
 		}
 		else if (g_4e6948->flag1128)
 		{
+			word text[256];
 			text[0] = 0;
 			function_161ef0(0x0c000108, text);
 			unicode_string_vsnprintf(buffer, size, text);
@@ -3544,6 +3532,7 @@ bool function_15f120(long player_index, word *buffer, long size, long suppress_s
 		}
 		else if (state == 2)
 		{
+			word text[256];
 			text[0] = 0;
 			function_161ef0(0x0d000109, text);
 			unicode_string_vsnprintf(buffer, size, text);
@@ -3551,13 +3540,13 @@ bool function_15f120(long player_index, word *buffer, long size, long suppress_s
 		}
 		else if (state == 3)
 		{
+			word text[256];
 			text[0] = 0;
 			function_161ef0(0x1900010a, text);
 			unicode_string_vsnprintf(buffer, size, text);
 			result = true;
 		}
 	}
-done:
 	return result;
 }
 
@@ -4298,6 +4287,14 @@ void function_15fe20(long team_index, color3f *color);
 // named unit index with the default before the test 72 (with the helper 72, with 0xcbd50 72);
 // default at the top of the function or of the player block 711/697/721; selection as if/else
 // either way or inverted ternary 41; default plus a repeated unit test around the charge 86.
+// Round 129: existing 0x15fe20 at the rival/own/both team sites 88/88/88 (inlined, same copies);
+// on the 46 form with both reorders and `(iterator.index & 0xffff)` as the shift count (43): a
+// long slot with the default before the unit test 74 (2688 B, aligned 15: the charge tail is then
+// retail's, only the unit lookup order and the -1 register compares remain); the unit looked up
+// again for the weapon read, or both reads through engine_object_get, with or without a named
+// unit index 72; zone progress read through the zone table at each use 72, charge fraction
+// stored before the flag 81, the product without the cast 72. The two reorders and the masked
+// shift count without the color locals 84 (2692 B); with the default before the test 115 (2688 B).
 // Earlier: frame 0x48c and early scalar homes agree; text/color/zone allocation and charge spills differ.
 // Fast bounded copies: team pair 513, individual pair 616, rival pair 482 (plain 485);
 // unsigned player 541, best-store order 542; rival pair plus earlier rounds 478 (plain 481).
@@ -5412,7 +5409,7 @@ void __stdcall function_d6bc0(long object_index);
 // inline or noinline declarations, separately and together, all 167.
 // Earlier: Frame 0x14 versus 0x18 and countdown/base homes remain; shared
 // Frame 0x14 versus 0x18 and timer/base homes remain.
-// Earlier 167 (was 167): Frame 0x14 versus 0x18 and countdown/base homes remain; shared
+// Earlier at 167: Frame 0x14 versus 0x18 and countdown/base homes remain; shared
 // reset/scheduling/both displacement producers 175/167/175; outer short index 167; outer countdown
 // pointer 167; pointer with reset/scheduling/both 175/167/175.
 // frame 0x14 versus 0x18; timer/base homes and scheduling layout differ.
@@ -5471,6 +5468,12 @@ void __stdcall function_d6bc0(long object_index);
 // Round 225: reset-counter pointer/reference, before query/at update,
 // with ordinary/entry countdown declarations: 174/172/174/172/174/172/174/172.
 // Original field reads and body restored; independent timer home remains missing.
+// Round 129: retail decides the schedule by control flow (no 0/1 value), tests bits 0 and 1 of +0x12c
+// separately (a bitfield-style read), compares the kind as a byte and switches on a long modifier.
+// Bits 0/1 written as two tests, bit 2 as a shift and both 144/144/144 (VC folds them to `& 3`);
+// bool schedule set by if/else or true-default 173/173 (860 B, aligned 84 -> 82: the schedule
+// block then follows the distance test as in retail); on it long modifier with char kind / long
+// modifier / char kind 188/181/184 (844/851/849 B, aligned 79/84/77).
 // Lane 3 r173 (fast): the timer folds because `entries` stays re-derivable; a timer pointer formed
 // from a volatile read of `entries` gives frame 0x18, the timer in EDI/[esp+0x20] and every
 // reload as retail: 132 (873 B), plus `scenario` declared before the rate 130, leaving only the

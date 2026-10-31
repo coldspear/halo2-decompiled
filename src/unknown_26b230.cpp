@@ -1906,6 +1906,13 @@ void function_269250(long clump_index, long actor_index);
 // Round 83 (fast; unchanged control 89): two-arm score assignment 128; zero-initialized two-arm
 // assignment 128; reversed strict comparison 89; separate best publication 89; old-clump local
 // after/before the scan 141/147; flattened selection/creation tests 89; byte activity snapshot 89.
+// Round 129: selection stored before the best score (retail cross-jumps the best store with the
+// initialisation's) 89 (aligned 54 -> 58); in-arm compare with that order 126 (480 B, aligned 60;
+// retail's x87 compare, but the found block is laid out after the improve block and the selection
+// stays in EDI after the loop); with the iterator's datum index 128 (pool hoisted and the shared best
+// store as retail, but the not-found path threads to the exit and the score/best/selection homes are
+// 0x14/0x18/0x1c against retail's 0x1c/0x18/0x14 reversed); best, score, selection declared in that
+// order, either selection 128/126 (homes unchanged).
 // Round 107 (fast, with 0x269580/0x269040 in the build; without them 0x269580's arguments swap):
 // the team-arm form gives retail's homes (selection 0x14, score 0x18, best 0x1c) and x87 compare,
 // 126; a memory-only selection (diagnostic, reverted) shows the pool then takes EBX. On the
