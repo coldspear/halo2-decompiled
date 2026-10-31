@@ -990,6 +990,9 @@ struct s_string_buffer
 // and an `else if (== 9)` arm with the same loads 65 (the arms merge); the chain in a
 // bool, a long, or a flag set by an if 65; the score1 format call in both arms with the
 // chain 100 (483 bytes) or the range 104.
+// Independent final-mode if 63 (501 bytes); nested output guards with the range 13,
+// with the chain 50; score-widget declarations split 50; one value declaration 50;
+// upper-bound-first range 14; 7/9/8 chain 51; grouped final equalities 50 (plain).
 // @retail 0x2342e9
 void c_postgame_statistics_list_459680::fill_row(c_class_1a2c81 *item, long row)
 {

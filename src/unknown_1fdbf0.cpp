@@ -402,6 +402,11 @@ vector3f *function_11d000(vector3f const *v, vector3f *out);
 // j/k in place) 67 (766 bytes, aligned 46 -> 63); that with the cosine term first in row i 66
 // (aligned 37, left: axis j/k in xmm4/xmm3 for retail's xmm2/xmm1 and row i in place); the dot
 // accumulated 67, both 66; parallel term first in rows j/k 62 (aligned 40).
+// Lane 16 r46: axis i/j/k read into scalars before `*direction = forward` 43 (same code); cross terms
+// read from forward, the dot from direction 74 (776 B); axis operands first in the dot and the crosses
+// 43; the j and k rows interleaved (both projections `axis * local_0`, then both cosine terms, then both
+// sine terms, then both stores) 57 (gives retail's cosine in a register and early d.j load, colours stay
+// ours: direction j/i take xmm1/xmm2 where retail gives them axis k/j); that with k first 57.
 // @retail 0x1fddd0
 bool function_1fddd0(long actor_index, point3f const *origin, vector3f *direction,
     long *out_index, real *arg_c9241c, long *out_object)

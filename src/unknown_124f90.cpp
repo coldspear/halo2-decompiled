@@ -1995,7 +1995,6 @@ short sound_voice_acquire(long sound_index, long *reason)
 }
 
 bool function_12be90(void);
-static inline void approach_126660(real *value, real delta, real lower, real upper);
 
 /* advances the sound system's clock and the ambience fades, and fades the
    master gain out while the game asks for it (after its delay) and back in
@@ -2118,15 +2117,6 @@ void sound_update_locations(void)
 		sound_voices_update_locations();
 		looping_sound_update_locations();
 	}
-}
-
-/* clamps value to [lower, upper], testing the lower bound first */
-#define PIN_126660(value, lower, upper) ((value) < (lower) ? (lower) : (value) > (upper) ? (upper) : (value))
-
-/* adds delta to value, kept within [lower, upper] */
-static inline void approach_126660(real *value, real delta, real lower, real upper)
-{
-	*value += PIN_126660(delta, lower, upper);
 }
 
 /* moves the sound system's two environments toward the two requested:
