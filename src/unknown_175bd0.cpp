@@ -1805,6 +1805,9 @@ long function_1785c0(s_effect_object_marker const *marker, s_effect_datum *effec
 // before the position block 236 (795 bytes).
 // Round 172: the forward rows' accumulators follow row statement order (XMM5, XMM4, XMM3); statement
 // orders i,k,j / j,i,k / j,k,i / k,i,j / k,j,i 82/77/82/81/81.
+// Round 450: complete live marker fields alone/node-first/matrix-live/both
+// 215/218/223/223; with staged cross 215/218/223/223. All lose the matched caller;
+// original point, marker, normalizer and cross producers restored.
 // @retail 0x1786f0
 void function_1786f0(s_effect_object_marker *out, s_effect_marker_source const *source, short marker_index)
 {
@@ -1995,6 +1998,9 @@ static inline bool effect_location_in_zone_178c80(s_location const *location, po
 // Round 172: shared colour helper (system, A, B) 178 (0x177040 92); its parameters renamed 178
 // (identical); both type queries as the call's arguments 145 (`multiplied()` runs first); cursor computed
 // after the colour call 158 (552 bytes); matrix at function scope 178.
+// Round 450: live cluster field alone/zone/entry/both 128/165/379/379; with
+// live base 128/165/379/379. Entry-field forms outline the existing zone producer;
+// its forced expansion on live cluster/entry gives 186. Original producer and body restored.
 // @retail 0x178c80
 void function_178c80(real scale, s_effect_datum *effect, s_particle_system_datum *particle_system, s_effect_particle_system_definition *definition, real unknown, bool field_b4)
 {

@@ -288,6 +288,9 @@ PRIVATE __forceinline void center_update_28f8d0(s_28f8d0 *arg_0)
 	}
 }
 
+// score 28 (was 28): retail loads the actor pool, the pool's data and then the origin, where
+// ours loads the origin first and the pool after it, and the loop's object lookup scales the
+// index into EDX in retail and into EAX here.
 // score 28 (was 38): the entry compares the actor index with an immediate -1
 // and the origin copy takes ebp as its temporary, as retail does. What is left
 // is the order of the first loads: ours reads the origin pointer (g_468788)

@@ -631,6 +631,11 @@ PRIVATE inline s_player_state *local_player_state(long local_index)
 // the forward copy 128, between the distance and the copy 100, right declared first 55, const previous_up 53, staged
 // first product 54 (1264 B), first product from direction 220, the up output through the view 53, five declaration
 // orders of previous_up/direction/right 53 each.
+// Round 33 (lane 10): retail's second product is exactly cross3f_staged's order (k, j, i, then the stores),
+// 217 at 1270 bytes again (up.k then in xmm2); the field-of-view copy moved to the start of the camera
+// branch 248 (1261 bytes), with the staged product 114 (1262); the else-branch forward pointer 55 again,
+// with the staged product 217; the distance in a named local stored at once 57 (identical). A compile-only
+// /FAs build reproduces our camera colouring but returns the distance on x87 (xmm0 stays free there).
 // @retail 0x23de50
 void __stdcall function_23de50(void *state, void *input, s_observer_command *output)
 {

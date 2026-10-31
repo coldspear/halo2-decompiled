@@ -443,8 +443,10 @@ static __forceinline void point_add_scaled_c35a0(point3f const *point, vector3f 
     result->z = point->z + vector->k * scale;
 }
 
-// score 34 (was 34): the x87 magnitude pops k and sums i, k, j rather than retaining k and summing k, j, i;
-// the inverse-times-i load, BSP word load and loop-entry padding also differ.
+// score 8 (was 34): the magnitude sums k, i, j against retail's k, j, i, and the BSP index and pointer
+// take BX/EBP where retail uses BP/EBX. Earlier (34): the x87 magnitude popped k and summed i, k, j
+// rather than retaining k and summing k, j, i; the inverse-times-i load, BSP word load and loop-entry
+// padding also differed.
 // Shared vector3f_add_scaled 34; scale then add 100; nested scale/add 100; shared scaled-add with
 // per-use BSP globals and a loop-local structure 34; force-inline normalize 34; both helpers force-inline 34;
 // force-inline difference 34; point outside the loop 34; inline target 34; inline caller 34;
@@ -495,6 +497,14 @@ static __forceinline void point_add_scaled_c35a0(point3f const *point, vector3f 
 // 34-37; the BSP index read at its use with the BSP pointer declared first 37 (word load, in BX); the BSP
 // pointer a local with the index and structure read at use 36 (DI); BSP pointer and index locals with the
 // structure at use 36 (index back to a dword load).
+// Round 47 (lane 16; kept, 34 -> 8: the direction through the existing scaled_difference3f with a
+// scale of 1.0f, whose component loop gives retail's difference (k kept on x87 and squared first),
+// and the BSP index read at its use): the helper alone 76 (the index local is then loaded as a
+// dword and the loop head loses its alignment jump); on the kept form the BSP pointer declared
+// first 9, the BSP pointer at its use 9, the structure at its use 8 (pointer EBX as retail, index
+// DI / structure EBP), all three at their use 9, normalize3d 75. Left: the magnitude sums k, i, j
+// (normalize_inline pairs i with k; retail pairs j with k) and the index/pointer take BX/EBP where
+// retail uses BP/EBX (with three locals declared structure, index, pointer the registers are retail's).
 // Round 32 (lane 10, fast counts): normalize3d with the BSP index read at its use 80; the difference
 // through vector3f_assign with normalize3d 79; the direction declared first with normalize3d 79; a
 // `short const` BSP index 34 (same code); `break` for the found exit 34 (same code).
@@ -505,18 +515,17 @@ bool function_c0840(point3f const *start, point3f const *end, point3f *out, real
     real travelled = 0.0f;
     real step = 0.001f;
     vector3f direction;
-    vector3d_from_points3d(start, end, &direction);
+    scaled_difference3f(start->n, end->n, 1.0f, direction.n);
     real length = normalize_inline(&direction);
     if (length > 0.0f)
     {
         s_match_globals *structure = g_4e0348;
-        short bsp_index = g_4686c4;
         s_bsp3d *bsp = g_4e033c;
         while (!result && length > travelled)
         {
             point3f point;
             point_add_scaled_c35a0(start, &direction, travelled, &point);
-            if (bsp_index != NONE)
+            if (g_4686c4 != NONE)
             {
                 long leaf = function_14a280(bsp, 0, &point);
                 if (leaf != NONE && *(short *)(*(byte **)((byte *)structure + 0x30) + leaf * 8) != NONE)
@@ -1397,6 +1406,11 @@ point3f *transform4x3f_apply_point(transform4x3f const *matrix, point3f const *p
 // without the union 38, a matrix3x3 rotation helper 45; dead initialised locals change it by count
 // alone (+1..+5: 40/56/56/60/60, any position or type) and the fold stays at every count, and also
 // without the first-person marker call, without 0xb8d30 or without 0xc28b0.
+// Round 47 (lane 16, fast with 0xc0840/0xc28b0/0x14a280; unchanged by 0xc0840's new body): the node
+// arm's far point through the existing vector3f_add_scaled 38 (same code); both rotations through the
+// existing vector3f_rotate_into_axes on the rotation member 525 (759 bytes); the light index read
+// through the alias at the 0x16a8e0 and 0x1cac60 calls too 38 (same code here); the second / first
+// rotation alone through vector3f_rotate_into_axes 388 / 390 (894 bytes).
 // @retail 0xc2d00
 void __stdcall function_c2d00(long light_index)
 {

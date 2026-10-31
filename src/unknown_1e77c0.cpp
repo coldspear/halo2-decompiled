@@ -537,6 +537,13 @@ struct s_request_profile
 // 1 state first 79 (542 B, retail counter/pointer/registers, element 1's ticks late); t0 t1 s0 s1.. from 0 91; i-1..i+2
 // from 1 ticks first 82 (540 B, retail registers, pointer +0, displacements 4 off), element 0 state first 91; a
 // per-element reset helper (ticks then state) 136.
+// Round 47 (lane 16, fast with 0x137e40/0x1e7a10/0x1e7a60): one group pointer to elements i-2..i+1
+// 91; each state from the existing 0x1e7a60 `== 3` 110; a dword counter 96 (rebased to 1); a short
+// counter 239 (599 bytes); a pointer local to the transition array before the loop 87 (the prologue
+// and outer loop then take retail's registers, EDI table and EDX local index, first difference
+// +0xf -> +0x3b, but the IV starts at element 0 with the counter rebased to 3; retail: element 1,
+// counter 2); with that pointer the elements i..i+3 91, i-1..i+2 126, i-3..i 80 (the IV stays at
+// element 0, counter 3, whatever the spelling).
 // @retail 0x1e73b0
 void function_1e73b0()
 {

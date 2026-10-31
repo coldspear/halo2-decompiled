@@ -418,8 +418,8 @@ bool __stdcall function_1b85a0(long actor_index, s_slot *slot)
     *(real *)((byte *)&request + 0x4c) = (real)minimum;
     *((bool *)&request + 0x50) = true;
     *((bool *)&request + 0x59) = character && (*character & 1);
-    s_object_marker *marker_list = has_markers ? markers : NULL;
-    *(s_object_marker **)((byte *)&request + 0x64) = marker_list;
+    s_object_marker *request_markers = has_markers ? markers : NULL;
+    *(s_object_marker **)((byte *)&request + 0x64) = request_markers;
     if (state->unknown04 != 0.0f)
         *(real *)((byte *)&request + 0x1c) = state->unknown04;
     if (actor->unknown50c && actor_get(actor_index)->unknown504 != 2)
@@ -454,7 +454,7 @@ bool __stdcall function_1b85a0(long actor_index, s_slot *slot)
             *(long *)((byte *)location + 0x14) != 0xffff)
         {
             success = function_1f4a20((s_1f4a20_entry const *)&entry, actor_index, reference,
-                (s_1f4a20_source const *)marker_list, true, &state->point, &state->facing,
+                (s_1f4a20_source const *)request_markers, true, &state->point, &state->facing,
                 (signed char *)&state->unknown11, &available);
             if (success)
             {

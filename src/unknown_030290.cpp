@@ -550,6 +550,10 @@ real function_30bf0(vector3f *v);
 // second argument, so the 0x31c80 caller changes its +0xb8 vector, not +0xac) and cross3f_staged writing
 // straight into vector; needs the matching one-line declaration change in src/unknown_0350e0.cpp, so it
 // is held until that file's owner agrees.
+// Round 47 (lane 16, fast with 0x30bf0/0x31c80): normalize_inline for the first normalization 61
+// (224 bytes); the result stored through the existing vector3f_assign 42 (same code); the existing
+// out-of-line 0x30bf0 for it 88 (197 bytes); cross3f_staged second product with vector3f_assign 42.
+// BLOCKED-BY 0x31c80's call: the (axis, vector) order (35) needs the contributor file's caller.
 // @retail 0x31b40
 real function_31b40(vector3f *vector, vector3f const *axis)
 {
