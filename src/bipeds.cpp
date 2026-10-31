@@ -3968,11 +3968,22 @@ bool function_e4680(long arg_159e6d)
 bool function_1f5560(long actor_index, vector3f *facing);
 
 /* jumps: an upward kick to the definition's jump speed (less for a tired
-   player), relative to what the biped stands on; an actor may refuse.
-   Retail keeps the biped on the stack (ret 4): its address is taken */
-// score 224 (was 224): frame 0x24 versus 0x28; ground/result homes, entry saves and state observations differ.
-// Natural parameter 239; late success 221 (subthreshold), shared vector producers 224; CRT relative
-// copy 224; common result exit 222 (subthreshold); all velocity names 224; late/shared 221;
+   player), relative to what the biped stands on; an actor may refuse. The
+   biped index is read once from the stack argument (ret 4) */
+// score 210 (was 224): 640 bytes against retail 683, frame 0x24 versus 0x28. Walked against retail block by block
+// (callees, argument order, offsets, constants, condition directions, return values, store paths): behaviour agrees.
+// Remaining difference: on the actor path retail (0xe490c-0xe4929) reads the animation state name at
+// biped + *(short *)(biped + 0x12a) + 0x7c (the base is computed at entry into EBX, 0xe4799/0xe47af, and kept
+// across the whole function) and stores name == 0xa00003e || name == 0xd00003f into the result slot [esp+0x3c]
+// (the stack argument's own slot) before 0x1f5560, whose AL overwrites it at 0xe4934 with nothing reading it in
+// between: dead in effect, so the 55-byte gap and EBX taken by that base (riding then spills to [esp+0x13], EDI is
+// the definition) are not a behaviour difference. Plain forms (expression, if/else, via a local pointer) are compiled
+// away (224/229); only `volatile bool result` (174) or writing through the parameter's address (166) keeps it, both
+// refused for not matching. The ba1d0 output is its own local `raw`, copied to `velocity` (kicked and passed on, as
+// retail's [esp+0x14] copy) and `relative` (retail's re-stored ba1d0 slot [esp+0x20]); earlier: kicking the ba1d0
+// output itself with relative a copy (224). Natural parameter (no `reference`) 228; relative as scalars 207
+// (without the shared slot, restored). Tried earlier: late success 221 (subthreshold), shared vector producers 224;
+// CRT relative copy 224; common result exit 222 (subthreshold); all velocity names 224; late/shared 221;
 // natural parameter/common result/shared/CRT 234. All executable forms restored.
 // @retail 0xe4770
 bool __stdcall function_e4770(long arg_159e6d)
@@ -3982,6 +3993,7 @@ bool __stdcall function_e4770(long arg_159e6d)
 	byte *definition = BIPED_DEFINITION_GET(biped);
 	real jump;
 	vector3f ground;
+	vector3f raw;
 	vector3f velocity;
 	vector3f relative;
 	bool riding;
@@ -4000,8 +4012,9 @@ bool __stdcall function_e4770(long arg_159e6d)
 
 		jump = (1.0f - *(real *)(globals + 0x7c) * biped->unknown2e4) * jump;
 	}
-	function_ba1d0(arg_159e6d, &velocity, NULL);
-	relative = velocity;
+	function_ba1d0(arg_159e6d, &raw, NULL);
+	velocity = raw;
+	relative = raw;
 	if (riding)
 	{
 		relative.i -= ground.i;
