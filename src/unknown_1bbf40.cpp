@@ -514,6 +514,10 @@ point3f *function_b9dd0(long object_index, point3f *result);
 // setcc def against retail's branchy `mov cl, 1; jmp`, and the tail flag in AL, not CL), operands
 // swapped 193 (same); `&&` def 200 (flag memory-only, tail after the special path); the F11 def 97
 // (memory-only). Every all-constant (branchy) def keeps the flag in memory.
+// Round 131 (lane 4, aligned counts against 39): seat_object = NONE declared at the outer block's
+// top 47 (aligned 40); allow_exit declared after the actor lookup 52 (44); `!!actor->unknown268`
+// in the bitwise def 47 (same code); the iterator declared at the outer block's top 47 (same code);
+// the seat index in a long 196.
 // @retail 0x1bbf40
 short __stdcall function_1bbf40(long actor_index, s_slot *slot)
 {
