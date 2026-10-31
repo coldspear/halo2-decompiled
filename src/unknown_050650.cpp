@@ -919,6 +919,11 @@ done:
 	return result;
 }
 
+// score 9 (was 9): Round 30 (lane C): the prologue still builds the actor offset in ESI and folds
+// the table base into it (`add esi, edx`); retail computes the offset in EAX and forms the actor
+// with `lea esi, [eax + edx]`. New forms: a data-base local with a masked slot local, a byte
+// offset local and the `&array[index]` subscript form (9 each); an `unsigned short` slot local
+// gives 38 (`movzx esi, cx`) and was reverted.
 // score 9 (was 9): only the prologue differs: retail builds the actor offset in EAX
 // (`mov eax, ecx`) and moves the actor to ESI with `lea esi, [eax + edx]`; ours builds it in ESI.
 // Tried: a specification pointer local 9; an if/else chain without the early return 9; the valid

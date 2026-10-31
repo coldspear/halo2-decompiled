@@ -1801,29 +1801,33 @@ void function_269580(long destination_index, long source_index)
 	short count = 0;
 	iterator.next = ((s_clump_activity_view *)(g_502420->data + (source_index & 0xffff) * sizeof(s_clump_activity_view)))->first_prop;
 	while (clump_next_prop(&iterator)) indices[count++] = iterator.index;
-	long *cursor = indices;
-	for (short remaining = count; remaining > 0; --remaining)
+	short remaining = count;
+	if (remaining > 0)
 	{
-		long index = *cursor;
-		if (index != NONE && (index & 0xffff) < g_50241c->high_water_index)
+		long *cursor = indices;
+		for (; remaining > 0; --remaining)
 		{
-			s_prop_copy_view *copy = (s_prop_copy_view *)(g_50241c->data + g_50241c->size * (index & 0xffff));
-			if (copy->salt && copy->salt == (index >> 16))
+			long index = *cursor;
+			if (index != NONE && (index & 0xffff) < g_50241c->high_water_index)
 			{
-				long object_index = copy->object_index;
-				if (function_badc0(object_index, (dword)NONE))
+				s_prop_copy_view *copy = (s_prop_copy_view *)(g_50241c->data + g_50241c->size * (index & 0xffff));
+				if (copy->salt && copy->salt == (index >> 16))
 				{
-					long object_slot = object_index & 0xffff;
-					if (g_4de300[object_slot] != g_4de2fc)
+					long object_index = copy->object_index;
+					if (function_badc0(object_index, (dword)NONE))
 					{
-						g_4de300[object_slot] = g_4de2fc;
-						long added = function_26a860(destination, copy);
-						if (added != NONE) function_26a960((s_clump *)destination, added);
+						long object_slot = object_index & 0xffff;
+						if (g_4de300[object_slot] != g_4de2fc)
+						{
+							g_4de300[object_slot] = g_4de2fc;
+							long added = function_26a860(destination, copy);
+							if (added != NONE) function_26a960((s_clump *)destination, added);
+						}
 					}
 				}
 			}
+			++cursor;
 		}
-		++cursor;
 	}
 	g_4de2f8 = false;
 	if (*(real *)((byte *)source + 0x2c) > *(real *)((byte *)destination + 0x2c))

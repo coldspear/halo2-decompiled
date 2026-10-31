@@ -2114,6 +2114,11 @@ void function_159460(long player_index, bool *leading, bool *tied)
 
 #include "object_iterator.h"
 
+// score 8 (was 8): Round 30 (lane C): the inlined lookup still loads the table base before masking
+// and scaling the object index; retail scales the index first, so the scaled index gets its own
+// register and the base lands in EAX, which in turn moves the tail reload and the iterator LEA.
+// The lookup written as a subscript gives identical code (8); the shared helper still swaps the
+// mode global's register (9). A permuter run was killed before it reported a result.
 // score 8 (was 8): the inlined equipment lookup keeps the object table base and the index in
 // swapped registers.
 // @retail 0x15adb0

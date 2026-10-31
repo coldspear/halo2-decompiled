@@ -1357,7 +1357,8 @@ char *__stdcall function_1537a0(byte const *address);
 
 struct s_rating_summary
 {
-    long values[16];
+    ULONGLONG session;
+    long values[14];
     char identity[64];
     char name[64];
 };
@@ -1451,6 +1452,16 @@ struct s_rating_summary
 // all four shared values per loop 108, each with the formatted local and key first 100. Left after 83:
 // level and the compare cursor/identity slot swapped (ours 0x18/0x14), and in the team loop retail keeps
 // the collection then level in EBX and the counters cursor in a stack slot (ours the reverse).
+// Round 47 (lane 16; kept: the summary as `= { 0 }` with a 64-bit first field, byte-identical 92, in
+// place of two zero stores and a hand-written memset of the rest): the team loop bounded by a
+// team-count helper in the for condition 331 (loop rotated); a team entry pointer in the team loop
+// 245 (1192 bytes); a force-inline terminating copy helper for the identity 225 (it stays a
+// register-argument call under the inline_depth(0) region); on the kept form, the key stored before the
+// session copy 88 (the summary block then differs only in the formatter call/count push order).
+// Slot sharing: retail packs {level, team cursor} and {group-compare cursor, identity, counters
+// cursor}; ours spills level in both loops and keeps the counters cursor in EBX, so the slot swap
+// likely follows the team loop's register choice (diagnostic: with constant counter arguments level
+// takes EBX, but the collection is still reloaded from its parameter slot rather than kept in EBX).
 // @retail 0x741f0
 void __stdcall function_741f0(s_match_player_rating_collection *collection, s_query_batch *batch)
 {
@@ -1493,15 +1504,11 @@ void __stdcall function_741f0(s_match_player_rating_collection *collection, s_qu
                         function_739a0(group, key);
                     }
                 }
-                s_rating_summary summary;
-                summary.values[0] = 0;
-                summary.values[1] = 0;
-                memset((byte *)&summary + 8, 0, sizeof(summary) - 8);
-                summary.values[2] = function_199290((byte *)collection);
-                summary.values[3] = function_199250((s_address_table *)collection, g_4cf7cc);
-                summary.values[0] = *(long *)((byte *)collection + 0x130);
-                summary.values[1] = *(long *)((byte *)collection + 0x134);
-                summary.values[4] = key;
+                s_rating_summary summary = { 0 };
+                summary.values[0] = function_199290((byte *)collection);
+                summary.values[1] = function_199250((s_address_table *)collection, g_4cf7cc);
+                summary.session = *(const ULONGLONG *)((byte *)collection + 0x130);
+                summary.values[2] = key;
                 const XUID *identity = (const XUID *)((const byte *)player + 2);
                 strncpy(summary.identity, function_1537a0((const byte *)identity), 64);
                 summary.identity[63] = 0;
@@ -1519,17 +1526,17 @@ void __stdcall function_741f0(s_match_player_rating_collection *collection, s_qu
                     destination++;
                     remaining--;
                 } while (character && remaining > 0);
-                summary.values[5] = *(const short *)((const byte *)player + 0xa2);
-                summary.values[6] = player->rank;
-                summary.values[7] = value;
-                summary.values[8] = change;
-                summary.values[9] = level;
-                summary.values[10] = first;
-                summary.values[11] = second;
-                summary.values[12] = third;
-                summary.values[13] = player->team;
-                summary.values[14] = collection->teams[player->team].unknown02;
-                summary.values[15] = collection->teams[player->team].rank;
+                summary.values[3] = *(const short *)((const byte *)player + 0xa2);
+                summary.values[4] = player->rank;
+                summary.values[5] = value;
+                summary.values[6] = change;
+                summary.values[7] = level;
+                summary.values[8] = first;
+                summary.values[9] = second;
+                summary.values[10] = third;
+                summary.values[11] = player->team;
+                summary.values[12] = collection->teams[player->team].unknown02;
+                summary.values[13] = collection->teams[player->team].rank;
                 function_73e00(lower, batch, identity, change, first, second, third, level, 3, players);
             }
         }

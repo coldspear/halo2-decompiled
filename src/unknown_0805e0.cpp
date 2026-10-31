@@ -104,6 +104,15 @@ static inline bool player_configuration_is_excluded(s_recent_player const *playe
 // Compile-only screens (one use of the mask never hoists it): a do-while with a named successor, a
 // `continue` filter, an admitted flag, the XUID view, and the null-identity test before or after the
 // guest test (both hoist the 3 into BL but keep both guest tests).
+// Round 111 (LTCG harness equal to the full listing): the one-use mask is hoisted into AL, with the result
+// rematerialized at the exit as retail, when the guest test comes first in the chain, with `continue` filters in
+// the while loop, or with `while (!result && index != NONE)`; those loops stay top-tested with index and successor
+// sharing one register. A successor local with that loop condition gives retail's EBX successor and ECX/EDX
+// scratch but no hoist, and moves the player argument to the stack. `--fast`: `continue` filters 57; the `!result`
+// loop 57; it with a successor local 37 (0x1a303b and 0x2b393c then lose their matches: player passed on the
+// stack, ret 8); the successor assigned in an else 57; a guarded do-while with a successor and early returns 49.
+// Harness only: for loops with `index = next` (no hoist), an inline entry getter (identical), short index or
+// successor, the found copy after the loop, result set before the copy.
 // @retail 0x805e0
 bool player_configuration_cache_next_recent_player(s_recent_player *player, long *iterator)
 {
@@ -541,6 +550,10 @@ void function_1537f0(s_profile_record *record);
 // Round 106: identity value-initialized 67; that without the tail clear and sentinel 78 (238 bytes); identity
 // declared and zeroed after the entry pointer 67; no tail clear with the links and flags stored before the
 // 0x7f8b0 call 81; the entry pointer passed as the view 67.
+// Round 111: flags and timestamp as two plain stores 73 (273 bytes); identity declared and zeroed right before
+// the entry pointer 67; the link stores as four statements in retail's order 67; the identity as the XDK XUID
+// type 67; the entry pointer as `g_4cf98c + i` 67. An LTCG harness copy of round 34's two-member local object
+// again gives retail's identity stores and offsets (259 bytes), with NONE then hoisted into EBP.
 // @retail 0x7f930
 void function_7f930(void)
 {
@@ -830,8 +843,9 @@ long __stdcall function_80330(const s_cached_player_identity *identity, long pos
 }
 #pragma inline_depth(8)
 
-// score 66 (was 66): frame 0xc agrees; the admission prefix (a `cache_full` bool, retail tests the count
-// directly), the order of the four link stores of the new entry and the EAX/ECX/EDX choices after them remain.
+// score 49 (was 66): frame 0xc and the whole tail agree; the admission prefix (a `cache_full` bool, retail
+// tests the count directly and loads the removed index into EDX) and the upper bound's register (retail ECX,
+// so the forward copy index takes EAX) remain.
 // Paired range arms 373;
 // native FILETIME 314; short adjustment 300; unsigned repair counter 364;
 // range/time/short combination 375; native time and short adjustment 357.
@@ -919,6 +933,14 @@ long __stdcall function_80330(const s_cached_player_identity *identity, long pos
 // Round 106: round 149's plain entry rebuilt 71 (aligned 39); it without the flag initialization (each arm sets
 // the direction) 390; time stored through the dword member 66; time read through a zeroed FILETIME 66; the NONE
 // link stores as `(short)NONE` 66; g_4cf97c named once for the next_other store 66.
+// Round 111: the four head repairs on the globals directly (no named copies) 49 kept: the link stores, the
+// g_4cf988 load and the time and identity-copy registers then match. On it: round 149's plain entry with
+// `removed > position` bounds, an explicit `>` arm and the count path upper first clearing the flag 54 (only
+// upper in EAX, the EDX load and the forward-copy addressing differ), the flag set after the decrements 56, the
+// count path lower first 55; the count path upper first without the flag 50; the 0x7f8b0 call for the fill 98.
+// Harness screens on the 54 form, all with upper still in EAX: every min/max spelling and three-way order, the
+// declaration orders, a named count, one copy index for both loops, the copy and repair loops as force-inline
+// helpers, a plain else for the count path (1155 bytes). Permuter on the 49 form: nothing better in 60 tries.
 // @retail 0x7fe90
 long function_7fe90(const s_cached_player_identity *identity, long position, const s_cached_player_source *source)
 {
@@ -969,14 +991,10 @@ long function_7fe90(const s_cached_player_identity *identity, long position, con
 			if (entry->unknown58 >= lower && entry->unknown58 <= upper) entry->unknown58 += change;
 			if (entry->next >= lower && entry->next <= upper) entry->next += change;
 		}
-		long first_other = g_4cf97c;
-		if (first_other >= lower && first_other <= upper) g_4cf97c = first_other + change;
-		long last_other = g_4cf980;
-		if (last_other >= lower && last_other <= upper) g_4cf980 = last_other + change;
-		long first_cached = g_4cf984;
-		if (first_cached >= lower && first_cached <= upper) g_4cf984 = first_cached + change;
-		long last_cached = g_4cf988;
-		if (last_cached >= lower && last_cached <= upper) g_4cf988 = last_cached + change;
+		if (g_4cf97c >= lower && g_4cf97c <= upper) g_4cf97c += change;
+		if (g_4cf980 >= lower && g_4cf980 <= upper) g_4cf980 += change;
+		if (g_4cf984 >= lower && g_4cf984 <= upper) g_4cf984 += change;
+		if (g_4cf988 >= lower && g_4cf988 <= upper) g_4cf988 += change;
 	}
 	s_player_configuration_cache_entry *entry = &g_4cf98c[position];
 	entry->next_other = (short)g_4cf97c;
