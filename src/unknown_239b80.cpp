@@ -289,6 +289,10 @@ short function_239e50(short count, point2f const *points, short *indices);
 // state before the distance 42; the normalizer reading j into a scalar before the length and
 // scaling that scalar 42 (j still folded as `mulss xmm0,[j]`); an explicit `default: break;` 42;
 // the shared header's union vector2f with that j-scalar normalizer 42.
+// Round 132 (an LTCG env link reproduces it): every order of the first/line/state declarations with
+// the scales as written or `*=` j first and the dot taking (normal, point) or (point, normal): 42 each
+// (24 forms); the normalizer scaling through a 2-D scale helper (normalize3d's shape) 42; dividing by
+// the length 42; the length's sum j first 42; the normal built in a local vector and assigned 71.
 // @retail 0x239b80
 short function_239b80(short count, point2f const *points)
 {
