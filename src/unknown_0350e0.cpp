@@ -1251,7 +1251,15 @@ void function_020b40(long value, long index);
 // the tag and the position differs. Tried without effect on that choice:
 // dropping the volatile result, reading the position through a volatile
 // pointer (108), copying the position into a local first (129), hoisting the
-// deltas to the top (112).
+// deltas to the top (112). Also tried: the plain form with no volatile at all (`bool result`,
+// `alternate` used directly) scores 101 and moves the register arguments (alternate in ecx,
+// position in ebx), which raises the callers 0x41980 (146 -> 194), 0xc3340 (109 -> 132) and
+// 0x179880 (88 -> 343), so the volatile pair stays until the function matches; a second tag test
+// or a second definition lookup changes nothing (101). Retail's registers look like the callee's
+// own allocation: tag (ecx) and direction (edi) are forwarded unchanged in 0x2e230's registers,
+// the position is loaded into ebp from the stack (ebp is never a parameter register),
+// `alternate` is read from memory twice (a branchy ternary) and the result byte is spilled
+// into the position's dead stack slot.
 // @retail 0x2dba0
 bool function_2dba0(long tag, vector3f const *direction, bool alternate, long c, long d, long e, point3f const *position, color3f const *color, real alpha, real amount, real scale)
 {
@@ -2938,7 +2946,11 @@ s_cached_input_list g_5246f8[4];
 // image. Tried: only the counter volatile (98 alone, 115 there), only the count
 // volatile (138), an explicit cursor, a loop index declared before the count
 // (140), an if (count > 0) guard, the view declared first (135), flags read
-// before the object.
+// before the object. The plain form with no volatile (what Kirk's review asks for) scores 133
+// alone (130 in the callers' check, 0x335e0 42 -> 38); the same 133 with an explicit cursor, the
+// `if (count > 0)` guard, `view` as if/else or the alpha/special locals hoisted; the list arrays
+// hoisted 149, a pointer-compare limit 145; `view` computed after the loop 124 but the list
+// pointer then moves to ebp.
 // @retail 0x33400
 long function_33400(byte const *list, s_cached_input *output, long mode)
 {
@@ -3793,12 +3805,16 @@ void function_133720(s_bit_vector_pool *visibility, bool enabled);
 void function_44720();
 void function_31170(long tag, s_view_camera *camera, long resource, s_view_source *source, bool special, real weight);
 
-// score 180 (was 195): retail keeps `parent` in ebx and the walk's `root` in edx through the loop,
-// reads `definition` as a dword (`mov ecx,[ebp]; test cl,0x20`) and spills the light index to a
-// local at [esp+0x34]; ours keeps the loop pointer in ebx and spills `parent`, and the frame is 4
-// bytes smaller than retail's 0x1508. Tried: re-reading the record at each use (190-210), a
-// `dword flags = *(dword *)definition` local for the bit tests (181, frame 0x1500), root assigned
-// in the walk instead of after it (202), parent/root declared in the other order (189).
+// score 186 in the full build (180 in a fast check; was 195): retail keeps `parent` in ebx and the walk's `root` in
+// edx through the loop, reads `definition` as a dword (`mov ecx,[ebp]; test cl,0x20`) and spills the light index to a
+// local at [esp+0x34] (a ninth frame slot: ours is 4 bytes smaller, 0x1504 against 0x1508, and the record cursor takes
+// ebx while `parent` is spilled; retail keeps the cursor and the counter in memory). Tried: `light_index` as a plain
+// copy with the definition flags read once before the walk (171 in a fast check, but 210 in the full build, so not
+// kept; the code is then 724 bytes against 720), re-reading the record at each use (190-210), a
+// `dword flags = *(dword *)definition` local alone (181, frame 0x1500), the flags local after
+// the walk (182), a second flags read after the parent block for the special/bsp/mask tests (190-208), the light
+// index declared after the parent block (182), root assigned in the walk instead of after it (202), parent/root
+// declared in the other order (189), an explicit record pointer with an up- or down-counting loop (180).
 // @retail 0x31c80
 void function_31c80()
 {
