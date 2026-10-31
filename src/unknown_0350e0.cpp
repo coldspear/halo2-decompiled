@@ -66,7 +66,11 @@ PRIVATE __forceinline vector3f rotate_axis_vector(matrix3x3 const *matrix, vecto
     return result;
 }
 
-// score 356 (was 372): both axes are read straight from g_485618 as retail does (no local copies of
+// score 356 (was 372): second pass walked retail 0x39e50-0x3a540 formula by formula and found no behaviour
+// difference: both matrices (forward axis angle step*0.5 from 0x485624.., up axis angle step*0.3 from 0x485630..,
+// constants 0.5 / 0.3 / 1.0 read from the XBE), all nine entries of each, and the up*k + left*j + forward*i sum order
+// of the vector rotation (0x3a148-0x3a2f0, 0x3a37c-0x3a526) agree with the source. Only scheduling and registers differ.
+// Original note: both axes are read straight from g_485618 as retail does (no local copies of
 // the axis, which was the whole 16 points). Retail interleaves the two matrices' sin/cos and spills
 // differently (frame 0x90 vs 0x98), and stores each rotated component to g_467104 straight from
 // xmm with the input vector copied component-wise; here the vectors are copied through integer
@@ -1934,13 +1938,18 @@ PRIVATE __forceinline vector3f direction_from_angles(real heading, real elevatio
     return result;
 }
 
-// score 220 (was 298): the statements match retail (cos(elevation) is evaluated first, the entry's tag is read again at the
-// call instead of cached, `left` is built from g_4687b0 directly while `up` is a separate copy). What still differs: frame 0x7c
-// against retail's 0xc0 and 822 against 857 bytes. Retail builds `local` and `forward` straight into their slots (0x14, 0x20)
-// and then block-copies local, forward and up into one argument-like area (0x30, 0x3c, 0x54, with a slot for `left` at 0x48 that
-// is never stored); ours returns them by value, which adds a per-component temp, and has no copy of local or forward.
-// Tried: sin/cos without the (real) casts (223), out-pointer helper (284), by-value basis helper with `left` as a vector
-// (261) or as three reals (253), `left` from a returning cross helper (235).
+// score 204 (was 220, 298 originally): the statements match retail (cos(elevation) is evaluated first, the entry's tag is read again
+// at the call instead of cached, `left` is built from g_4687b0 directly while `up` is a separate copy). Writing the result back
+// with `local = direction;` (retail stores the new direction into the slot of `local`, 0x14) took 220 to 204. What still differs:
+// frame 0x7c against retail's 0xc0 and 846 against 857 bytes, and the register roles (retail keeps the loop count in ebx, the entry
+// in ebp, spills `definition` to [esp+4] and the entry offset to [esp+0x2c]; ours keeps `definition` in ebx). Retail builds `local`
+// and `forward` straight into their slots (0x14, 0x20) and then block-copies local, forward and up into one argument-like area
+// (0x30, 0x3c, 0x54, with a slot for `left` at 0x48 that is never stored); `left` stays in xmm registers there.
+// Retail reads the entry's heading and elevation straight from memory for `local` (fld [ebp+0x10] ... fld [ebp+0xc] twice) but
+// loads the definition's heading once for `forward`, so `local` is not a call of the same helper as `forward`.
+// Tried: sin/cos without the (real) casts (223), out-pointer helper for both (284/260), for `local` only (256/228), by-value basis helper with `left` as a vector (261, 357 when
+// passed whole) or as three reals (253), `left` from a returning cross helper (235), `local` written inline from the entry fields
+// (269/247), a by-value world_direction(local, forward, up) helper (203 but 846 bytes of different temps), basis declared before position (no change).
 // @retail 0x3eec0
 void function_3eec0()
 {
@@ -1967,18 +1976,19 @@ void function_3eec0()
             direction.i = local.j * left.i + local.k * up.i + local.i * forward.i;
             direction.j = local.i * forward.j + local.j * left.j + local.k * up.j;
             direction.k = local.i * forward.k + local.j * left.k + local.k * up.k;
+            local = direction;
             if (1.0f > g_4b9f58)
             {
                 g_4670bc = true;
                 function_16b10((s_render_reset_state *)g_485b48);
                 point3f position;
-                position.x = direction.i * 1023.875f + g_4b9da0.x;
-                position.y = direction.j * 1023.875f + g_4b9da0.y;
-                position.z = direction.k * 1023.875f + g_4b9da0.z;
+                position.x = local.i * 1023.875f + g_4b9da0.x;
+                position.y = local.j * 1023.875f + g_4b9da0.y;
+                position.z = local.k * 1023.875f + g_4b9da0.z;
                 vector3f basis[3];
-                basis[0].i = 0.0f - direction.i;
-                basis[0].j = 0.0f - direction.j;
-                basis[0].k = 0.0f - direction.k;
+                basis[0].i = 0.0f - local.i;
+                basis[0].j = 0.0f - local.j;
+                basis[0].k = 0.0f - local.k;
                 function_11d000(&basis[0], &basis[2]);
                 function_30bf0(&basis[2]);
                 function_2dba0(*(long *)(entry + 0x18), basis, false, 3, 0, i, &position, (color3f const *)((byte const *)g_4686cc + 4), 1.0f - g_4b9f58, 1.0f, 1.0f);
@@ -2058,39 +2068,40 @@ void c_octree_radius_view_ab::function_3f970(short index, plane3f const *planes,
         return;
     }
     real child_radius = radius * 0.5f;
-    point3f child;
-    child.x = center->x - child_radius;
-    child.y = center->y - child_radius;
-    child.z = center->z - child_radius;
-    ((c_octree_radius_view_ab const *)tree)->function_3f970( children[0], planes, bounds, &child, child_radius);
-    child.x = center->x - child_radius;
-    child.y = center->y - child_radius;
-    child.z = center->z + child_radius;
-    ((c_octree_radius_view_ab const *)tree)->function_3f970( children[1], planes, bounds, &child, child_radius);
-    child.x = center->x - child_radius;
-    child.y = center->y + child_radius;
-    child.z = center->z - child_radius;
-    ((c_octree_radius_view_ab const *)tree)->function_3f970( children[2], planes, bounds, &child, child_radius);
-    child.x = center->x - child_radius;
-    child.y = center->y + child_radius;
-    child.z = center->z + child_radius;
-    ((c_octree_radius_view_ab const *)tree)->function_3f970( children[3], planes, bounds, &child, child_radius);
-    child.x = center->x + child_radius;
-    child.y = center->y - child_radius;
-    child.z = center->z - child_radius;
-    ((c_octree_radius_view_ab const *)tree)->function_3f970( children[4], planes, bounds, &child, child_radius);
-    child.x = center->x + child_radius;
-    child.y = center->y - child_radius;
-    child.z = center->z + child_radius;
-    ((c_octree_radius_view_ab const *)tree)->function_3f970( children[5], planes, bounds, &child, child_radius);
-    child.x = center->x + child_radius;
-    child.y = center->y + child_radius;
-    child.z = center->z - child_radius;
-    ((c_octree_radius_view_ab const *)tree)->function_3f970( children[6], planes, bounds, &child, child_radius);
-    child.x = center->x + child_radius;
-    child.y = center->y + child_radius;
-    child.z = center->z + child_radius;
-    ((c_octree_radius_view_ab const *)tree)->function_3f970( children[7], planes, bounds, &child, child_radius);
+    // each child center is its own brace-initialized local: assigning one shared point3f member by member
+    // schedules the stores ahead of the argument pushes, retail interleaves them
+    {
+        point3f child = { center->x - child_radius, center->y - child_radius, center->z - child_radius };
+        ((c_octree_radius_view_ab const *)tree)->function_3f970( children[0], planes, bounds, &child, child_radius);
+    }
+    {
+        point3f child = { center->x - child_radius, center->y - child_radius, center->z + child_radius };
+        ((c_octree_radius_view_ab const *)tree)->function_3f970( children[1], planes, bounds, &child, child_radius);
+    }
+    {
+        point3f child = { center->x - child_radius, center->y + child_radius, center->z - child_radius };
+        ((c_octree_radius_view_ab const *)tree)->function_3f970( children[2], planes, bounds, &child, child_radius);
+    }
+    {
+        point3f child = { center->x - child_radius, center->y + child_radius, center->z + child_radius };
+        ((c_octree_radius_view_ab const *)tree)->function_3f970( children[3], planes, bounds, &child, child_radius);
+    }
+    {
+        point3f child = { center->x + child_radius, center->y - child_radius, center->z - child_radius };
+        ((c_octree_radius_view_ab const *)tree)->function_3f970( children[4], planes, bounds, &child, child_radius);
+    }
+    {
+        point3f child = { center->x + child_radius, center->y - child_radius, center->z + child_radius };
+        ((c_octree_radius_view_ab const *)tree)->function_3f970( children[5], planes, bounds, &child, child_radius);
+    }
+    {
+        point3f child = { center->x + child_radius, center->y + child_radius, center->z - child_radius };
+        ((c_octree_radius_view_ab const *)tree)->function_3f970( children[6], planes, bounds, &child, child_radius);
+    }
+    {
+        point3f child = { center->x + child_radius, center->y + child_radius, center->z + child_radius };
+        ((c_octree_radius_view_ab const *)tree)->function_3f970( children[7], planes, bounds, &child, child_radius);
+    }
 }
 
 
@@ -2363,14 +2374,22 @@ static void clamp_cached_input(s_cached_input_entry *entry)
 	entry->initial = entry->initial < 0.0f ? 0.0f : entry->initial > *maximum ? *maximum : entry->initial;
 }
 
-// score 405 (was 424): everything up to the first call to function_4b160 agrees except register homes (retail keeps
-// first in edx and the state in ebp, here the other way round). The decay loop is unrolled four times in both, but
-// the induction pointer here is biased one entry lower (retail: [eax-0x15] for the flag of the first copy, here
-// [eax+0xf]), which shifts every compare after it. Source order affects only some operands: "last > i" /
-// "last >= i" reproduce retail's cmp operand order in the first loop (the whole prefix then matches); "limit <= i"
-// stops the unrolling (802); a pointer loop (398); the flag tested after "initial > 0.0f" (389, wrong order);
-// entry->elapsed written through a local or as "initial += elapsed" (390-392, no change); register-order
-// permutations of first/last/requested/found/i (406-413). Without the "last >= i" forms 390.
+// score 317 (was 405, 424 originally): the logic was walked against retail block by block (0x4ac30-0x4b159) and
+// agrees: the four passes (pairs to the front, first flagged entry, drop of just-created flagged entries, duplicate
+// key removal), both sorts (modes 1 and 2), the decay loop, the growth loop and the output copy. What is left is
+// register allocation. Retail keeps `first` in edx and the state in ebp for the first three loops and reloads `first`
+// from [esp+0x10] into ebp as loop 3's counter (0x4ad43); here `first` stays in ebp, the state is in edx and the
+// counter lives in memory, which adds a few instructions and shifts everything after it. The decay loop's unrolled
+// body is rotated one entry (base entry-0xc, first copy at +0x24) where retail's base is the first copy's `initial`
+// field; its copies 2-4 match retail. Gains this round: the last (growth) loop is a counted do/while (retail ends
+// it with dec ecx/jne, not a pointer compare), and the decay loop declares a pointer to `initial` before the
+// entry pointer (377 -> 317 with the same bytes length as retail). Earlier: `initial` is a real, compare operand
+// order, one-expression clamp. Tried: index loop `i < limit` for the growth loop (715, unrolled), pointer
+// compare for the decay loop (367, divides by 36), decay loop as `--i >= limit`, `i = count; i > limit` with
+// entries[i - 1] (349), a second pointer decremented alongside i (375), entry derived from `initial` (369),
+// declaration order of first/last/requested/found/i (317-319), per-loop `long i` (317), an `entries` alias (317),
+// a copy of `first` for the later calls (370), found set before/after the swap (360/318). Without the
+// "last >= i" forms 390; "limit <= i" stops the unrolling (802).
 // @retail 0x4ac30
 long __stdcall function_4ac30(s_cached_input_list *state, s_cached_input *output, long limit, real step)
 {
@@ -2433,11 +2452,12 @@ long __stdcall function_4ac30(s_cached_input_list *state, s_cached_input *output
 		{
 			for (i = state->count - 1; i >= limit; --i)
 			{
+				real *initial = &state->entries[i].initial;
 				s_cached_input_entry *entry = &state->entries[i];
-				if (!((byte *)&entry->input.data[0])[3] && entry->initial > 0.0f)
+				if (!((byte *)&entry->input.data[0])[3] && *initial > 0.0f)
 				{
 					entry->elapsed -= step;
-					entry->initial = entry->elapsed + entry->initial;
+					*initial = entry->elapsed + *initial;
 					clamp_cached_input(entry);
 				}
 				else entry->elapsed = 0.0f;
@@ -2445,8 +2465,9 @@ long __stdcall function_4ac30(s_cached_input_list *state, s_cached_input *output
 		}
 		if (limit > 0)
 		{
-			s_cached_input_entry *end = state->entries + limit;
-			for (s_cached_input_entry *entry = state->entries; entry != end; ++entry)
+			s_cached_input_entry *entry = state->entries;
+			long remaining = limit;
+			do
 			{
 				if (*(real *)&entry->input.data[3] > entry->initial)
 				{
@@ -2455,7 +2476,8 @@ long __stdcall function_4ac30(s_cached_input_list *state, s_cached_input *output
 					clamp_cached_input(entry);
 				}
 				else entry->elapsed = 0.0f;
-			}
+				++entry;
+			} while (--remaining);
 		}
 	}
 	for (long i = 0; i < state->count; ++i)
@@ -2469,7 +2491,9 @@ long __stdcall function_4ac30(s_cached_input_list *state, s_cached_input *output
 
 PRIVATE __forceinline real motion_random_step(double value, double step)
 {
-    double random = random_unit_fraction(g_4e7408);
+    // a float, so the 1.0f below stays a float constant as in retail (`fsub dword [1.0f]`); no rounding store is
+    // emitted, so the x87 keeps the fraction unrounded
+    real random = (real)random_unit_fraction(g_4e7408);
     real next = (real)(step * (random + random - 1.0f) + value);
     return next < -1.0f ? -1.0f : next > 1.0f ? 1.0f : next;
 }
@@ -2489,15 +2513,19 @@ PRIVATE __forceinline point2f motion_project_point(point3f const *point)
     return result;
 }
 
-// score 529 (was 561): the logic matches retail block by block; what is left is register allocation and scheduling.
-// Retail's loop keeps one pointer per (base, stride) group starting at state+0x18, view+0x104, view+0x120 (offset[1]),
-// view+0x158 and state+0x2c; we start at state+0x88, view+0xec and view+0x11c, so the whole loop differs in registers
-// and spill slots (frame 0x60 vs 0x38). Retail also reads the velocity back from memory for the speed limit (we reuse
-// the registers and spill them), keeps the random step and the old value alive on the x87 stack (fmul st(2) / fadd st(1)
-// where we copy and pop), computes dz, dy, dx before the three products, and reads the flags byte at state+0x94 for
-// the cycle bit (a byte read scores 538 but is a type pun, not kept). Tried: a speed-limit helper (560, same code),
-// factor order in the random step (no change), the lane order of offset and of the view fields (no change), dz/dy/dx
-// from the stored position (587), phase read before the cycle test (+7 over the per-branch read).
+// score 517 (was 529; 561 before that): the logic matches retail block by block (walked statement by statement against
+// 0x37260-0x37a50: offsets, argument order, condition directions, the z,x,y random order and the clamps all agree); what
+// is left is register allocation and scheduling. Retail's loop keeps one pointer per (base, stride) group starting at
+// state+0x18, view+0x104, view+0x120 (offset[1]), view+0x158 and state+0x2c. Reading the strength before the cycle test
+// and storing the fade before the phase now give the first two as retail; the offset group still starts at view+0x11c
+// (offset[0]) with every order of its loads and stores (6 spellings, 520-525), and the frame is 0x60 vs 0x38. Retail also
+// reads the velocity back from memory for the speed limit (we reuse the registers and spill them), keeps `step` on the
+// x87 stack and multiplies with `fmul st(2)` where we emit `fld st(2); fmulp st(1)` (the product's operand order makes no
+// difference), computes dz, dy, dx before the three products, and reads the flags byte at state+0x94 for the cycle bit
+// (a byte read scores 538 but is a type pun, not kept). Tried: a speed-limit helper (560, same code), factor order in the
+// random step (no change), the lane order of offset and of the view fields (no change), dz/dy/dx from the stored
+// position (587), phase read before the cycle test (+7 over the per-branch read), structs for the state and view
+// layouts (517 with the two reorders, 536 without; the byte offsets are kept).
 // @retail 0x37260
 bool __stdcall function_37260(byte *state, real step, byte const *parameters)
 {
@@ -2531,20 +2559,23 @@ bool __stdcall function_37260(byte *state, real step, byte const *parameters)
     do
     {
         real phase;
+        // the strength is read before the cycle test and the fade is stored before the phase: in this order the
+        // compiler starts its loop pointers at state+0x18 and view+0x104, where retail's start
+        real strength = *(real *)(state + 0x88 + i * 4);
         if (cycle)
         {
             phase = *(real *)(state + 0x18 + i * 4);
             if (*(real *)(view + 0x140) > phase) phase += 1.0f;
             phase -= *(real *)(view + 0x140);
-            *(real *)(view + 0x104 + i * 4) = phase;
             real centered = phase * 2.0f - 1.0f;
-            *(real *)(view + 0xec + i * 4) = (1.0f - centered * centered) * *(real *)(state + 0x88 + i * 4);
+            *(real *)(view + 0xec + i * 4) = (1.0f - centered * centered) * strength;
+            *(real *)(view + 0x104 + i * 4) = phase;
         }
         else
         {
             phase = *(real *)(state + 0x18 + i * 4);
+            *(real *)(view + 0xec + i * 4) = strength;
             *(real *)(view + 0x104 + i * 4) = phase;
-            *(real *)(view + 0xec + i * 4) = *(real *)(state + 0x88 + i * 4);
         }
         real distance = phase * range + *(real *)(state + 0x78);
         real radius = (real)(tan(g_485640 * 0.5f) * distance);
@@ -3212,12 +3243,20 @@ bool __stdcall function_38450(byte *state, byte const *definition, real remainin
 bool __stdcall function_37a60(void *state);
 bool __stdcall function_391f0(void *state);
 
-// score 257: retail checks the portal's two sides with a real 2-iteration loop
-// (movsx ebp, word [portal+eax*2]; inc eax; cmp eax, 2), not the unrolled pair of tests written here;
-// the camera x/y/z and 32767.0f stay in xmm3-xmm6 across the portal loop, and retail re-makes zero
-// with xorps inside each block (here one zero is shared from the function start). Tried: the 2-iteration
-// for loop with the volatile counter (299), with a plain counter (273); a plain counter with the
-// unrolled tests (956, the loop is unrolled and grows to 1535 bytes).
+// score 272 (was 257 with a volatile counter): no volatile any more. The portal loop is now `while (remaining-- > 0)` with
+// `*portals++` and the two sides are a real 2-iteration loop (`for (side...) if (sides[side] == cluster) break;`), which compiles
+// to retail's loop (movsx ebp, word [portal+eax*2]; inc eax; cmp eax, 2; jl). A plain `for (; remaining > 0; --remaining)` counter
+// is unrolled four times by the compiler (1535 bytes, 956); retail keeps the count in memory ([esp+0x10], dec; jne) and does not
+// unroll, which the post-decrement form also gives without volatile. What still differs: retail compares the portal
+// side with `je found` straight into the plane code, ours re-tests `side == 2` after the loop (a `do { if (..) goto found; } while
+// (++side < 2); continue; found:` form removes that but scores 274); retail reads the current cluster as a long (movsx ebx, word
+// [0x547f90]; cmp ebx, -1) and reloads the global inside the fog loop, ours compares a cached copy (`long current_cluster`
+// makes the front match retail's order but scores 299 with the later spills); the camera x/y/z and 32767.0f stay in xmm3-xmm6 across
+// the portal loop, and retail re-makes zero with xorps inside each block (here one zero is shared from the function start); the
+// outer loop's index lives in edi in retail (spilled around the portal loop) and in ebx here.
+// Tried: the 2-iteration for loop with the volatile counter (299), with a plain counter (273); a plain counter with the
+// unrolled tests (956, the loop is unrolled and grows to 1535 bytes); `for (k < count) portals[k]` (972, unrolled);
+// a while loop with a side index (295); camera_z read before camera_y (no change).
 // @retail 0x36b50
 void function_36b50()
 {
@@ -3260,12 +3299,16 @@ void function_36b50()
         {
             real minimum = 32767.0f;
             short *portals = *(short **)(current + 0x90);
-            volatile long remaining = *(long *)(current + 0x8c);
-            for (; remaining > 0; --remaining, ++portals)
+            long remaining = *(long *)(current + 0x8c);
+            while (remaining-- > 0)
             {
-                if (*portals == NONE) continue;
-                byte *portal = *(byte **)(structure + 0x60) + *portals * 0x24;
-                if (*(short *)portal != cluster && *(short *)(portal + 2) != cluster) continue;
+                short portal_index = *portals++;
+                if (portal_index == NONE) continue;
+                byte *portal = *(byte **)(structure + 0x60) + portal_index * 0x24;
+                long side;
+                for (side = 0; side < 2; ++side)
+                    if (((short *)portal)[side] == cluster) break;
+                if (side == 2) continue;
                 real *plane = (real *)(*(byte **)(*(byte **)(structure + 0x18) + 0xc) + *(long *)(portal + 4) * 16);
                 real value = 0.0f - (camera_y * plane[1] + camera_z * plane[2] + camera_x * plane[0] - plane[3]);
                 if (0.0f > value) value = 0.0f - value;
@@ -3853,6 +3896,16 @@ extern dword g_4b843c;
 // ja, ja, jbe-to-else with the `or 2` falling through.
 // Tried: a local `flags` stored to g_4ba014 after each step (293: the compiler drops the intermediate stores), flags as a ternary or a
 // negated condition (289, same), `(byte)` / `!= 0` / bool casts on the first bit test (278, same).
+// Second pass (logic walked against 0x31170-0x31518: every branch, mask, pass argument and the tail agree, so what is left is code
+// shape): (5) retail reads the flags twice for the last pass (`test byte ptr [g],1` then `mov edx,[g]; shr edx,1`) where we
+// load once; 0x3fdf0 shows the same quirk. (6) 0x4a1e0's own prologue (retail 0x4a1e0-0x4a28f) reads source from eax (+0x50..+0x68),
+// camera from ecx (`mov dx,[ecx]`) and resource from edx (`cmp edx,-1`), exactly as retail's caller loads them (0x311b4-0x311c3), so
+// the call-site difference is the stub's register mapping, not this function. Tried: the bit sets through an inlined copy of
+// 0x30ca0 (`if (v) g |= 1 << n; else g &= ~(1 << n)`, 278, same code; the real 0x30ca0 is called, not inlined, from 0x32350), the
+// `!enabled || bit0` branch order (278), a `moving` bool folded into one ternary store (278), a volatile-cast read of g_485a40
+// to provoke the store before the branch (no change to the store). A dword bit-field view of g_4ba014 (cast of its
+// address, not kept) scores 274 and 264 with the inlined sets, but still drops the store before `test bl,bl` and turns the bit-0
+// read into `mov al,[g]`; no spelling tried reproduces that store, so the 54-byte shortfall (and the shifted compare after it) stays.
 // @retail 0x31170
 void function_31170(long tag, s_view_camera *camera, long resource, s_view_source *source, bool enabled, real scale)
 {
