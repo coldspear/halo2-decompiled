@@ -1097,10 +1097,9 @@ struct s_biped_collision
 /* the point a biped grabs from: its eye (its standing or crouching height
    up from its origin), moved to its head marker unless something is in
    the way */
-PRIVATE inline void biped_eye_raise(long arg_159e6d, real crouch, point3f *eye)
+PRIVATE __forceinline void biped_eye_raise(long arg_159e6d, s_biped *self, byte *self_definition, real crouch,
+	point3f *eye)
 {
-	s_biped *self = BIPED_GET(arg_159e6d);
-	byte *self_definition = BIPED_DEFINITION_GET(self);
 	point3f head;
 	vector3f forward;
 	vector3f up;
@@ -1156,17 +1155,31 @@ PRIVATE inline void biped_eye_raise(long arg_159e6d, real crouch, point3f *eye)
 PRIVATE __forceinline void biped_grab_eye(long arg_159e6d, point3f *eye)
 {
 	function_b9dd0(arg_159e6d, eye);
-	biped_eye_raise(arg_159e6d, function_e0dc0(arg_159e6d) ? 0.0f : BIPED_GET(arg_159e6d)->crouch, eye);
+	s_biped *self = BIPED_GET(arg_159e6d);
+	byte *self_definition = BIPED_DEFINITION_GET(self);
+
+	biped_eye_raise(arg_159e6d, self, self_definition, function_e0dc0(arg_159e6d) ? 0.0f : BIPED_GET(arg_159e6d)->crouch, eye);
 }
 
 /* fills the biped's character physics input for its physics mode: walking
    (1), flying (2), dead (3), animation driven (4, 5) or grabbing (6) */
-// score 1497 (was 1638): Frame 0x7c versus retail 0xfc; the inner eye helper, flag homes and argument scheduling still differ.
+// score 636 (was 1497): biped_eye_raise is forced inline (below); the frame, flag homes and argument scheduling still differ.
 // Outer-only inline control 1566; native case order 1562; full vector setter 1555;
 // use-site animation flags 1578; consistent ground observations 1502; default boost 1563;
 // conditional material 1566; workspace names 1566; case/setter/boost/names 1552.
 // Ground observations with case order 1497, setter 1510, default boost 1535, case/setter 1509.
 // Case order alone is below the eight-point gate; retain it only with the native ground observation cause, plain 1497.
+// Logic walk (2026-10-31): every block, call argument and constant agrees with retail (ground velocity and facing,
+// the speed_scale paths and 1/137, material, boost, the turning states, the 0x1e5bb0 arguments, cases 1-6 with
+// 0x183670, 0xe5d50, the 0.9/0.05/-0.25 steps and the final 0x1e6850). The 880 missing bytes are biped_eye_raise,
+// which retail expands here, in 0xde9d0 and in 0xdef60: as __forceinline this function is 651 full (1497), 0xde9d0
+// 319 (931) and 0xdef60 287 (995). It is applied (2026-10-31) with biped_eye_raise taking the biped and its
+// definition from its caller (the lookups hoisted as in retail's 0xdef60): 0xdc5c0 636, 0xde9d0 336, 0xdef60 279,
+// 0xcb500 110 and 0xcb500's caller 0x1e3b00 matches. With the helper doing its own lookups 0xdef60 took its mode
+// in DX and tested it before the lookup, which moved 0xcb500 to 129 and unmatched 0x1e3b00. Before the helper took the
+// lookups, `default: __assume(0)` (retail's unchecked jump table at 0xdc9ae), `long players` (movsx at 0xdc7cc) and
+// the 0xbc test in a bool local gave 633 (643 with the hoisted lookups); the five call arguments in named locals
+// (retail's stack slots 0xac/0xa4/0xa0) 651. Without the forced inline those forms give 1497-1534.
 // @retail 0xdc5c0
 void __stdcall function_dc5c0(long arg_159e6d, s_biped_physics_output *output)
 {
@@ -1487,7 +1500,7 @@ apply:
 /* whether the biped can see a biped it would grab: a ray from its eye to
    the target's center (or to three points up the target's height) gets
    through */
-// score 931 (was 932): Frame 0x8c versus retail 0xac; the outer eye call expands, but the inner call still differs.
+// score 336 (was 931): Frame 0x8c versus retail 0xac; biped_eye_raise is now forced inline (retail expands it here), 931 before.
 // Outer-only inline 952; entry result 1038; scan result 1020; shared displacement 1031;
 // scan collision workspace 1031; role names 1031; native while scan 1031; combined entry result 1038.
 // Outer-only inline with scan/entry result 932/950; shared workspaces 952; all scan forms 932.
@@ -1643,16 +1656,22 @@ void function_dfd70(long arg_159e6d)
 /* a point on a biped: its eye (mode 0 at its origin, 1 standing, 2
    crouching, raised to its head marker unless something is in the way), or
    an offset from a point along a forward vector (mode 3) */
-// score 995 (was 995): Native 0x8c eye workspace remains out of line; incoming roles and object acquisition differ.
-// Existing helper forced inline 287 but loses a matched caller; forced zero/default/reverse/if-else/
-// origin-join/name/zero-default forms 292/287/287/282/287/287/292 on that rejected boundary.
-// Both existing helpers forced 287; late force-inline declaration 287: both lose the same caller.
-// Original helper boundary with zero/default/reverse/if-else/origin-join/name/zero-default forms
-// 1003/995/995/989/995/995/1003; the six-point if-else gain is dropped. Original body restored.
+// score 279 (was 995): the helper is forced inline; 0xdef60 still compiles with another convention than retail, whose
+// own bytes take only `point` in EAX and the other five arguments on the stack (0xcb500's call at 0xcb56c-0xcb571,
+// the mode read from [esp+0xa4] at 0xdef9e) with the biped in EDI, its definition in EBX and the index in EBP. Ours
+// takes the mode in EBX, the forward vector in EDX and the offsets in ECX (ret 0xc); their registers force a scratch
+// register for the point copy, which pushes the definition to a stack slot.
+// Tried: the helper doing its own biped/definition lookups 287 (mode in DX, 0xcb500 129, 0x1e3b00 30); only `self`
+// hoisted 271 (0xcb500 111, 0x1e3b00 matches); definition passed at the call 288 (0xcb500 122); mode 3 as a separate
+// test after the point setup (arg in EBX, mode on the stack) 283 with 0xcb500 122; mode 3 as an else branch 264 with
+// 0xcb500 122; offsets in locals 271. The earlier forms with the helper out of line (zero/default/reverse/if-else/
+// origin-join/name/zero-default) scored 989-1003.
 // @retail 0xdef60
 void __stdcall function_def60(point3f *point, long arg_159e6d, short mode, point3f const *origin,
 	vector3f const *forward, real const *offsets)
 {
+	s_biped *self = BIPED_GET(arg_159e6d);
+	byte *self_definition = BIPED_DEFINITION_GET(self);
 	real crouch;
 
 	if (mode)
@@ -1683,10 +1702,10 @@ void __stdcall function_def60(point3f *point, long arg_159e6d, short mode, point
 		crouch = 1.0f;
 		break;
 	default:
-		crouch = function_e0dc0(arg_159e6d) ? 0.0f : BIPED_GET(arg_159e6d)->crouch;
+		crouch = function_e0dc0(arg_159e6d) ? 0.0f : self->crouch;
 		break;
 	}
-	biped_eye_raise(arg_159e6d, crouch, point);
+	biped_eye_raise(arg_159e6d, self, self_definition, crouch, point);
 }
 
 /* a biped's collision capsule: its bottom point, the vector to its top and
