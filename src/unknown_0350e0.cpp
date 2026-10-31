@@ -2062,39 +2062,40 @@ void c_octree_radius_view_ab::function_3f970(short index, plane3f const *planes,
         return;
     }
     real child_radius = radius * 0.5f;
-    point3f child;
-    child.x = center->x - child_radius;
-    child.y = center->y - child_radius;
-    child.z = center->z - child_radius;
-    ((c_octree_radius_view_ab const *)tree)->function_3f970( children[0], planes, bounds, &child, child_radius);
-    child.x = center->x - child_radius;
-    child.y = center->y - child_radius;
-    child.z = center->z + child_radius;
-    ((c_octree_radius_view_ab const *)tree)->function_3f970( children[1], planes, bounds, &child, child_radius);
-    child.x = center->x - child_radius;
-    child.y = center->y + child_radius;
-    child.z = center->z - child_radius;
-    ((c_octree_radius_view_ab const *)tree)->function_3f970( children[2], planes, bounds, &child, child_radius);
-    child.x = center->x - child_radius;
-    child.y = center->y + child_radius;
-    child.z = center->z + child_radius;
-    ((c_octree_radius_view_ab const *)tree)->function_3f970( children[3], planes, bounds, &child, child_radius);
-    child.x = center->x + child_radius;
-    child.y = center->y - child_radius;
-    child.z = center->z - child_radius;
-    ((c_octree_radius_view_ab const *)tree)->function_3f970( children[4], planes, bounds, &child, child_radius);
-    child.x = center->x + child_radius;
-    child.y = center->y - child_radius;
-    child.z = center->z + child_radius;
-    ((c_octree_radius_view_ab const *)tree)->function_3f970( children[5], planes, bounds, &child, child_radius);
-    child.x = center->x + child_radius;
-    child.y = center->y + child_radius;
-    child.z = center->z - child_radius;
-    ((c_octree_radius_view_ab const *)tree)->function_3f970( children[6], planes, bounds, &child, child_radius);
-    child.x = center->x + child_radius;
-    child.y = center->y + child_radius;
-    child.z = center->z + child_radius;
-    ((c_octree_radius_view_ab const *)tree)->function_3f970( children[7], planes, bounds, &child, child_radius);
+    // each child center is its own brace-initialized local: assigning one shared point3f member by member
+    // schedules the stores ahead of the argument pushes, retail interleaves them
+    {
+        point3f child = { center->x - child_radius, center->y - child_radius, center->z - child_radius };
+        ((c_octree_radius_view_ab const *)tree)->function_3f970( children[0], planes, bounds, &child, child_radius);
+    }
+    {
+        point3f child = { center->x - child_radius, center->y - child_radius, center->z + child_radius };
+        ((c_octree_radius_view_ab const *)tree)->function_3f970( children[1], planes, bounds, &child, child_radius);
+    }
+    {
+        point3f child = { center->x - child_radius, center->y + child_radius, center->z - child_radius };
+        ((c_octree_radius_view_ab const *)tree)->function_3f970( children[2], planes, bounds, &child, child_radius);
+    }
+    {
+        point3f child = { center->x - child_radius, center->y + child_radius, center->z + child_radius };
+        ((c_octree_radius_view_ab const *)tree)->function_3f970( children[3], planes, bounds, &child, child_radius);
+    }
+    {
+        point3f child = { center->x + child_radius, center->y - child_radius, center->z - child_radius };
+        ((c_octree_radius_view_ab const *)tree)->function_3f970( children[4], planes, bounds, &child, child_radius);
+    }
+    {
+        point3f child = { center->x + child_radius, center->y - child_radius, center->z + child_radius };
+        ((c_octree_radius_view_ab const *)tree)->function_3f970( children[5], planes, bounds, &child, child_radius);
+    }
+    {
+        point3f child = { center->x + child_radius, center->y + child_radius, center->z - child_radius };
+        ((c_octree_radius_view_ab const *)tree)->function_3f970( children[6], planes, bounds, &child, child_radius);
+    }
+    {
+        point3f child = { center->x + child_radius, center->y + child_radius, center->z + child_radius };
+        ((c_octree_radius_view_ab const *)tree)->function_3f970( children[7], planes, bounds, &child, child_radius);
+    }
 }
 
 
