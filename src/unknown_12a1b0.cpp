@@ -1019,6 +1019,13 @@ long __stdcall function_125e60(s_looping_track_sound *sound);
 // chunk index 14 (no change: the scheduler, not source order, places these stores); track index and flag zero
 // before the source copy 35 (the copy stops the zero being folded, so the flag is ORed as in retail, but the
 // stores move above the copy); chained ring links 16; source copy after the ring links 192.
+// Lane 10 round 34: our scheduler keeps stores through `links` and through `playing` in order but reorders stores
+// through one pointer, so the order is set by the pointer mix, not the statement order. Flag OR through playing->loop
+// 13 (mixed access; the OR matches, the schedule does not); playback lookup after the listener query 52; flag zero
+// before the track index 14 (identical); every link field through playing->loop (no links pointer) 30 (state test
+// from the register); link stores split links/playing (track index and flag / permutation copy / ring / controller)
+// LLPP 14 (retail's OR, callbacks store moves), PPPP 18, LLLLPP 14, PPLL 17; chained fade zeros start-first 14,
+// chained NONE resets 14, both 14 (identical code).
 // @retail 0x21b940
 long function_21b940(long looping_sound_index, long definition_index, long pitch_range_index, short track_index, short state, dword *seed)
 {
@@ -1307,6 +1314,9 @@ struct s_looping_detail_request
 // the else arm as `else if (count > 0)` reading the count in the condition 129; a short skip 137; the query called
 // before the random draw 137 (still inlined); a colder call site in 0x21b0e0 (diagnostic, folded pointer tests) 127:
 // the caller's site does not decide the query's inlining here.
+// Lane 10 round 34 (fast): count through a table pointer local 139; camera after the offset call 152; skip loop as a
+// counted for 139; result set before the random draw 197; diagnostic: a real extra test on the count makes the query
+// a call (124 with the extra compare), so the cause is still the call site's static frequency.
 // @retail 0x21cc60
 bool looping_sound_prepare_detail(s_type_a82d9f const *detail, long looping_sound_index, s_looping_detail_request *request)
 {

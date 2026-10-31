@@ -486,10 +486,10 @@ bool sound_driver_voice_create_buffer(
 }
 
 // score 79 (was 79): Frame 0x80, 618-byte length, the prologue (only ESI saved before the count test)
+// Frame 0x80, 618-byte length, the prologue (only ESI saved before the count test)
 // and the failure exit agree. Still differs: the 3D bool sits in a stack byte and the play bool in BL where
 // retail keeps the 3D bool in BL and the play bool in the stack byte; with that, the EAX/ECX roles for the
-// voice offset, the descriptor zero and the input mixbin are swapped, and the failure exit loads the globals
-// into EAX before its pops (retail ECX after them).
+// voice offset, the descriptor zero and the input mixbin are swapped (the failure exit now agrees).
 // Earlier: Frame 0x80 and 618-byte length agree; early register saves and descriptor/count/flag scheduling remain.
 // Earlier: the second buffer's flags are now retail's play ? DSBCAPS_FXIN2 : DSBCAPS_FXIN
 // (0x100010 when play is set; the old body set 0x180010, a behaviour difference, fixed at review in lane 15
@@ -550,6 +550,12 @@ bool sound_driver_voice_create_buffer(
 // creation 176 (606 bytes). Screened: whenever three_d is assigned before play, voice_index takes EBP
 // and both bools spill (205-218); a copy of play in the 3D branch or `(void)&play` change nothing;
 // play/three_d as dword 155/75; tests on `flags & 1`/`flags & 2` 202-203; play stays in BL in every form.
+// Round 35 (lane 10, fast): failure arm with result before the decrement 72 (kept with the next), plus the voice
+// reference declared before the bools 71 (kept); with the 3D flag as dword/long/byte 137/137/72, dword alone 134;
+// the 3D flag defined before the first creation 73, just before its test 182 (602), after the descriptor clear 80;
+// count stored before the clear 72 (71 with the voice reference first); 3D flag declared before play 180 (599).
+// On 71: the 3D flag spelled `(flags & 1) != 0` 71 (same code); the decrement through the `globals` local
+// 146 (619). Play keeps BL in every placement of either definition.
 // @retail 0x220b90
 short sound_driver_voice_new(
 	dword flags,
@@ -561,9 +567,9 @@ short sound_driver_voice_new(
 
 	if (voice_index < 0x40)
 	{
+		s_sound_driver_voice &voice = globals->voices[voice_index];
 		bool play = (flags & 2) != 0;
 		bool three_d = flags & 1;
-		s_sound_driver_voice &voice = globals->voices[voice_index];
 		struct
 		{
 			DSMIXBINS mixbins;
@@ -636,8 +642,8 @@ short sound_driver_voice_new(
 			}
 			else
 			{
-				SOUND_DRIVER_GLOBALS->voice_count--;
 				result = NONE;
+				SOUND_DRIVER_GLOBALS->voice_count--;
 			}
 		}
 		else
