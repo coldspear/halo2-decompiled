@@ -166,6 +166,11 @@ void c_animation_channel::clear()
 // a dword flags parameter 42; with an early `return false` guard 42; that with unknown0e stored before
 // graph 42. In every retail-order form ours stores the id before graph (the id load takes ECX), so ESI
 // holds only graph and becomes its argument register; retail reuses ESI for the id after the graph store.
+// Round 32 (lane 11, fast with the six matched callers; retail's callers load ECX first, then EDX,
+// then EAX, but the matched callers already do so with this declaration, so no reorder was tried):
+// `long const` graph parameter 36 (same code); single-exit result 49 (127 bytes, callers lose); the
+// id copied right after the NONE pair 41; unknown0e stored before graph 43; rate stored before the
+// frame 42. Diagnostic only: size-preference pragma 56 (120 bytes).
 // @retail 0x1c6470
 bool c_animation_channel::set(long graph_tag_index, word flags, c_type_709360 animation_id, long unknown08,
 	char unknown0c, char unknown0d, char unknown0e)

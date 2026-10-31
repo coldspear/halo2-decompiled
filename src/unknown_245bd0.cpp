@@ -301,6 +301,9 @@ PRIVATE inline void shape_copy_header(s_shape_header const *source, s_shape_head
 // y 61, storing y and copying it to x 57; that with the reciprocal in the call 57. Ours keeps n.k in the
 // scale's register (the k product goes in place on the scale), so both arms start with 1.0 in XMM0 and
 // it is hoisted above the fsqrt; retail keeps n.k in the z difference's register.
+// Round 32 (lane 11, fast with 0x19cb90/0x2461a0): the matching form's two keepable halves together (the
+// dot's inputs swapped and the unit-z zeros stored separately) 61; with the sum grouped j + (i + k) 61, flat
+// i, k, j 61, as i, k, j statements 61; flat i, k, j with the existing vector3f_scale 61.
 // @retail 0x245ef0
 bool function_245ef0(s_shapes const *shapes, point3f const *point, s_shape_result *result)
 {

@@ -127,6 +127,11 @@ bool g_47f05b;
 // intermediate base 31 (its vtable store moves up beside the abstract stores; 0x146b80 3). g_479888 at
 // both placements re-measured 38: retail's reload and layout, the 1 as three immediates, no base store.
 // An explicit `block ? new (block) ... : NULL` after the global stores 34 (same code).
+// Round 32 (lane 11, fast with 0x146b80/0x146e30/0x22c3e0/0x146ac0; retail's 0x453760 is the abstract class's
+// own vtable, eight pure slots, and 0x146b80 builds the same class at 0x105410 with the store dropped): the
+// fixed class flattened onto the abstract one 31 (0x146b80 3); `::new` 34; the refcount header as a member
+// in place of a base 34; the abstract constructor storing NONE before its zero loop 31 (0x146b80 4); the
+// masked size in a named local 34. The store is dropped in all (141 bytes).
 // @retail 0x146a20
 void function_146a20(void)
 {
