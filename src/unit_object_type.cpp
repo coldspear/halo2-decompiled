@@ -2562,6 +2562,8 @@ void function_cce00(long unit_index, short starting_profile_index, bool reset, b
 // Round 178: bits 26/27 as unit_action_active calls (as matched 0xcc170 now has them) 111: LTCG inlines just those
 // two and calls the rest, retail's own split, and the two tests re-read +0x346 as retail does, but the hand loop's
 // unit lookup still merges with the entry one (retail re-looks it up after the calls), 297 bytes.
+// Round 179: the 26/27 calls with the unit local declared only after the tests (entry test through UNIT_GET) 111
+// (same code: the post-call lookup still merges).
 // Round 130: the two hand-written bit tests are 0xe6fe0's body: unit_action_active(unit_index, 26/27)
 // gives retail's per-test reloads (our LTCG inlines exactly those two calls, as retail; the later ones
 // are cold) and 0xcbd50 per hand with a UNIT_GET argument gives the slot cursor and counter: 79
@@ -6700,7 +6702,7 @@ bool __stdcall function_cd7b0(long unit_index, long weapon_index, bool *modes)
    and grenade choices, zoom (with the weapon's or the globals' zoom
    sounds), and passes each hand's trigger state to its weapon; whether
    anything changed */
-// score 350 (was 367): the control tests 0x8000000/0x4000 are plain mask tests (retail `test eax, imm`), flag 2 of
+// score 254 (was 310): the control tests 0x8000000/0x4000 are plain mask tests (retail `test eax, imm`), flag 2 of
 // +0x10a goes through s_unit_flags_10a_view (load, shift, test), the zoom is a short compared against
 // the stored field (cmp bx; the field is then read, not the local, for the NONE tests), the zoom sound is read
 // before the level count, and the second loop's weapon index is NONE then an `if`. Still differs: frame 0x24 versus 0x28 (retail keeps the second loop's `first`
@@ -6711,6 +6713,14 @@ bool __stdcall function_cd7b0(long unit_index, long weapon_index, bool *modes)
 // volatile goes only on parameters and locals here.
 // Tried: the flags passed as *(long *)&flags 252; with the volatile reads: bit mask computed before the pointer
 // 249, the pointer read volatile 254.
+// Round 179: the four action-bit tests as unit_action_active calls (retail inlines 0xe6fe0 there, reloading +0x346
+// per test) 310 -> 254, kept; the second loop's weapon through the existing 0xcbd50 254 (same code), kept. Still
+// differs: frame 0x24 versus 0x28 (retail writes the flags word once from CX into a stack slot and pushes it as a
+// dword, builds it with 16-bit ops, spills `first` and uses EBX/EDX where ours uses EDX/EDI); 0x113da0/0x113df0
+// results tested as AL in retail (ours EAX); 0xd1540 takes the unit on the stack in retail. Tried: 0x100430's
+// `value` as word (definition and declaration) 257; the zoom block's weapon as NONE then if, with the scales from
+// the stored byte field 293; only the scales from the byte field `(real)unit->unknown240` 253; the zoom block's
+// weapon through 0xcbd50 293 (retail re-reads the header data pointer there, ours keeps it).
 // @retail 0xc58f0
 bool __stdcall function_c58f0(long unit_index)
 {
@@ -6877,37 +6887,17 @@ bool __stdcall function_c58f0(long unit_index)
 			{
 				continue;
 			}
-			s_unit *holder = UNIT_GET(unit_index);
-			short index = (&holder->current_weapon_index)[hand];
-			long weapon_index = NONE;
-
-			if (index != NONE)
-			{
-				weapon_index = holder->weapon_object_indices[index];
-			}
+			long weapon_index = function_cbd50(unit_index, (&UNIT_GET(unit_index)->current_weapon_index)[hand]);
 			bool held = function_110ab0(unit_index);
 
 			if (unit->unknown1ec > 0)
 			{
 				held = false;
 			}
-			/* retail looks the unit up again after 0x110ab0 for these three tests */
-			s_unit *bit_holder = UNIT_GET(unit_index);
-			if (TEST_FIELD_BIT((*(dword const *)((byte *)bit_holder + bit_holder->unknown346 + 4) >> 22) & 1) ||
-				TEST_FIELD_BIT((*(dword const *)((byte *)bit_holder + bit_holder->unknown346 + 4) >> 26) & 1) ||
-				TEST_FIELD_BIT((*(dword const *)((byte *)bit_holder + bit_holder->unknown346 + 4) >> 27) & 1))
+			if (unit_action_active(unit_index, 0x16) || unit_action_active(unit_index, 0x1a) ||
+				unit_action_active(unit_index, 0x1b) || unit_action_active(unit_index, first ? 8 : 0x12))
 			{
 				held = true;
-			}
-			else
-			{
-				dword const *bits = (dword const *)((byte *)bit_holder + bit_holder->unknown346 + 4);
-				long bit = first ? 8 : 0x12;
-
-				if (bits[bit >> 5] & (1 << (bit & 0x1f)))
-				{
-					held = true;
-				}
 			}
 			dword control = unit->unknown148;
 			word flags;
