@@ -1385,6 +1385,25 @@ void function_b75a0(long object_index, point3f const *point, vector3f const *for
 // line); `byte *ragdoll` as 0xe4c10 writes it 201/193/220/128; bit-2 tests through a fresh lookup
 // 254/284; spin products all angle-first or all axis-first 122/122. Still differ: the seed load and the
 // magnitude's x87 interleave, spin product operands, +0x3ec clears through a pointer, mode byte/long loads.
+// Logic walk against retail (block by block, 0xde620-0xde9c9): no behaviour difference found. Checked: the
+// 0xbc bit-20 early return, strong = |impulse|^2 > 1.96 (0x45e5a8), the 0.5 scale (0x45dbbc) only when
+// flags_10a bit 2 is clear, flags_348 |= 2, the cross product up x velocity (0xde763-0xde7a5, signs and
+// operands), the 1/65535 and pi/2 constants (0x45dc50, 0x4123ec) and their multiply order, spin = axis * angle,
+// spinning = strong || !bit2 (0xde84f-0xde865), the strong block (0xe57e0, then for mode 3 the two byte clears
+// at +0x3f8/+0x3f9, 0x1ed340, 0xe18d0 with true), linear = mode != 3 || strong (0xde9c7 sets bl), the
+// 0xb7880 argument order and its NULL masks (0xde8cd-0xde8e9), the away test order (parent, +0x13c, modes 4/5,
+// +0x34b, strong || mode != 3, |impulse|^2 > 1.96) and 0xb75a0 (eax = 0, ecx = away, edx = up, location and
+// flag 0) with its > 0.0 normalize test (0x45dbd8 is 0). All callers/callees still match (0xd9640 the only
+// caller). Tried (2026-10-31): the away vector as a whole copy of the impulse then k = 0 (retail copies all three
+// dwords at 0xde97c-0xde997 and overwrites the third with xorps) and the +0x3ec block goes through a local pointer
+// (retail clears [ecx+0xd], [ecx+0xc] at 0xde885): both make the region identical to retail's, but the
+// score reads 132 (not kept) because the metric is positional and the spin-product pair below shifts the
+// rest by one line (the align edit blocks fall from 12 to 7). The remaining blocks are: the x87 square order
+// (retail j, k, i; every source order of the three terms, a separate squared local, and the order i/j/k
+// compile to k, j, i), the spin j/k products (retail loads axis.j/axis.k then mulss by the angle register;
+// angle*axis, axis*angle, all-axis-first, vector3f_scale all compile to movaps+mulss mem), and the mode load
+// at 0xde90e (mov cl; movzx eax, cl; cmp eax, 4/5; cmp cl, 3: long local 128, byte local 132, nested under the
+// parent/+0x13c tests 132, nested long 129, switch on the byte 138 because it becomes a range compare).
 // @retail 0xde620
 void __stdcall function_de620(long arg_159e6d, vector3f const *impulse)
 {
@@ -4927,6 +4946,20 @@ void __stdcall function_e5d50(long arg_159e6d, long target_index, vector3f *offs
    (NONE for none): the one inside the grab window (function_e63b0), and when
    both are, the one with the smaller yaw when both are close, else the
    nearer; NONE when neither is */
+// score 112 (was 112): walked against retail block by block, no behaviour difference: the weapon slot byte at
+// +0x212 and the +0x218 table (0xe5be1-0xe5bfd), the flag inlined from function_cbd50 and function_1012c0
+// (definition byte +0x12f, bit 0; 0xe5c04-0xe5c34), previous == NONE at 0xe5c37, both function_e5d50 calls (object
+// first, then previous, offset = unit + 0x168, out pushed first; 0xe5c4d, 0xe5c83, 0xe5c95), function_e63b0 on
+// candidate then current (0xe5ca0, 0xe5cad), the 0.6 constant at 0x44ae8c, the gap test (+8, 0xe5cc6-0xe5cda), the
+// yaw magnitudes (+0, 0xe5cdc-0xe5d0a; the candidate wins only when |candidate yaw| < |current yaw|, a tie
+// keeps previous via 0xe5d36) and the three returns (candidate: 0xe5cbc, 0xe5d0f, 0xe5d23; previous: 0xe5d36; NONE:
+// 0xe5d3a) all agree; the caller 0x1515e0 (0x15165a-0x15166c) passes (unit, object, previous) and stores the
+// result. Remaining difference is allocation: retail keeps object_index in EBP and the result in the argument's
+// home slot ([esp+0x28], stored as imm -1 at 0xe5bf0), reloads [esi+0x44] for the weapon lookup (0xe5c0b) and tests
+// the first function_e63b0 result from its spill (0xe5cb2); ours holds -1 in EBP as the result, caches the data
+// pointer in ESI and calls function_e63b0 on current first. Tried: result as a reassigned parameter with the flag
+// before the unit lookup (391 bytes, 120), flat && conditions (127/132), inverted nesting (136/140), calls inside
+// the conditions (114, wrong: the second call becomes conditional).
 // @retail 0xe5bc0
 long __stdcall function_e5bc0(long unit_index, long object_index, long previous_index)
 {
