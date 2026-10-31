@@ -519,6 +519,10 @@ bool function_270400(long actor_index, long mode, long set, point3f const *posit
 // Round 46: one vertices base for the case 1/6 corners 280; writable start-out parameter 279;
 // reversed entry declarations 278; case 5 fallback first 278; shared function-scope position 278.
 // Diagnostics: no actor in case 2 326, extra actor tests 360, actor declared first 278 (no entry load).
+// Round 6 (lane 17): the actor test as a function-scope bool used in case 5 364 (1292 bytes; aligned
+// 200 -> 139: retail's `push ebx; mov ebx, eax` entry and the actor loaded at entry, but compared there
+// with setne where retail keeps the value in EAX and compares in case 5); that bool at the top of case 5
+// 278; a short type local for the switch 280; `(long)` switch operand 278; const surface pointer 278.
 // @retail 0x26f3f0
 bool function_26f3f0(s_pathfinding_data *pathfinding, long surface_index,
     s_type_c3b527 const *entry, long actor_index, s_type_f17a25 *state,
