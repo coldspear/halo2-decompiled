@@ -505,6 +505,15 @@ point3f *function_b9dd0(long object_index, point3f *result);
 // `&= field != 0` 47 (same code); flag computed without the one-use tag local 47; `&&` flag with a
 // return at the proximity exit only 226 (872 bytes; compile-only screen: the special path still falls
 // into the unknown268 block); bitwise flag held in a long 172.
+// Round 109 (lane 5, fast): the entry tests as one `goto done` 47 (same code). Cause found: NONE
+// loses EBX whenever the special def needs a third byte register (EDX keeps the vehicle index for
+// 0x1b8d40), so the `!= 0` bitwise def takes BL; `(type == 6) & actor->unknown268` (two byte
+// registers) gives NONE in EBX and retail's entry. An explicit `special = false` at the scan's start
+// gives retail's split (0 stored to the argument slot, reloaded at the scan's exit, a scratch
+// register in the tail): bitwise def 68 (flag AL, NONE EBP); raw-bool def 193 (aligned 18: only the
+// setcc def against retail's branchy `mov cl, 1; jmp`, and the tail flag in AL, not CL), operands
+// swapped 193 (same); `&&` def 200 (flag memory-only, tail after the special path); the F11 def 97
+// (memory-only). Every all-constant (branchy) def keeps the flag in memory.
 // @retail 0x1bbf40
 short __stdcall function_1bbf40(long actor_index, s_slot *slot)
 {

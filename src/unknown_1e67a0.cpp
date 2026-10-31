@@ -824,6 +824,9 @@ PRIVATE inline real initial_dot(const vector3f *a, const vector3f *b)
 // Round 430: staged rotation cross/paired side crosses/both 184/153/184; those with common
 // completion 184/153/184; both with early side-output storage, with/without common completion 184/184.
 // Two-point side-product gains rejected; original helpers, storage, ordered guard and body restored.
+// Round 207: completed sample copied to velocity then scaled in place, original/rate-angle/
+// per-use scale/both 208/265/211/262; the same four through the shared float scale
+// 220/207/220/207. Original sample, field stores, angle storage and includes restored.
 // @retail 0x1e5bb0
 void function_1e5bb0(s_biped_physics_output *output, void *physics, void *animation_state, real speed_scale,
  long component_index, long object_index, void const *definition, long value, bool b, bool turning,

@@ -50,7 +50,8 @@ extern short const g_44aee8[20] =
 	3, 7, 3, 3, 3, 3, 1, 2, 2, 4, 4, 4, 5, 5, -1, 3, 7, 7, 7, 4
 };
 
-// score 90 (was 90): the five handles are now filled by memset (retail's NONE in EDX, LEA ECX
+// score 72 (was 90): First +0x30 uses the second-bit word mask; native bit merge, NONE/array carriers and later registers differ.
+// Earlier at 90: the five handles are now filled by memset (retail's NONE in EDX, LEA ECX
 // base and five stores); aligned on retail the body differs in 6 instructions (49 before),
 // but the second flag bit's load is hoisted above the branch and its store merged after it
 // (retail ORs/ANDs the byte in memory in each arm), which shifts the positional listing by one,
@@ -70,17 +71,24 @@ extern short const g_44aee8[20] =
 // Round 200: shared byte/word second-bit setters 92/92; word first bit with original/byte/word
 // second bit 103/107/103; byte first bit with original/byte/word second bit 106/106/106.
 // Shared setters do not recover the word mask or per-arm memory stores; original body restored.
+// Round 207: native word/dword complete commits, original/reversed bit order, 102/103/104/103;
+// reversed direct bit stores 95; reversed native Boolean fields 72 plain, kept;
+// adjacent-bit word extraction 105; first-bit conditional arms 90. The original word clear
+// remains before both native bit writes; subsequent initialization and all game calls are unchanged.
+// On native reversed fields: shared source word 75; shifted first bit 72; both 75;
+// byte second bit 102, with shared source/shifted first/both 101/102/101;
+// directly assigned extracted bits 95. Native fields at 72 retained.
 // @retail 0x200c20
 void function_200c20(byte const *definition)
 {
 	long index = record_pool_allocate(g_51e9d8);
 	s_squad_datum *squad = squad_get(index);
 	*(word *)((byte *)squad + 2) = 0;
-	*(word *)((byte *)squad + 2) |= (word)((*(dword const *)(definition + 0x20) >> 8) & 1);
 	if (*(dword const *)(definition + 0x20) & 0x200)
-		*((byte *)squad + 2) |= 2;
+		squad->flag1 = true;
 	else
-		*((byte *)squad + 2) &= ~2;
+		squad->flag1 = false;
+	squad->flag0 = (*(dword const *)(definition + 0x20) & 0x100) != 0;
 	squad->first_actor_index = NONE;
 	squad->first_vehicle_index = NONE;
 	*(long *)((byte *)squad + 0x78) = NONE;
@@ -1829,7 +1837,7 @@ PRIVATE __forceinline void squad_area_consider(byte *squad, byte const *definiti
     }
 }
 
-// score 224 (was 257): Frame 0x3c agrees; count/definition/best/point homes, entry loads and packed reference tests remain.
+// score 224 (was 224): Frame 0x3c agrees; count/definition/best/point homes, entry loads and packed reference tests remain.
 // Packed comparisons 393; shared actor walk 344; split point scopes 344; early target 365;
 // native reference indices 350; entry fields at use 344; inline distance call 678.
 // Native player iterator 305; native entry cursor 316; word validation 305; matching-area
@@ -1889,6 +1897,9 @@ PRIVATE __forceinline void squad_area_consider(byte *squad, byte const *definiti
 // Round 436: lookup palette long 224 plain (kept); lookup area/both long 261/253;
 // consideration palette/area/both long 259/304/305; both palette inputs/all indices long 258/276.
 // The four-point lookup-both gain is below threshold; all other formal widths restored.
+// Round 207: promoted repeated entry indices 253; fallback palette 253; both 273;
+// retained absolute squad ordinal 347, with entry/fallback/both indices 335/329/305;
+// ordinal with complete reach expression 347. Original carriers and helper body restored.
 // @retail 0x204450
 void function_204450(long definition_index, long squad_index)
 {
@@ -2738,6 +2749,9 @@ bool function_1fb8a0(long arg_0, short arg_1);
 // Round 436: native trigger table, raw/native entries and mutable/read-only cached receivers
 // 50/50/50/50; the same complete tables observed at every use 91/91/91/91.
 // All table/entry declarations and executable forms restored; the index reload remains.
+// Round 207: incoming-index, trigger-table/count and combined role names 50/50/50;
+// two-use trigger predicate counted as bool/byte/long/word 131/131/135/135,
+// Boolean count with the role names 131. Original trigger count and body restored.
 // @retail 0x202be0
 void function_202be0(long arg_0, long arg_1)
 {

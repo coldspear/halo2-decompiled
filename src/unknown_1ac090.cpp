@@ -819,6 +819,10 @@ bool function_1f8660(long arg_0);
 // untyped buffer pointer 7.
 // Round 41: entry flag test through a fresh actor lookup 33; buffer cleared after its release 7;
 // request outputs declared before the buffer 7; request before the count 7; reference output first 7.
+// Round 53: copied later actor view 7; actor copy with slot data view 7; actor copy, slot data view
+// and flattened request scope 34; slot data view alone 7; state scoped to the outer test 7;
+// flattened request scope alone 34; actor declaration split from its lookup 52; buffer declaration
+// split from acquisition 7. Actor/buffer homes remain exchanged; the opening body is restored.
 // @retail 0x1ad6a0
 bool __stdcall function_1ad6a0(long arg_0, s_slot *arg_1)
 {

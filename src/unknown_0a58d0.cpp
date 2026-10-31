@@ -318,6 +318,18 @@ bool function_a9820(long *block, long index)
 	return result;
 }
 
+// score 11 (was 11): this round: the database as a byte pointer with the active byte read from the
+// array 14; the record address as an integer 11; a named world pointer 21; the database read
+// before the state test 11; the database as a long address 14; the database local with the record
+// read from a second global read 14; the state in a named local 11 (same code). Still the database
+// pointer in ECX where retail keeps it in EDX.
+// This round, again: the active byte read from the array element with the record taken inside the
+// branch 14 (123 bytes, the address is materialised before the byte); the record pointer, the type
+// and the definitions each split from their initialiser 11 (the permuter's two candidates); the
+// world local used for the database only 11 (same code); the state local with a world local 11
+// (same code); the identifier read before the state test 22; the world local used for both reads 18
+// (the database is then updated in place, but in ECX with the world). A permuter run produced no
+// variant below 11. Still the database pointer in ECX where retail keeps it in EDX.
 // score 11 (was 11): the database pointer takes ECX where retail keeps it in EDX, and ours takes the
 // record address before the active test and reads the byte through it (`lea eax, [eax + ecx + 0x20ac]`,
 // `mov cl, byte ptr [eax + 6]`), while retail reads the byte from the array and takes the address after.

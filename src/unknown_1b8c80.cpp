@@ -1320,14 +1320,15 @@ struct s_1ba091
     s_slot_entry_iterator field_4;
 };
 
-// score 198 (was 198): the frame 0x14 still agrees; the object-header data is still
-// acquired after the actor is scaled where retail takes it before, and the
-// eligibility mask, the entry and the result keep their homes; unchanged this round
-// score 198 (was 198): the frame 0x14 still agrees, but the object-header data is still
-// acquired after the actor is scaled where retail takes it before, and the eligibility
-// mask, the entry and the result keep their homes; this round's trials in this file
-// found no lower form of that order
-// score 198 (was 198): frame 0x14 agrees; early object-header acquisition, incoming actor, mask/entry/result carriers and reusable homes remain.
+// score 198 (was 198): the frame 0x14 agrees; retail takes the object-header data before scaling
+// the actor (actor index in EDX, ours ECX), keeps the loop entry in EBX (spilled at F+4), spills the
+// 0x20 mask byte to F+3 and re-reads the flags for the 0x40 test; ours keeps the entry in memory
+// (iterator struct member) and the flags or the mask in BL. Earlier headers, merged: the frame 0x14
+// still agrees; the object-header data is still acquired after the actor is scaled where retail
+// takes it before, and the eligibility mask, the entry and the result keep their homes; unchanged
+// that round (198); this round's trials in this file found no lower form of that order (198);
+// frame 0x14 agrees; early object-header acquisition, incoming actor, mask/entry/result carriers
+// and reusable homes remain (198).
 // Earlier: frame 0x14 agrees; incoming actor ECX/EDX, early object-header
 // acquisition, selection-mask storage and iterator/result homes differ.
 // Earlier slot-data form 198; raw-mask and independent iterator variants 202/207;
@@ -1369,6 +1370,20 @@ struct s_1ba091
 // normalized/raw selection mask 235/235/235/235/234/234/234/234. The indexed
 // payload form was first on each graph; controls survive. All are exact-match-
 // only call-result/assigned-flag forms; original body and layouts restored.
+// Round 22 (lane 13; scores positional, "al" = a difflib-aligned count, baseline al 91): the radii
+// read/stored through the selection (struct grown to +0x14), a plain entry local and the 0x20 test
+// at both uses 237 (861 bytes, al 82, retail's F+3/F+4/F+8 homes); plus the 0x40 test through the
+// slot view 225 (frame 0x10, mask in BL); bit 6 as a bitfield 237; for-loop iterator 237; the
+// fallback lookup in its own local then assigned (0x1bead0's form) 239 (al 75, retail's double NONE
+// test); a bool specified in the found block 246; a byte flags local there 237 (al 73); the 0x29
+// set as bitfield stores 239; the default object index stored through the slot view 239 (al 72:
+// flags re-read after it and hoisted above the slot-flag branch, as retail); positive admission 237
+// (861, al 64: retail's decline-after-0x40 layout); one 0x1fb7e0 call per seat type 240 (al 58: no
+// sbb select, retail's tail-merged call); the 0x29 set after the radii 240 (al 56); a byte mask
+// local 230 (al 77: 0x40 test from memory as retail, but the mask then takes BL); that local before
+// the element 242, an assigned-if `same` 245, the negative decline test 230; element or iterator
+// declared earlier 240/240; the original loop with the new tail 244. The al-56 form (all of the
+// above but the byte local) leaves the loop's entry in memory and the prologue order.
 // @retail 0x1ba090
 long __stdcall function_1ba090(long actor_index, s_slot *slot)
 {
