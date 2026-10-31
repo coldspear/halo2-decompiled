@@ -4729,6 +4729,13 @@ bool function_e63b0(vector3f const *aim, bool flag)
 /* measures a target from the biped's grab eye, against a reference
    direction: the yaw and pitch (radians) of the direction to the target, and
    the gap between the two bodies, not less than 0 */
+// score 406 (was 449): The logic matches retail (walked block by block, constants read from the XBE, no behaviour
+// difference found). The reference frame is a matrix3x3 (forward, left, up): retail's frame is 0xc8, the 36 bytes
+// being that 36-byte object at +0x58 (a 12-byte local per axis overlaps the eye's locals and gives 0xa4). Still
+// differs: the other locals' slot order (retail head +0x10, to_head +0x1c, eye +0x28; ours packs the 4-byte
+// definition and distance slot in front) and the operand order of the first ray's start (retail loads back.i, then
+// multiplies by t). Tried, no change: locals at function scope (449), the cross product as an inline helper (452),
+// permuted declaration order (406), t * back.i (406); biped_grab_eye as the helper stays out of line (1214).
 // @retail 0xe5d50
 void __stdcall function_e5d50(long arg_159e6d, long target_index, vector3f *offset, point3f *point)
 {
@@ -4856,23 +4863,21 @@ void __stdcall function_e5d50(long arg_159e6d, long target_index, vector3f *offs
 	}
 	else
 	{
-		vector3f forward;
-		vector3f up;
-		vector3f left;
+		matrix3x3 frame;
 		real forward_amount;
 		real up_amount;
 		real left_amount;
 
 		point->z = distance - (target_radius + radius);
 		point->z = point->z < 0.0f ? 0.0f : point->z;
-		forward = *offset;
-		function_11d090(&forward, &up);
-		left.i = up.j * forward.k - up.k * forward.j;
-		left.j = up.k * forward.i - up.i * forward.k;
-		left.k = up.i * forward.j - up.j * forward.i;
-		forward_amount = direction.k * forward.k + direction.j * forward.j + direction.i * forward.i;
-		up_amount = direction.k * up.k + direction.j * up.j + direction.i * up.i;
-		left_amount = direction.k * left.k + direction.j * left.j + direction.i * left.i;
+		frame.forward = *offset;
+		function_11d090(&frame.forward, &frame.up);
+		frame.left.i = frame.up.j * frame.forward.k - frame.up.k * frame.forward.j;
+		frame.left.j = frame.up.k * frame.forward.i - frame.up.i * frame.forward.k;
+		frame.left.k = frame.up.i * frame.forward.j - frame.up.j * frame.forward.i;
+		forward_amount = direction.k * frame.forward.k + direction.j * frame.forward.j + direction.i * frame.forward.i;
+		up_amount = direction.k * frame.up.k + direction.j * frame.up.j + direction.i * frame.up.i;
+		left_amount = direction.k * frame.left.k + direction.j * frame.left.j + direction.i * frame.left.i;
 		point->x = (real)atan2(left_amount, forward_amount);
 		point->y = (real)atan2(up_amount, sqrt(left_amount * left_amount + forward_amount * forward_amount));
 	}
