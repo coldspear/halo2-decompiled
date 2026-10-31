@@ -1156,6 +1156,8 @@ PRIVATE inline void cache_header_initialize_strings(s_cache_header *header)
 }
 // score 104 (was 104): retail hands the file handle to the read call by value, which the declaration
 // in include/async.h and the callers outside this file cannot give; frame 0x1144 and the extent agree.
+// frame 0x1144 and extent agree; file displacement, request-copy
+// scheduling, the first read handle copy and write-success join still differ.
 // Earlier: frame 0x1144 and extent agree; file displacement, request-copy, the first read
 // call's handle copy and the write-success join remain.
 // frame 0x1144 and extent agree; file displacement (retail's product in ECX
@@ -1273,6 +1275,9 @@ PRIVATE inline void cache_header_initialize_strings(s_cache_header *header)
 // initializer returning the header in both calls 7; named write_flags after bytes 7; bytes declared
 // outside the write block 7; checksum operands swapped 7. A permuter run on the 38 form: 60 tries,
 // none below 38. Diagnostic: one dead load before the 0x213800 call gives the checksum register.
+// Round 449: native initialized validity slots byte/signed-byte/word/long
+// 270/270/263/271; with ordinary completion while 307/307/295/308.
+// Original Boolean slots, byte fill, completion helper and complete body restored.
 // @retail 0x213970
 void function_213970(void)
 {

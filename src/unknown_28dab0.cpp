@@ -182,6 +182,11 @@ void __stdcall swarm_delete(long arg_0);
 // the first call); the success block returning on its own 95 (`--fast`, callee caveat); retail's store
 // order with the if-form limit and the delete path returning NONE 92 (plain, first +0xb); the
 // result as an unsigned dword 44 (plain, same code).
+// Round 177: the tag field compared against the result with the result/tag names in either sort order
+// 44/44 (same code), on the s2 shape 92/92 (same code: names never break this tie); the tests as a
+// `do { ... break; ... } while (false)` chain 149 (328 bytes), on s2 132; the tag pointer `const` 44 (same
+// code); the tag field read at the loop call instead of a local 106 (the tag then takes EBX and the NONE
+// value stays in EDI, copied to ESI for the result: NONE prefers EDI even with ESI free).
 // @retail 0x28dab0
 long __stdcall function_28dab0(long arg_0, s_28dab2 const *arg_1)
 {

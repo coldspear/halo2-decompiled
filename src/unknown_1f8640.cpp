@@ -367,10 +367,6 @@ struct s_1f8a70_actor
 	byte unknown00[0x4ac];
 	s_1f8a70_frame frame;
 };
-// Round 27: the route switch's real default and the failure block's own false reach retail's frame
-// 0x80 but score 415; dropping the result initializer matches retail's prologue order and its frame
-// yet loses retail's `xor bl,bl` before the 0x1f86a0 call (416); retail's mode 3 also sets route_mode
-// = 1 and our case 3 does not (423 alone, 405 with the actor pointer hoisted); the original is kept.
 // score 228 (was 228): frame 0x84 versus retail 0x80; pool/data entry schedule and unit-output/route/result homes differ.
 // Round 46 leads (aligned diff 59 at 228): retail's failure block stores result = false itself and the
 // route switch has a real default storing false (`default: result = false; break;` and `failed:
@@ -427,6 +423,19 @@ struct s_1f8a70_actor
 // Round 208: Scratch path receiver reuse with unit-output/source-settings/default-lifetime masks
 // 0..7: 228/232/228/232/258/262/258/262. Original receiver, scopes and defaults restored; frame 0x84
 // and result/output homes remain.
+// Round 27: the route switch's real default and the failure block's own false reach retail's frame
+// 0x80 but score 415; dropping the result initializer matches retail's prologue order and its frame
+// yet loses retail's `xor bl,bl` before the 0x1f86a0 call (416); retail's mode 3 also sets route_mode
+// = 1 and our case 3 does not (423 alone, 405 with the actor pointer hoisted); the original is kept.
+// Round 109 (lane 6, fast; the reduced image scores the original 228 too): case 3 fixed to retail's
+// order (point, node NONE, radius 0, route_mode = 1) 423 (1616 bytes; route_mode then takes EDI and
+// NONE EBX); that with `default: result = false; break;` and `failed: result = false;` reached by the
+// `!result` exit as well 270 (1636 bytes; frame 0x80 and the prologue are retail's, the first
+// difference is the missing `xor bl, bl` before 0x1f86a0, which shifts every later row), with the
+// `!result` exit jumping past that store 398; on the 270 form: short route_mode 431, the returned
+// unit-mode test 333, both 432, `result = false;` inside the first exit with no initializer 270 (same
+// code), `return false;` there 270; the fix with the real default only 380; t2 with the returned test
+// 436. Retail's first exit keeps the constant in BL; every form here folds it to `xor al, al`.
 // @retail 0x1f8a70
 bool __stdcall function_1f8a70(long actor_index, long unknown)
 {

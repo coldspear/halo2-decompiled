@@ -687,6 +687,12 @@ struct s_1f9762
 // Round 444: caller ordinary-inline difference/normalizer/query boundaries, seven
 // subsets 67 each; all with direction-valid-first guard 191. All declarations and
 // the complete body restored; native approach placement remains.
+// Round 14 (lane 2; fast, aligned in brackets, 30 at the start): only the first dot direction first
+// 67 [28] (retail's i product is direction first in the first dot, point first in the second; ours
+// the reverse); only the second 67 [30]; `last` as `field_2d <= field_2e + 1` 69; the previous-point
+// ternary with its arms reversed 92, with the first dot swapped 92; diagnostics, one-caller helpers
+// (not keepable): the previous point as a forceinline accessor 67 [28], the approach computation
+// as a forceinline helper returning whether it has length 67 [36].
 // @retail 0x1f9760
 bool function_1f9760(long actor_index, long object_index, point3f const *point, real distance,
 	bool *last_out, bool *direction_valid_out, vector3f *direction_out)
@@ -864,6 +870,12 @@ real normalize2d(point2f *v);
 // return, folded false exit). Request result returned from its arm 182 (919 B); early false return after
 // the retry 135; retry admission and call joined by && 135; unit index local 135; validity block
 // flattened into an early false return 232. All restored.
+// Lane 16 r46: `return valid;` folds to `xor al, al` (VC propagates the branch value), so retail's
+// `mov al, bl` returns a value it cannot prove zero. `bool result = valid;` with one exit 236 (877 B,
+// result takes BL); `result = false; if (query) result = true;` 182; the facing fallback written into
+// `direction` 135 (same code); both speed lookups as calls to the existing 0x26f290 (same body) 316
+// (/Ob1 file, stays out of line even with a __forceinline redeclaration; a local inline copy 135, same
+// code); the result renamed reachable/arrived/success 135 each.
 // Round 208: Retry-outcome-owned chosen-speed defaults with early result declaration, valid-scope
 // retry outputs and horizontal-first pair declarations, masks 0..7: 212 each at 914/935 bytes.
 // Original chosen-speed initialization and complete body restored; retained DL result and

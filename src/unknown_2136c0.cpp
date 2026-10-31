@@ -97,6 +97,11 @@ void function_213970(void);
 // src/unknown_213d20.cpp, with an extern in src/unknown_214c30.cpp; block B: g_55bd04/g_55bd08 in
 // src/unknown_12be90.cpp). Scalar zero stores before the clears 131, without the size pragma 158;
 // enabled flag before the NONE stores 131; NONE stores before the zero stores 131, without the pragma 161.
+// Round 210: Actual preference-difference decisions reused for refresh and dirty publication:
+// Boolean language/version/both 193/193/226; native language/version/both 185/185/221; byte/short
+// pair 226/225. All regress with every match preserved. Original conditional publications,
+// comparisons, calls, resets and whole body restored. Two complete storage blocks still require
+// coordinated changes to protected definitions outside this queue.
 // @retail 0x2136c0
 void function_2136c0(void)
 {

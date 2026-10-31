@@ -34,6 +34,9 @@ static inline bool slot_flag_clear_2403b0(s_slot_table *table, long team)
 	return !(table->flags[team] & 1);
 }
 
+// score 95 (was 95): the object-pool data pointer is spilled across 0xcbd50/0x101280 where
+// retail reloads it, and the completion bits are set through AL where retail uses DL and CL;
+// the frame 0x3c agrees.
 // score 95 (was 95): frame 0x3c agrees; pool-data spill and scratch-register ties remain.
 // Earlier: frame 0x3c agrees; the object-pool data pointer is cached where retail reloads
 // frame 0x3c agrees; the object-pool data pointer is spilled across 0xcbd50/0x101280

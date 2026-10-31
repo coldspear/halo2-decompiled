@@ -499,6 +499,12 @@ done:
 // speed-preference diagnostic inlines the definition getter and the copy (118 at 224 bytes), so a
 // speed setting alone does not give retail's immediates. Matched siblings parse_variant and
 // parse_mapname cache their buffer constant in ESI; here retail's ESI holds the tag.
+// Round 109 (lane 6, fast): one shared copy after the `if (globals)` block (the switch's default
+// skipping the translator) 54: the tag then sits in ESI, EDI is pushed only around the switch and
+// popped after the translator, as retail, but the buffer address is hoisted into EBX at the globals
+// test for its two uses; on it the tag read before the variant call 57, the selector straight from
+// the getter with the tag first 57, `if (!globals) goto done;` 54, the tag read at the translator call
+// 45 (171 bytes; the selector then in EAX as retail, still the EBX buffer).
 // @retail 0x22d456
 void __stdcall parse_gametype(long string_handle, word *buffer)
 {
