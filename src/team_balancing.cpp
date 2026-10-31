@@ -495,6 +495,10 @@ bool balance_teams_greedy(s_balance_problem *problem, long team_count, s_balance
 // Round 230: solution selection at every query, alone, with A/B/both team observations,
 // outer-party lifetime, both candidate-team roots, shared candidate spread and equality-first
 // acceptance: 112/179/150/186/112/182/107/115. Original selection, named post-swap counts and body restored.
+// Lane 14 r20: the first test as `!(candidate >= reference)` 67; the reference pointer declared
+// `const` 67; the condition rewritten as `<= && (!= || cost)` 100 (512 bytes but reference spread
+// still first and the frame 0x268c); the reference selected right after the candidate copy, before
+// the swaps, 151 (521 bytes; 0x91dd0 9); the cost test written candidate first 67.
 // Round 127 (lane 4): the reference selected right after the candidate copy 151 (0x91dd0 9; the
 // reference is still queried first); the reference on the left of both comparisons 65 (reference
 // still first); the comparison as an in-class solution method called on the candidate 188 (not
@@ -508,6 +512,26 @@ bool balance_teams_greedy(s_balance_problem *problem, long team_count, s_balance
 // `!(candidate.count_spread() >= reference->count_spread())` 67; the selection written `!improved ? &current :
 // &best` 70; the selection moved after the candidate copy (before the swaps) 151; `best = candidate;` before
 // `improved = true;` 71. No other function calls count_spread, total_spread or rank_spread out of line.
+// Round 14 (lane 2): aligned the only cause is the count_spread order (and the `mov ebx, esi` it
+// adds); a compile-only screen reproduces it even with count_spread's body defined after this
+// function, so it is not purity: VC queries the stack-local candidate (`lea ebx, [esp+0x38]`) after
+// any pointer or member solution, in every operand order (probes against `best` and `current`
+// directly do the same). Real builds, 67 each (same code): the comparison as a forceinline
+// `better_than` method on the candidate, as a forceinline `worse_than` method on the reference, as a
+// forceinline free function of both pointers, the selection as an if/else, the reference declared at
+// the top of the inner loop and assigned after the swaps. Compile-only, same order: `this->` inside
+// the method, the selection passed as the call's argument, `(&candidate)->`, a reference variable,
+// the selection written at each use, `!(reference <= candidate)`.
+// Lane 16 r46: the reference declared at the top 67; count_spread as a free function on a pointer 67; the
+// test in a forceinline (candidate, reference) helper 67; renamed trial/baseline 67; `candidate(current)`
+// 67. Compile-only (no /GL, extern methods): the call on the stack copy runs after the call through the
+// pointer in every operator, operand order, helper, free/__stdcall and naming form; with two stack copies
+// the right operand of `<`/`==` runs first. So retail's candidate-first order is not a reorder that only
+// LTCG's readonly knowledge makes.
+// Round 33 (m3 lane 11), fast: the test as a forceinline solution method on the candidate
+// (`candidate.better_than(reference)`) with its comparisons this-first 67, this-first with the cost
+// written other-first 67, all other-first 65; the candidate declared in the outer loop and copied in
+// the inner one 209 (570 bytes); the reference as `&(improved ? best : current)` 67 (same code).
 // @retail 0x91bd0
 void s_balance_optimizer::try_swap(long team_a, long team_b)
 {
@@ -745,6 +769,10 @@ bool balance_teams_by_count(long player_count, long const *party_indices, long t
 // Separate maximum reduction and guarded memcpy, copy before/after scan, indexed/advancing
 // source and if/conditional maximum 93/93/83/83/79/79/88/88. Count register exchange and clamp
 // homes remain; original body restored.
+// Round 14 (lane 2; fast with 0x91e30): imbalance declared with the other locals at the top and set
+// to NONE before the call 34; declared there with its NONE initializer 65 (190 bytes); open slots
+// computed just before the call 87 (170 bytes), with imbalance at the top too 87; next_party declared
+// after the array and index 34.
 // @retail 0x91f00
 bool balance_teams_can_add(long player_count, long const *party_indices, long extra_count, long team_count,
 	long maximum_team_size, bool flag_parties, long flag_minimum, long flag_maximum, bool use_parties,

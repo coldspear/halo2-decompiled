@@ -290,6 +290,20 @@ PRIVATE inline void shape_copy_header(s_shape_header const *source, s_shape_head
 // Round 27 (lane 11, real builds): the sphere helper forced inline 57; its parameters (point, sphere,
 // plane, depth) 57, (sphere, point, depth, plane) 57, (point, sphere, depth, plane) 57; the sphere
 // passed as `shapes->spheres + index` 57.
+// Round 22 (lane 13; aligned difflib count 37, all in the sphere test: difference registers z/y,
+// copies of the scale for x and y, the hoisted 1.0 and the plane-dot registers): the scale helper
+// taking the factor by const reference 57 (0x2461a0 4 -> 50); the radius added first in plane->d
+// 57; the best-* locals declared in reverse 59; plane declared before depth in the loop 57;
+// best_depth declared first 60.
+// Round 97 (lane 8, fast with 0x2461a0/0x19cb90/0x245bd0/0x245d80): the normalization test written
+// `g_45dbd8 < distance` 57 (same code); the difference scaled in place (unit z in the other arm) and
+// copied to the plane once 397 (456 bytes, helper outlined); the unit-z arm storing x and copying it to
+// y 61, storing y and copying it to x 57; that with the reciprocal in the call 57. Ours keeps n.k in the
+// scale's register (the k product goes in place on the scale), so both arms start with 1.0 in XMM0 and
+// it is hoisted above the fsqrt; retail keeps n.k in the z difference's register.
+// Round 32 (lane 11, fast with 0x19cb90/0x2461a0): the matching form's two keepable halves together (the
+// dot's inputs swapped and the unit-z zeros stored separately) 61; with the sum grouped j + (i + k) 61, flat
+// i, k, j 61, as i, k, j statements 61; flat i, k, j with the existing vector3f_scale 61.
 // @retail 0x245ef0
 bool function_245ef0(s_shapes const *shapes, point3f const *point, s_shape_result *result)
 {
@@ -368,6 +382,13 @@ PRIVATE inline real shape_dot_reverse(vector3f const *a, vector3f const *b)
 // separation-first/direction-first/reverse projection helpers 4/4/4; shared final scaling 4;
 // normal-first plane product 6. The vector addition helper with a negative step 16 (435 bytes),
 // with normal-first plane product 18 (435). All restored; the projection still sums i,j,k.
+// Round 21 (lane 14): the difference vector renamed 4 (same code); `(i + k) + j` with the j product's
+// operands swapped 11 (the j product still loads direction->j first); b computed right after c,
+// before the c test 61 (435 bytes); b computed before c 102 (428); the hit normal through
+// vector3d_from_points3d(&d, &scaled) 4 (same code).
+// Round 447: Existing difference helper first/second input copies and complete scalar publication,
+// seven subsets 140/171/186/4/140/171/186; native vector publication 184. Projection sum order remains.
+// Original executable source and all trial helper/interface changes restored.
 // @retail 0x2461a0
 bool function_2461a0(
 	s_sphere const *sphere,

@@ -189,10 +189,30 @@ void replication_table_release_chain(s_handle_peers *peers, long count, long con
 // Round 84: on the indexed active chain, separate pending-selector publication after the blocked
 // test/always 226/241; peer callback 233; isolated control 170; owner before the loop 238;
 // peer lookup, equality termination and iteration-local owner 170 each. Original body restored.
+// Round 107: retail's slots follow the locals' names (cursor, entry, item locals, type last); ours put the
+// active countdown's shared type slot first. The active counter renamed (z/u/a/aa/handle_index, one-file
+// harness al 27 each; real handle_index 55); a named entry pointer for every field read 193 (831 bytes),
+// with the active chain indexed 195 (815); a pending chain count assigned to handles_count after its loop
+// 219 (814), with the active chain indexed 184 (796).
 // Lane 14 r19 (fast `0x98150 0x89d20` reproduces the plain 55): indexed active loop with the item
 // priority at the arm scope 170 (814 bytes; type keeps EBX through the pending chain, whose index
 // spills); active cursor bounded by a remaining countdown 55 (same code); indexed loop bounded by its
 // own count local 170; `type = 4` after the active chain query 170; blocked declared after `type = 4` 170.
+// Round 14 (lane 2): retail keeps type in EBX and splits it only around the pending loop (stored to
+// +0x34 before the chain query, reloaded at 0x98402 before the join) because that loop's call needs
+// EBX for the vtable; with the active chain indexed ours keeps type in EBX, puts the vtable in ESI
+// and spills the pending index. On the indexed form (fast, 0x89d20 with it): one function-scope
+// `blocked` for both chains 170; `i != handles_count` in the pending/active loop 170/170; the pending
+// item locals declared size first 170; on the cursor form, the same item order 55.
+// Lane 16 r46: retail keeps type in EBX everywhere but the pending loop (stored to its home before the
+// chain query, reloaded at the join), i.e. a split around that loop. On the indexed form: type renamed
+// kind/z_type and the count renamed 170 each; a `short` pending index 198; the active owner in a
+// loop-local 170; the pending size sum before the priority test 170. On the cursor form the cursor
+// stepped in the `for` increment 132 (823 B).
+// Round 33 (m3 lane 11), fast with 0x89d20, on the cursor form: `type = 4` after the active chain
+// query 58; `type = 3` after the pending chain query 60; the active cursor stepped in its own
+// statement 61; the active item priority declared before its loop 55; the active size zeroed before
+// its priority 54. Retail keeps type's home last (+0x34) with the cursor, entry and item slots 4 lower.
 // @retail 0x98150
 long c_handle_table_450cd0::v1(long a1, long max_count, void *output)
 {

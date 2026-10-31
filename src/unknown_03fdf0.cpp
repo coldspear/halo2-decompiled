@@ -285,6 +285,24 @@ void function_4a1e0(s_view_source *source, s_view_camera *camera, long resource_
 // the field 177 (480 bytes); the clears in both arms of the guard 145; the guard as a bool computed before
 // the clears 144; a long count before the clears 165; entries declared before the clears 146; `0 < count`
 // 144; `count >= 1` 145; the clears through a group-reset helper 144.
+// Round 107 (fast; the block form's entries cursor is biased +0xc, the second non-base read): indexed form
+// 144 (492 bytes; index in EDX as retail, count CX/EDX and zero EAX where retail has AX/EAX and ECX, first
+// in EAX across the copy where retail loads it into EDI and spills it); on it, current and first both
+// read from previous 140 (495), `&g_4ba138[first]` as the copy destination 144, a for loop over n 144,
+// the selection computed before the copy 170 (490).
+// Round 13 (fast; aligned = difflib count): the indexed form again 144 (492 bytes, aligned 23 against the block
+// form's 39: count CX/zero EAX where retail has AX/ECX, first in EAX where retail loads it into EDI and spills it,
+// no loop-entry jump over the pad); on it an early return on `count <= 0` 144 (aligned 23), the copy size as
+// `sizeof * count` 144 (23), `count >= 1` 145 (26); the block form with the geometry pointer renamed 54 (same code:
+// the slot order does not follow that name); on the indexed form the loop index declared before n 145 (23).
+// Round 112 (fast): the parameters as (mode, cache_index) at the definition and call 54 (same code: the one
+// register argument stays EAX). The arrival register follows the colouring of cache_index, the count and the
+// clears' zero: block form index EAX, count CX, zero EDX; indexed form EDX/CX/EAX 144; a named long count
+// at the block top ECX/AX/EDX 140 (retail EDX/AX/ECX; with retail's zero in ECX the six clears are 6-byte
+// stores, which is most of the indexed forms' 13-16 missing bytes). On that named count: the copy source as
+// the field 140, entries set after the advance 155, entries set before the loop 158, index declared before n
+// 141, the count as a short local 177 (480 bytes). A /Gd compile-only first pass loads cache_index into EBX
+// (block form) or EBP (indexed), so it does not predict the arrival register here.
 // @retail 0x402b0
 void function_402b0(long cache_index, long mode)
 {

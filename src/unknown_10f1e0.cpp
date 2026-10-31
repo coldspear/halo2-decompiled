@@ -1282,11 +1282,11 @@ long function_cbd50(long unit_index, short weapon_index);
 // score 164 (was 164): this round found no gain - retail keeps index*12 as a value (lea/shl) and re-reads
 // the unit through that offset for both depletion queries, and it writes the first depletion with setle;
 // the byte-offset entry with re-derived queries gives 325 and the if-form depletion gives 330.
-// score 164 (was 164): this round found no gain - retail keeps the pool pointer in EAX and the data in
+// this round found no gain - retail keeps the pool pointer in EAX and the data in
 // EBP, materialises index*12 and rematerialises the unit pointer for the first query, while ours keeps
 // the unit in EAX, folds index*3 with a scale of 4 and builds the result with a branch instead of setle;
 // the byte-offset header, a pool local, re-read queries and retail-shaped flag joins all score the same or worse.
-// score 164 (was 164): frame eight agrees; entry pool/state registers, signed-count joins and result
+// frame eight agrees; entry pool/state registers, signed-count joins and result
 // Round 141: retail returns the result byte unnormalised (a bool) and keeps the depletion in BL with the
 // interruptibility in memory; round 75's first-sets/second-clears depletion 330, with a bool result
 // 361 (1243 bytes, aligned 132 -> 102: retail's setle and second test, but depleted in memory and
@@ -1344,6 +1344,11 @@ long function_cbd50(long unit_index, short weapon_index);
 // Round 85: `unit_index = *unit_reference;` at entry (0x1130f0's form) with a plain 0xc70b0 argument
 // 271; an object-headers local with if-form depletion and bool/byte result 336/325, with a byte depletion
 // 336; the headers local with the `&&` depletion, bool result and byte depletion 334.
+// Round 210: Boolean success with depletion/interruptibility bool-short, bool-long, short-bool,
+// short-short, short-long, long-bool, long-short and long-long 315/187/209/314/208/189/315/188.
+// Native pairs reserve frame twelve and 1269 bytes; entry pool/state allocation and count joins
+// remain. Original byte success, canonical statuses, signed counts, queries and argument handling
+// restored.
 // @retail 0x110ab0
 bool __stdcall function_110ab0(long unit_index)
 {

@@ -109,11 +109,15 @@ static inline s_sound_class *function_xaa8231(short class_index)
 	return &((s_sound_globals_classes_view *)g_51ebd4)->classes[class_index];
 }
 
-static inline long decibels_interpolate(long a, long b, real t)
+/* a gain in decibels, copied as a whole */
+struct s_decibels_view
 {
-	real result = (*(real *)&b - *(real *)&a) * t + *(real *)&a;
+	real value;
+};
 
-	return *(long *)&result;
+static inline real decibels_interpolate(long a, long b, real t)
+{
+	return (*(real *)&b - *(real *)&a) * t + *(real *)&a;
 }
 
 static inline real real_decompress_angle(long value)
@@ -1207,7 +1211,7 @@ bool sound_playback_update_location(long sound_index)
 struct s_sound_class_fade
 {
 	dword target;
-	dword current;
+	s_decibels_view current;
 	real time;
 	byte flags;
 	byte unknownd[3];
@@ -1222,9 +1226,15 @@ long function_2197f0(real gain);
 
 /* a sound class's gain in decibels: its fade, ducked by the current and the
    previous ambience */
-// score 149 (was 149): retail keeps the entry gain in a stack home that the gain helpers read in place; the
+// score 137 (was 149): the gain is a decibel struct (retail copies decibels as a whole, as 0x218d70 does): it
+// lives in its own stack home from entry, each sum is stored there and the result is returned from it, at
+// retail's 678 bytes. Left: the entry (retail loads g_502118 first and pushes the unextended class index),
+// the first branch's product/sum order (retail `(elapsed - hold) * inverse * fade_out`, then
+// `ambience_fade - elapsed` plus it), the clamps' register (retail starts from 1.0 and replaces it), and the
+// hold branch's copy of the ducking gain through a stack temporary.
+// Earlier at 149: retail keeps the entry gain in a stack home that the gain helpers read in place; the
 // helper's signature is in include/unknown_218ac0.h, so this file can only hand the gain over by copy.
-// score 149 (was 149): Frame 0xc agrees; early table load, gain home, delayed ESI save and fade scheduling differ.
+// Earlier at 149: Frame 0xc agrees; early table load, gain home, delayed ESI save and fade scheduling differ.
 // Retail keeps gain in a stack home from entry (stored before the flag test, EDI keeps a copy for the
 // plain returns), the helpers read it there with no copy, and each sum is stored in that home.
 // Round 72: decibels_add's second parameter a const reference 168 (retail's home store and EDI copy
@@ -1266,12 +1276,26 @@ long function_2197f0(real gain);
 // (`(elapsed - hold) / fade_in * fade_out`, `1.0f > time / fade_in ? time / fade_in : 1.0f`) with a
 // fade_out local 160 (retail's reciprocal-first order, multiply compare and divss result); plus
 // `t = 1.0f; if (time < 1.0f) t = time;` clamps 160/180 (the two tails cross-jump); if/else-if pin 160.
+// Round 94: gain as `s_decibels_view` (one real; fade->current declared with that type here) copied from
+// fade->current, sums stored into gain.value,
+// decibels_interpolate returning real from its long-bit operands, `return *(long *)&gain` 137 (kept; 678
+// bytes); on it, the lookup passed the raw class index 179 (670 bytes), and without the index local 179;
+// the first branch written with divisions 207 (636 bytes); clamps as `t = time; if (t > 1.0f) t = 1.0f;`
+// 136, as `t = 1.0f; if (time < 1.0f) t = time;` 190 (642 bytes). Compile-only: clamp ternary spellings
+// and dot/product term orders are canonicalised (no change).
+// Round 133 (one-file LTCG harness, exact here: 137): no index local, class index passed raw 179 (670 bytes:
+// retail's `movsx eax, cx` and raw `push ecx`, but the table load folds into the add); the raw index for the
+// call only 179; the hold sum through `decibels_interpolate(0, gain, 1.0f)` 184 (704 bytes), through the
+// existing decibels_add on the gain's bits 163 (686 bytes; retail's long copy of the ducking gain appears);
+// the first branch with divisions 207 (636 bytes), plus a fade_out local 207; a fade_out local with the
+// inverse 141 (670 bytes); the time sum product-first 137 (identical). Left: the else branch and the first
+// branch are retail's code with XMM2/XMM3 (and the 1.0 constant's register) swapped.
 // @retail 0x127010
 long function_127010(short class_index)
 {
 	long index = class_index;
 	s_sound_class_fade *fade = &g_502118[index];
-	long gain = fade->current;
+	s_decibels_view gain = fade->current;
 
 	if ((byte)~fade->flags & 1)
 	{
@@ -1296,20 +1320,20 @@ long function_127010(short class_index)
 						real time = sound_system->ambience_fade - elapsed + (elapsed - ducking->hold_time) * inverse * ducking->fade_out_time;
 						real t = 1.0f > time * inverse ? time / ducking->fade_in_time : 1.0f;
 
-						return decibels_add(gain, decibels_interpolate(0, ducking->gain, t));
+						gain.value = gain.value + decibels_interpolate(0, ducking->gain, t);
 					}
 					else
 					{
 						real time = (sound_system->ambience_fade - elapsed) / ducking->fade_in_time;
 						real t = 1.0f > time ? time : 1.0f;
 
-						return decibels_add(decibels_interpolate(0, ducking->gain, t), gain);
+						gain.value = decibels_interpolate(0, ducking->gain, t) + gain.value;
 					}
 				}
 			}
 			else
 			{
-				return decibels_add(ducking->gain, gain);
+				gain.value = *(real const *)&ducking->gain + gain.value;
 			}
 		}
 		else
@@ -1323,7 +1347,7 @@ long function_127010(short class_index)
 					real time = sound_system->previous_ambience_fade - ducking->hold_time / ducking->fade_out_time;
 					real t = 0.0f > time ? 0.0f : (time > 1.0f ? 1.0f : time);
 
-					gain = decibels_add(decibels_interpolate(ducking->gain, 0, t), gain);
+					gain.value = decibels_interpolate(ducking->gain, 0, t) + gain.value;
 				}
 			}
 			if (sound_system->ambience_index != NONE)
@@ -1335,12 +1359,12 @@ long function_127010(short class_index)
 					real time = sound_system->ambience_fade / ducking->fade_in_time;
 					real t = 1.0f > time ? time : 1.0f;
 
-					return decibels_add(decibels_interpolate(0, ducking->gain, t), gain);
+					gain.value = decibels_interpolate(0, ducking->gain, t) + gain.value;
 				}
 			}
 		}
 	}
-	return gain;
+	return *(long *)&gain;
 }
 
 /* decibels_add on the values in place: retail reads both operands where they are */
@@ -1978,7 +2002,6 @@ short sound_voice_acquire(long sound_index, long *reason)
 }
 
 bool function_12be90(void);
-static inline void approach_126660(real *value, real delta, real lower, real upper);
 
 /* advances the sound system's clock and the ambience fades, and fades the
    master gain out while the game asks for it (after its delay) and back in
@@ -2101,15 +2124,6 @@ void sound_update_locations(void)
 		sound_voices_update_locations();
 		looping_sound_update_locations();
 	}
-}
-
-/* clamps value to [lower, upper], testing the lower bound first */
-#define PIN_126660(value, lower, upper) ((value) < (lower) ? (lower) : (value) > (upper) ? (upper) : (value))
-
-/* adds delta to value, kept within [lower, upper] */
-static inline void approach_126660(real *value, real delta, real lower, real upper)
-{
-	*value += PIN_126660(delta, lower, upper);
 }
 
 /* moves the sound system's two environments toward the two requested:
@@ -2762,6 +2776,11 @@ static inline short sound_voice_find_available_channel(char type)
 // Round 235: chained driver/buffer defaults inside/before test/before search 91/147/171;
 // with canonical success assignment 129/130/144; complemented status before test/inside
 // 122/127. The 91 form is below the minimum gain; original byte-result body restored.
+// Round 94: search helper taking `long type` (retail's direct movsx of the type byte) 128; success flag
+// declared after/before the search with `if (!success)` failure block and early `return true` 138/143;
+// result false after the search, true on success, `if (!result)` failure 132; bool result with the search
+// index re-tested after a break loop 104 (retail's found-path-after-loop layout: VC places a loop's break
+// target after the function's other blocks). Original byte-result body restored.
 // @retail 0x1295e0
 bool __stdcall function_1295e0(short voice_index)
 {
@@ -3125,9 +3144,13 @@ struct s_animation_ref;
 void function_219310(s_animation_state *state, s_animation_ref *ref, short value);
 long function_2193d0(s_animation_state *state, s_animation_ref *ref);
 
-// score 86 (was 86): retail holds the playback base in ecx, builds the pointer with `lea esi,[eax+ecx]` and folds
-// the sound-system time into the compare; ours hoists the time into edx and holds the base in edi. The mode switch
-// still needs a second non-empty case.
+// score 49 (was 86): the start-time test reads the sound through SOUND_PLAYBACK_GET and the sound pointer is
+// declared inside it, which gives retail's loop top (base in ecx, `lea esi,[eax+ecx]`, time folded into the
+// compare). Left: the mode switch is `test ax, ax` where retail has a two-case switch's `movsx eax, ax;
+// sub eax, 0; jne` (3 bytes, shifting every later branch target), and the pool reload sits before the next-index
+// ternary. Earlier (86): retail holds the playback base in ecx, builds the pointer with `lea esi,[eax+ecx]` and
+// folds the sound-system time into the compare; ours hoists the time into edx and holds the base in edi. The
+// mode switch still needs a second non-empty case.
 // Frame 8 agrees; playback base, clock scheduling and promoted mode remain.
 // Retained clock receiver 163; voice record reference 86; combined receivers 163; role names 86;
 // native update/mode/both flag words 86/86/86; receiver plus native flags 163.
@@ -3160,6 +3183,13 @@ long function_2193d0(s_animation_state *state, s_animation_ref *ref);
 // tag 86/86/86; conditional native sound-tag value 204; pool/value and receiver/value 204/204;
 // pool/readonly 86; all 204. Native tag capture expands frame eight to 24 and length 558 to 588;
 // original clock, iterator, mode and call inputs restored.
+// Round 133 (one-file LTCG harness, exact: 86): matched 0x128020's loop-top `sounds = g_4e637c;` with its
+// `(s_sound_playback *)sounds->data + index` pointer 86, the pointer form alone 104; the time in a local 86;
+// `!(start > time)` 86; the getter-read test with the pointer inside it 49 (kept); on it, the pool global at each
+// use 49; a for loop 49, with `case 1: continue;` 78 (retail's `sub eax, 0` switch, but pool/index swap
+// EBP/EBX), `case 1: goto next;` in the do-while 78, case 1 first 78, case 0 ending in continue 78, long mode 89,
+// the switch on the ternary 89, an if/else mode 78, `default: continue;` 49 (dropped); empty case 1 with or
+// without `default: __assume(0)`, case 1 first, cases 1 and 2: 49 (empty cases are dropped).
 // @retail 0x1282d0
 void function_1282d0(void)
 {
@@ -3169,9 +3199,9 @@ void function_1282d0(void)
 	{
 		do
 		{
-			s_sound_playback *sound = SOUND_PLAYBACK_GET(sound_index);
-			if (sound->start_time <= SOUND_SYSTEM->time)
+			if (SOUND_PLAYBACK_GET(sound_index)->start_time <= SOUND_SYSTEM->time)
 			{
+				s_sound_playback *sound = SOUND_PLAYBACK_GET(sound_index);
 				if ((byte)function_125e60((s_looping_track_sound *)sound))
 				{
 					long reason;
@@ -3951,6 +3981,19 @@ void __stdcall function_221a70(long arg_0, s_voice_position_batch *arg_1);
 // no system local, arrays at entry, player for loop).
 // Round 235: persistent buffer/channel clear return with the other clear still a call argument
 // 104/72; with long restart 60/86; entry declarations repeat 104/72/60/86. Original body restored.
+// Round 94: every form that realigns or uses EBP here also changes matched callee 0x128020's registers
+// (0 -> 147: its allocation follows this function's EBP use). Count first + statement clears + long restart
+// 134; statement clears 121; `= {}` arrays + long restart 139; memset results kept in named locals for
+// 0x129380 only (arrays direct to 0x129100) 129 (527 bytes, copies through EBX/EBP), with long restart 110.
+// Compile-only: realignment is decided late (a size held in a variable or a static const, fills of 0xff,
+// clears of struct fields or through a pointer all realign; /Os avoids it but changes the whole body).
+// Round 133: the restart block through the matched sibling 0x125a90(1) (its resume case is this block) 212
+// (473 bytes: LTCG keeps 0x125a90 out of line); the sibling's `long` restart counter 76 (everything up to the
+// clears is retail's, first difference +0x57 -> +0x10a; only the clears' copies and the padding they shift
+// remain); with it, statement clears 139 (the body is retail's; only the realigned prologue and its pushes
+// differ), `= {}` arrays 139, memset results in two named locals 77. Compile-only: statement clears realign
+// with clears of 0x40 bytes too, with `__declspec(align(4))` arrays, long/char element views, a returning clear
+// wrapper (inline/forceinline) or the player loop as a for loop.
 // @retail 0x125b40
 void function_125b40(void)
 {

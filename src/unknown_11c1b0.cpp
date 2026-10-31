@@ -94,6 +94,25 @@ void function_16e2c0(long arg_0);
 // Round 233: phase-local tag table 73; loaded-index snapshot 126; published BSP value 50;
 // entry-list value 50; tag/index 122; tag/BSP 50; index/entries 126; all four 126.
 // Original index/result lifetimes and global read-backs retained; entry slot and BX/EDI remain.
+// Round 30 (lane 11, fast): the saved index read from the global at the top 130 (own slot, registers
+// still swapped); the saved index set in an if/else after the callback loop 120; the current index read
+// inside the block after the range test, the copy right after it, 58 (457 bytes: BX/EDI and the zero
+// extension become retail's and the copy takes the argument's home, but the global read follows the
+// range test); the copy at the top in either direction 128/128 (retail's registers and early store,
+// own slot). Leads: the registers follow whether the current index is live across the range test
+// without an early store; only the argument's home is still missing from the copy-at-top form.
+// Round 92 (--fast, reproduces 50): the requested index read once through the argument's address
+// (`short const *ref = &arg_0; short requested = *ref;`) with the saved index defined at entry 128
+// (own slot: the argument's home is no longer shareable); the address read with the saved index still
+// in the block 50; the address read after the current index, before/after the saved index 128/128; the
+// saved index as its own read of the global at entry 130. Restored.
+// Round 35 (lane 10, fast): saved index as long 83 (462 bytes), current index as word 123 (464) / long 101
+// (457); the BSP-globals store as a ternary 50 (same code); the unload argument written in the call 50 (same
+// code, kept: it drops a one-use element pointer).
+// Round 110 (fast): the range test through a forceinline validity helper taking the index 50; the BSP
+// count read into a local at entry 50; the range test before the NONE test in the disjunction 50 (the
+// same code); the structure-globals pointer as a ternary 50; the loaded BSP's list index read once into a
+// named local for the call and the table 89 (461 bytes).
 // @retail 0x11c1b0 standard
 bool __stdcall function_11c1b0(short arg_0, bool arg_1)
 {
@@ -118,8 +137,7 @@ bool __stdcall function_11c1b0(short arg_0, bool arg_1)
         {
             if (arg_1)
             {
-                byte *local_3 = *(byte **)((byte *)g_4e0350 + 0x214) + g_4686c4 * 0x44;
-                cache_files_unload_structure_bsp((s_structure_bsp_reference *)local_3);
+                cache_files_unload_structure_bsp((s_structure_bsp_reference *)(*(byte **)((byte *)g_4e0350 + 0x214) + g_4686c4 * 0x44));
             }
             g_4686c4 = NONE;
             g_4e0348 = NULL;

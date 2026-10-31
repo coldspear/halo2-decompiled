@@ -411,6 +411,11 @@ PRIVATE __forceinline void function_21dcf1(long effect_index)
 // 213/213. All eight sensitive callers preserved; original accessor restored.
 // Round 206: Native C contracts on private starter/allocator/record accessor, seven subsets
 // [204, 204, 204, 204, 204, 204, 204]; all three standard callee-cleanup 204. Original contracts restored.
+// Round 179: the private starter forced inline with the real out-of-line delete 52 (429 B; 0x189fe0
+// 110 -> 135, its request moves from EAX to EDX and all eight matched callers lose their match: the
+// same blocker as the 0x125f70 route); the rate-limit test negated with no NONE arm 204; the platform
+// handle computed after the definition/effect declarations 221 (0x189fe0 132); sound_index declared
+// at the top 204; the allocation folded into the definition test 204. Still BLOCKED-BY 0x189fe0.
 // @retail 0x21d110
 long function_21d110(s_sound_play_state *state, long tag_index)
 {
@@ -777,6 +782,7 @@ PRIVATE long const g_44a20c[] = { 0, 1, 2, 2 };
 // the definition or tag index declared earlier: the bool stays at the bottom.
 // Round 48 (Kimi 2): repeat_state and loop_alternate held in one named 8-byte record matched byte for byte
 // (0 at 823); not kept, a struct that only groups locals to move their stack homes.
+// Earlier note (30, was 60): every remaining difference is a stack offset. Retail keeps the loop bool
 // score 30 (was 30): every remaining difference is a stack offset. Retail keeps the loop bool
 // in a dword-aligned unit (its low byte) between repeat_state and the listener; ours is a
 // one-byte home in the lowest unit, which shifts the lighter dwords by four and reorders the
@@ -878,6 +884,16 @@ PRIVATE long const g_44a20c[] = { 0, 1, 2, 2 };
 // Round 49 (fast, baseline 58): the alternate expression directly in SET_BIT 139; direct raw gain 58;
 // both 139; a function-scope looping pointer with direct gain 58; cumulative const effect, controller index,
 // tag flags and tag index on that neutral graph 58 each. Opening body restored.
+// Round 29 (lane 11, plain checks; --fast reads 58 here): the definition read before the looping block 201
+// (the bool stays at the bottom); alternate as an if/else assignment in the 'lsnd' arm (state ternary kept) 30;
+// the flag as `(flags & 0x10) ? true : false` 30; the flag through the file's TEST_BIT 30; the looping pointer
+// declared at function scope 30 (its round 49 score was a --fast preview). Compile-only frame listing
+// (reproduces our frame: bool at the bottom, then sound flags, entry offset temp, effect, state, controller,
+// index, rate stage, definition, listener, repeat state, tag): the pair declared the other way round,
+// repeat_state read first with TEST_BIT, repeat_state/loop_alternate renamed to sort first, definition renamed
+// to sort first or last: no slot moves. Diagnostics (not keepable): the bool alone with 4-byte alignment moves
+// only the bool; the {long, bool} record gives retail's whole order (definition to the top), so retail's flag
+// lives in a 4-byte-aligned aggregate with repeat_state.
 // Round 9 (fast baseline 58, plain 30): the 8-byte {repeat state, alternate} record now matches byte for
 // byte in the plain check (fast 28); not kept, a struct that only groups two locals. A one-file frame probe
 // shows a lone bool always takes the bottom byte slot whatever its uses, so retail's dword slot needs the

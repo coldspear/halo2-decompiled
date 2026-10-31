@@ -722,7 +722,7 @@ void function_273670(long ai_index, bool flag)
 	}
 }
 
-void function_201520(short value, long type, long a, long b, long c);
+void function_201520(short value, long type, short a, bool b, bool c);
 void function_204010(long squad_index, long other_squad_index);
 
 /* for every squad an ai index names (or the squad of a starting location),
@@ -1395,6 +1395,9 @@ PRIVATE __forceinline bool function_274a51(long arg_0, s_object_seat const *arg_
 // real decision polarity/lifetime does not recover the request registers or seat loads.
 // Round 234: Actual request outcome byte/short/long/dword 41/70/68/68; complementary failure carriers
 // 73/73/72/72. Original outcome and body restored; iterator scaling and request/seat scheduling remain.
+// Round 450: scalar candidate transfer/final-publication increment/both 41/41/41;
+// direct priority result alone/with transfer/with increment/both 42/42/42/42;
+// shared seat-definition input 48. Scalar address copies exact-only; all original code restored.
 // @retail 0x274a50
 void function_274a50(long ai_index, long vehicle_index, long filter_range, bool load)
 {
@@ -2156,6 +2159,10 @@ PRIVATE __forceinline bool function_276381(long arg_0, s_unit_request *arg_1)
 }
 
 /* whether an actor an ai index names runs the command script named */
+// score 7 (was 7): Seven request-clear versus actor-address scheduling rows remain at exact retail length.
+// DL209: Byte/char/short/long results born after actor lookup, constant false or actor-admission
+// produced: 28/29/28/29/28/37/28/34. All remove the saved BL lifetime and regress; original result
+// restored.
 // @retail 0x276380
 bool function_276380(long ai_index)
 {

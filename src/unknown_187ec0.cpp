@@ -253,6 +253,26 @@ struct s_seat_animations
 // Round 44: native entry-index equality, reversed receiver, compared-entry result, count-first
 // unguarded result, per-arm entry, true entry cursor and promoted traversal with/without inner
 // result guard 55/55/61/71/78/64/80/66. Native type restored; result/animation allocation remains.
+// Round 13 (fast): result tested in the outer loop's condition, `while (!result && (element = ...) != NULL)`,
+// no inner guard and no break after the parent step 65 (type arrives in EAX and goes to ESI, result in EAX,
+// 0x188130 1); with the entry pointer `&(first ? ... : ...)[i]` 63 (0x188130 12); result declared before first
+// 65/64; with the index read once through its parameter's address 65/63 (same code).
+// Round 93 (lane 8): without the inner guard, the entry as `&(first ? first_entries : second_entries)[i]`
+// 63 at 172 bytes: the body is retail's instruction for instruction but for the register permutation,
+// and LTCG then passes animation in EAX and type in ECX (ret 4; matched 0x188130 12). Without the guard
+// and the per-arm entry pointer 78 (0x188130 17); that with `!result &&` in the while test instead of
+// the break 78 (17); with the count read inside the outer loop 84 (0x188130 1); with `type == 0` at each
+// use 88 (0x188130 18). Retail's EBP for animation is what keeps it a stack argument.
+// Lane 16 r48 (fast): no inner guard 65 (type in EAX, result in EAX, count in EBP; 0x188130 1, 0x1882d0
+// 23); no guard with `entry = &(first ? ... : ...)[i]` 63 (animation in EAX, type in ECX, two-local
+// frame; 0x188130 12), with count declared before result 71 (0x188130 matches), result declared first
+// 64 (0x188130 12), count computed from `type == 0` before first 80 (0x188130 1).
+// Round 95 (lane 8), on round 118's 52 form (no inner guard, per-arm entry, animation read once
+// through its address; reproduced 52, 0x188130 matches; its getter adds into ECX and copies to EAX
+// where retail forms the element with `lea ebx, [ecx + esi]; test ebx, ebx`): element_index also
+// read through its address as in 0x1882d0 52 (same code); result declared before first 69
+// (0x188130 1); the array-select entry `&(first ? ... : ...)[i]` 62 (0x188130 3); `if (result)
+// break;` before the parent step 66 (185 bytes); count declared before result 61.
 // @retail 0x187fe0
 s_seat_animation_entry *function_187fe0(long type, s_seat_animation const *animation, c_type_47f957 element_index)
 {

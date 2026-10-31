@@ -548,6 +548,14 @@ void function_3dd10(long object_index, bool force);
 // Round 439: complete supplied/default/converted color result, loop/entry lifetimes and
 // field/indexed clamps with field/result dual publication: 261/261/291/286, repeated at entry.
 // Frame grows to 0x60; original object-output pipeline, scans and all float trees restored.
+// Lane 14 r20: the first scan as `for (j = 0; j < choice_count; j++)` with `continue` for an
+// ineligible choice 637 (the compile-only build keeps it rolled with retail's jle/jl exits; the LTCG
+// build unrolls it by 4, 1310 bytes), with the inverse in the found block 638; the selection loop
+// breaking out and the blend after it under `j < choice_count`, the inverse between them, 176 (the
+// test isn't threaded); the same under a found flag 280; the inverse in the found block (132, again)
+// with the first scan's mask, weight and last stores reversed 134. A compile-only screen shows the
+// unroll needs the float add: an integer sum or no sum leaves the `<` loop rolled. Calling the
+// existing 0x131c20 (HSV flag) in the found block is not inlined, 374 (again).
 // Round 128: inverse at the top of the found block again 132 (round 55's form: left are the not-found
 // exit's own 1.0 reload, the variant byte read after the blend's fstp, and the first scan's exits);
 // on it the first scan as a signed for loop 638 (unrolled, 1309 bytes), the same with the weight, the
@@ -687,6 +695,14 @@ color3f *function_131c20(color3f const *a, color3f const *b, dword flags, real t
 // the output pointer, ours computes the pointer first, and retail keeps the
 // running offset in another register, so the test, the two leas and the
 // loop's bookkeeping differ.
+// Round 15 (m3 lane 2, LTCG env harness = file + depth-4 closure; positional/aligned, base 84/55 = full 91):
+// plain `for (i = 0; i < count; i++)` with `current = &base[count + i]` and `result = true` at the body's
+// top/end/after the copy 129/55 each (563 bytes: source kept in its stack slot as retail, but the false
+// result takes BL, EBX is pushed at entry, the two false exits merge and the destination takes EDI);
+// on it `&base[i + count]`, `base + count + i`, a source pointer, current declared first, the copy first,
+// `colors` name, count declared before the array, a flags local 129/129/129/129/143/129/113/129; early
+// `return false` 170; result declared in the block 95; `result = count > 0` after the loop 168; result set
+// before the loop 91 (aligned 75); pointer increments in a plain for 97, inside the count test 108.
 // Direct size/24 count 161; const base, entry and function views 91;
 // unsigned count 171; component clamp loop 91; scale loop and both loops 90
 // (one-count gain rejected).
@@ -721,9 +737,24 @@ color3f *function_131c20(color3f const *a, color3f const *b, dword flags, real t
 // the destination taken as &base[count] 91; the two pointer increments swapped 91.
 // Source pointer derived from the destination inside the loop, so that the source induction
 // variable is never used in the preheader 186.
+// Lane 14 r20: a plain `for (i = 0; i < count; i++)` with `&base[count + i]` and `result = true`
+// in the body 149 (563 bytes: VC hoists the result store into the preheader and keeps the source
+// pointer only in its stack slot, as retail, but the false result takes BL with EBX pushed at
+// entry, so the two false exits merge, and the destination still takes EDI); the same inside the
+// count guard 148; with `result = true` before that loop 107; a destination array `base + count`
+// indexed by i 164; the destination pointer stepped at the end of the body 161; red scaled by `*=`
+// and green and blue as `value *` 91 (identical code: VC picks the mulss operand order itself); the
+// destination formed after the count test 99 (again).
 // Round 86: scalar component copy 139; blend-only count 169; scale-only count 170;
 // blend-only function array 173; scale-only function array 139; shared inner counter 105;
 // shared function pointer 91; advancing outer entry pointer 203. Original body restored.
+// Round 52: both value reads through the existing 0xbe8b0 91 (identical code, kept: it replaces that
+// helper's body written out twice); color scale and clamp as inline helpers 91 (identical); the
+// destination assigned first from the object 172 (575 bytes); one colour-array local split into
+// destination and source 182 (586 bytes); a plain `for (i = 0; i < count; i++)` with a per-iteration
+// destination pointer 186 (556 bytes). Screened: the destination declared before the source but
+// assigned after it identical; the source derived from the destination 164; indexed `current[i]`
+// accesses 135. The destination keeps EDI (the 0x131c20 result register) in every form.
 // @retail 0xbe8e0
 bool __stdcall function_be8e0(long object_index)
 {
@@ -747,9 +778,7 @@ bool __stdcall function_be8e0(long object_index)
                     s_colour_function_ab *function = &entry->functions[j];
                     if (function->blend_name)
                     {
-                        real value;
-                        if (!function_bab40(object_index, function->blend_name, &value)) value = 0.0f;
-                        function_131c20(&function->lower, &function->upper, function->flags, value, &*current);
+                        function_131c20(&function->lower, &function->upper, function->flags, function_be8b0(object_index, function->blend_name), &*current);
                     }
                 }
                 for (long j = 0; j < entry->function_count; ++j)
@@ -757,8 +786,7 @@ bool __stdcall function_be8e0(long object_index)
                     s_colour_function_ab *function = &entry->functions[j];
                     if (function->scale_name)
                     {
-                        real value;
-                        if (!function_bab40(object_index, function->scale_name, &value)) value = 0.0f;
+                        real value = function_be8b0(object_index, function->scale_name);
                         current->red = value * current->red;
                         current->green *= value;
                         current->blue *= value;

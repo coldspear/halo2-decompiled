@@ -1379,7 +1379,9 @@ point2f *g_4687c4;
    sway springs, the weapons' animations, zoom overlays and idles */
 static __forceinline real function_x82e52f(dword *seed, char const *file, long line);
 
-// score 218 (was 218): frame 0x28 versus 0x2c, unit/mode homes and shared look reciprocal remain.
+// score 218 (was 218; round 30's set below reached 122 but is not kept, see the review line): frame
+// 0x28 versus 0x2c (look homes), the shared look reciprocal, ESI/EDI saved before the unit test (retail
+// after it, restored at the loop exit) and the channelb8 pointer in ECX remain.
 // Earlier 241 from 241: frame 0x30 vs 0x2c; esi/edi saved before the unit test (retail after it,
 // frame 0x28 vs 0x2c; esi/edi saved before the unit test (retail after it,
 // frame 0x28 vs 0x2c; esi/edi saved before the unit test (retail after it,
@@ -1530,6 +1532,32 @@ static __forceinline real function_x82e52f(dword *seed, char const *file, long l
 // Round 317: Existing shared scalar clamp for both look outputs, with zoom clamp,
 // inline declaration and confined spring/look-phase subsets, 220 each (fast control 220,
 // full 218). Original macro expressions, declarations and complete body restored.
+// Round 30 (lane 11): retail's movzx form found with a compile-only harness of this file: the two flag
+// bits tested on a `long` copy of the channel byte under the update test (every byte, word, dword,
+// shift, bitfield, bool, volatile and helper spelling of the direct test folds to `test byte`; a
+// two-definition dword local also gives movzx but keeps an unthreaded join). Kept with the round 93
+// set (aligned counts, fast): movzx 116 -> 114, active preset 110, callback `== 0 ? right : left` 109,
+// positive zoomed/scoped in retail's order with the clear test lacking `zoomed &&` and the overlay
+// play per arm 48, the set read once 47 (plain 218 -> 122, 2196 bytes). Not kept (fast, control 125 /
+// aligned 47): set test as a ternary with field reads 323/53; if/else look clamps 128/50 (reciprocal
+// still shared); early return for a missing unit 125 (same code); weapon object looked up after the
+// orientations and callback 134/76; look rates as one point2f 121/33 (retail's -0x2c/-0x28 homes,
+// frame 0x30, reciprocal still shared; a grouping). Harness only: no clamp or rate spelling (pointer or
+// reference clamp helper, array, statement order, named rates, explicit reciprocal) stops the shared
+// reciprocal; ESI/EDI are shrink-wrapped as in retail without LTCG but not with it, also with the
+// post-loop code removed. Lead: 0xb6760 (src/unknown_0b66c0.cpp, not ours to change) may be a callee
+// retail's callers treat as clobbering ECX (channelb8 kept in ESI).
+// Review of round 30 (m3): not kept: the 48/122 set needs `else if (zoomed)` after `if (scoped)`, a test
+// that is always true inside `if ((zoomed || scoped) && ...)`; with a plain `else` it is 306 (fast). Code
+// back to the original; the movzx, active-preset and callback findings above still stand alone.
+// Round 24 (lane 14, fast; aligned counts by sequence alignment, base 116): the movzx flag test (a named
+// `long` copy of the channel byte, two bit tests), the active preset and the `== 0 ? right : left` callback
+// together 358 (2199 bytes, aligned 109); with the overlay set read once (negative flags) 372; those three
+// with positive zoomed/scoped bools in retail's order, the clear test without the extra `zoomed &&` and a
+// plain `else` for the play arms 328 (aligned 70); that with the play and save in each arm and the set read
+// once 306 (2190 bytes, aligned 53: two instructions short, retail's `cmp zoomed; je` in the else arm); the
+// positive bools alone on the original body 401. Unit/mode slots (ours -0x18/-0x1c), the look homes and
+// shared reciprocal and the ESI/EDI save region are unchanged by all of them.
 // @retail 0x166d75
 void __stdcall function_166d75(long user_index)
 {

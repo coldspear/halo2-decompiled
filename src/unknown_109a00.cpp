@@ -239,6 +239,9 @@ static __forceinline bool carried_object_motion_apply(long object_index, vector3
 // Round 16: the change through the existing in/out scale helper 10; the delta negation through it 10;
 // both 172; the object velocity written out without its pointer local 238; the output copy read from
 // the object 10. The same point-velocity helper loads the linear x first in matched 0x109e00.
+// Round 89: shared object-velocity receiver 199; second output pointer 163; nonrotating receiver 162;
+// change renamed scaled_change and displacement renamed offset 10 each; second linear pointer 164;
+// const change and const scale 10 each; force-inline point-velocity helper 10 (0x109e00 still matched).
 // @retail 0x109a00
 bool function_109a00(long object_index, vector3f *delta, bool rotate, vector3f *velocity)
 {
@@ -435,6 +438,9 @@ PRIVATE inline void carrier_body_angular_velocity_get(s_carrier_body const *body
 // entry after the component index 146.
 // Round 236: signed/unsigned matching-body result, native/late default and existing center converter 231/239/253/246/231/239/253/246.
 // Original executable body restored.
+// Round 241: entry/component/entry-component/object/entry-object/component-object/
+// all receivers at use 303/303/353/133/303/307/352; all with existing center converter 362.
+// Original body restored; input registers, physics spill and center/projection scheduling remain.
 // @retail 0x109660
 void function_109660(long object_index, long entry_index)
 {

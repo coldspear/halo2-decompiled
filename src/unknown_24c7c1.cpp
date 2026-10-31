@@ -563,6 +563,11 @@ void function_24ce9d(word const *text, long left, long top, short_rectangle2d *b
    the list of messages, then the timed message and the status text at the
    bottom */
 // score 115 (was 115): frame 0x264 agrees; predicate packing, color/rectangle/scalar homes and the text-buffer call convention still differ.
+// Round 15 (m3 lane 2, LTCG env harness of this file + depth-4 callee closure, aligned counts; base 123 = plain 115):
+// bool timer 121; long left 129; bool timer with long left 127; every local renamed to sort first or last
+// (view, font, line_height, player, hud, split_screen, height, status_player, origin, the three flags) identical
+// code; 80 orders of the player/count/hud/flag/height declarations, long and bool timer each, 125-219 (none
+// below the current order). The instructions are retail's; only the spill-home permutation differs.
 // Earlier: frame slots differ (the scripted flag packs beside the split-screen
 // byte, shifting colour, view, left and the loop index); BLOCKED-BY 0x15f120, whose text
 // buffer retail passes in esi (our push is the extra byte). Tutorial colour as three calls 233;
@@ -576,6 +581,20 @@ void function_24ce9d(word const *text, long left, long top, short_rectangle2d *b
 // outer fade ticks with byte timer 191; shared flash/fade scalar with byte/long timer 190/109 fast;
 // the long-timer form 107 plain (seven-point gain, restored); long scripted 208; inverted tutorial
 // choice 109; const short left 109; early shared declaration 109; result-first scripted 453.
+// Round 131 (lane 4): the 0x15f120 call now agrees (buffer in esi; that callee matches), so the
+// rest is the frame: retail keeps the timer flag in a byte at -0xf, shares the flash scalar with the
+// loop index (-0x18), gives the message height its own slot (-0x4c) and stores left as a word at
+// -0x3c; ours shares one dword (-0x14) among the timer flag, flash and message height. Bool timer
+// 191 (1888 bytes, aligned 111 against 113); message height declared at the loop top 309 (aligned
+// 118); top/left declared at their first assignment 114 (the reduced image's control, same code);
+// ticks read from the field at each use 115 (same code); scripted flag computed first 205; text_bounds
+// declared before bounds 114 (control, same code).
+// Round 51: retail keeps the three message flags as bytes at -0xf/-0xe/-0xd and `left` as a word memory
+// local at -0x3c; the flags are spill slots (renaming them and split_screen in four sort orders: no
+// change). Bool timer 191 (1888 bytes; structurally closer: flags -0xe/-0xd, scripted still at -2
+// beside split_screen). On the bool timer (LTCG env link, aligned counts against 123 for the base):
+// tutorial colour as if/else 131, tutorial ternary inverted 121, `height` declared before the flags
+// 126 (1901 bytes), scripted tested first 235; long timer with the tutorial if/else 133.
 // @retail 0x24cf66
 void function_24cf66(long local_player_index)
 {

@@ -373,6 +373,25 @@ short *function_e70b0(long unit_index, short *value);
 // Round 7 (m3 lane 2): matched 0x1aeb60/0x1af0a0 here give the index ECX and the data EDX as ours does;
 // the index copied into a local 49; the prop index named for its test and lookup 49; the index read once
 // through its address 49; `2 == ...` for the final mode test 49; `state->timer == 0` 49.
+// Round 11 (m3 lane 2): the two final tests and the action query as one condition (action declared
+// first) 49; the prop time product in a named elapsed value 49; the timer's zero test nested over
+// the actor flag test 49; `if (--state->ticks < 1)` 108 (445 bytes); the final mode read through a
+// second named actor lookup 49. Retail: 8 matched functions load an actor index into EDX with the
+// data base in ECX (0x1a80e0, 0x1b5aa0, 0x258660, ...), 15 into ECX (0x1aeb60, 0x1a93c0, ...); no
+// frame or prologue feature separates the two groups.
+// Round 132 (an LTCG env link with 0xe70b0's object reproduces it): with 0xe70b0 left out of line the
+// first 97 instructions are retail's (index EDX, actor data ECX), so the swap follows the inlined
+// action-state read. At the call: its result in a pointer local 110 (437 bytes); called alone and the
+// local compared 49; `7 !=` 49; the unit index in a local 49; `state->unknown34 != 0` 49.
+// Round 110 (fast): the final block as a guard return 49; the action query's out value tested in place of
+// the returned pointer 49; `7 != ...` 49; `0 < state->timer` 49 (the same code each time). Diagnostic, not
+// kept: the actor address written offset first (`(index & 0xffff) * size + data`) 49, so the operand order
+// of the address expression does not decide the ECX/EDX tie either.
+// Round 24 (lane 14): every differing row is ours with the scratch registers rotated (ECX/EDX at the
+// entry, EAX/EDX and ECX/EAX in the later blocks), as if retail's allocation started one register
+// further on. The definition moved after 0x1afcf0 in this file 49 (fast and plain; other functions
+// unchanged); the existing typed actor_datum_get for the first lookup 49, for both lookups 49; the
+// delay product written random times ticks 49 (the same code each time).
 // @retail 0x1afb30
 void __stdcall function_1afb30(long actor_index, s_slot *slot)
 {

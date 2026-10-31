@@ -749,7 +749,7 @@ void function_143250(
 	}
 }
 
-// score 1781 (was 1808): frame 0x314 versus retail 0x300; rotation admission and basis/matrix homes differ.
+// score 1781 (was 1781): frame 0x314 versus retail 0x300; rotation admission and basis/matrix homes differ.
 // Earlier: full frame 0x300 agrees; rotation input and basis/matrix homes remain.
 // Frame pointer 3182; separate adjacent basis pairs [0,1] 2278, [2,3] 2320,
 // [4,5] 2286, [6,7] 2329.
@@ -804,6 +804,17 @@ void function_143250(
 // [0,1,4]/[3,4,5,6]/[0,1,3,4,5,6] 1843/1806/1837/1836/1799/1781/1915/2075.
 // Rows [0,1,4] kept: 1781 plain, 10789/10773 bytes, frame 0x314; all other measurements unchanged.
 // Only fourteen additional matrix stores move; every scalar, precision boundary, value and application tuple remains.
+// Round 447: Third-band retained late rows [0,1,4] by columns in six row orders, then descending columns across rows and within each row
+// 1791/1795/1795/1790/1795/1791/1812/1803. Rotation admission and basis/matrix spill homes remain.
+// Original executable source and all trial helper/interface changes restored.
+// Lane 10 round 34: retail passes rotation in EAX, coefficients in ECX, result in ESI and the order on the stack
+// (ret 4); ours stacks rotation and the order (ret 8). --fast pins conventions from the last full build, so only
+// plain checks show them. Plain: the parameters in retail's call-setup order (result, order, rotation,
+// coefficients; definition, declaration and four calls) 1781, rotation still stacked; 0x22850's coefficient loop
+// written as three per-channel calls as retail has them (and as its second half does) 1781 here, 0x22850 237->254;
+// the eight leading terms and the matrix as plain locals 2116 (frame 0x300 as retail, rotation still stacked).
+// Fast: rotation-first orders (rotation, order, result, coefficients) and (rotation, result, order, coefficients)
+// 1781 each (convention pinned); round 19's body 2266 (rotation stacked there too).
 // @retail 0x143600
 real *function_143600(real const *rotation, unsigned long order, real const *coefficients, real *result)
 {

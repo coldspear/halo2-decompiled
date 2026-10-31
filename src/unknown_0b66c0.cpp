@@ -190,6 +190,12 @@ static __forceinline char *upload_copy_ab(char *destination, char const *source,
 // 104). Round 41 (fast): the length through the existing bounded length 0x11c9a0 (inlined by LTCG
 // as retail does in other files) 40, identical code, also with the length test nested 40; result
 // set in an else arm 48 (95 bytes, 0xb5f10 41); `count + start` 40.
+// Round 109 (lane 5, fast): the natural `string + start` at the copy re-viewed: the body then keeps
+// start in EDX for its whole life (scan counts in ECX, walks in EDI), so LTCG passes it in EDX;
+// retail evicts it ECX->EDI for the scan. A plain string parameter read once through its own
+// address, at the scan with `string + start` 40 (104 bytes, 0xb5f10 6), at the add 40 (104), at the
+// scan with `start += (long)string` 40 (104); `string + start` with `if (++count > 0x200)` 28
+// (0xb5f10 6); `string + start` named after the clamp 28 (0xb5f10 6).
 // Round 44 (lane 16, fast with 0xb5f10/0xb61d0): retail's scan takes ECX (count), EDX (walk) and
 // EBX, so the start it receives in ECX moves to EDI (matched 0xb61d0 moves its EAX start to EDI
 // the same way); ours keeps the start in whichever scratch register the scan leaves free and LTCG
@@ -198,6 +204,18 @@ static __forceinline char *upload_copy_ab(char *destination, char const *source,
 // condition (`bool result = start >= 0 && ...; if (result)`) 44 (0xb5f10 41); a non-volatile local
 // copy of the string for the scan and the add 60 (83 bytes, 0xb5f10 80); a `byte` result 41
 // (0xb5f10 41); `result = true` before the copy 40 (same code).
+// Round 132 (an LTCG env link of this file reproduces it and 0xb5f10 exactly): `string + start` gives
+// retail's body except that start lives in EDX and the walk in EDI (retail: walk EDX, start EDI), so
+// LTCG passes start in EDX. With it, the length loop as `while (length < 0x1ff && *string++)` 28, a
+// walk local in the length helper 28, the source named before the clamp 32 (0xb5f10 6 each); the
+// while-loop helper alone 40 (same code).
+// Round 54 (lane 12, fast with 0xb5f10/0xb61d0; env link = the build's listing): `if (++count > 0x200)` 40
+// (same code); `string + start` named after the clamp with the length test nested 28 (0xb5f10 6); a walk
+// local in the shared length helper 40 (0xb61d0 2); the length named inside the sign test with an early
+// `return result` 40 (103 bytes); `long end = start + count` tested against the length 43 (101 bytes).
+// Env grid (start += string / string + start / named source x count++ or ++count x one or nested
+// tests, 12 forms): start in ECX for its whole life (40) or in EDX (28, 0xb5f10 6) only; retail
+// colours start after the scan's counter and walk (EDI) and still receives it in ECX.
 // @retail 0xb6220
 bool function_b6220(char const *volatile string, long start, long count, char *destination)
 {
@@ -468,6 +486,14 @@ bool function_7af40(s_type_99af70 const *address);
 // Actual open completion from false entry or validity result, bool/long carrier, direct/shared
 // endpoint initialization 106/100/128/124/109/105/131/128. False joins, endpoint flag scheduling
 // and split attempt increment remain; original body restored.
+// Round 109 (lane 5, fast), all on retail's endpoint reads (local for the three stores,
+// `connection->endpoint` for the flag and the open call): the copy's source read once through the own
+// parameter's address 111; the state store inside the copy's destination argument (an inline member
+// returning the path buffer) 111; the path read into a named local between the counter and the state
+// store 111; the copy helper returning void 111; the three stores through an inline taking
+// `connection->endpoint` and the type (the existing private endpoint initializer, without its null
+// test) 111. The counter's load/inc/store split (EBX, address then in EAX) survives each; only a
+// written-out strncpy keeps the in-place `inc` (listed, 17).
 // Round 44 (lane 16, fast with 0xb40b0/0xb5f10): with retail's endpoint reads and the copy before
 // the state store (round 84's 15) only the state store differs: VC puts it after the strncpy call
 // and shares `eax = 1` with the return value. Whenever the state store precedes the call in the
@@ -475,6 +501,23 @@ bool function_7af40(s_type_99af70 const *address);
 // 0xb40b0 61): with the reads, state stored first 111; the increment through a pointer to the
 // field 111; plain member accesses without the `connection` alias 111; the copy's source as a
 // volatile read of the own path parameter 111. Without the reads, counter/copy/state order 36.
+// Round 132 (an LTCG env link with 0x7af40's object reproduces the full listing): with retail's
+// endpoint reads, the in-place `inc` survives when `connection` is used after the copy call (a
+// diagnostic store there gives retail's code plus that store); a destination pointer kept across the
+// call with no later use of `connection` splits it into EBX and moves the address to EAX. On the
+// reads: the copy helper with a dword or unsigned size, plain inline, returning void, keeping
+// strncpy's result, writing the terminator through `destination + size - 1` or a pointer computed
+// first, a destination local, or that local declared before the endpoint stores 111 each; a template
+// overload on the array 31 (kept out of line: in-place `inc`, destination ESI); one result carried
+// through the open call 94; the open test inverted with the close and return first 101; the counter
+// after the copy 37; the counter, state and copy in an inline member with the flag alone re-read 30
+// (env); the terminator through `connection` with a destination local 17 (as the written-out copy).
+// Round 54 (lane 12, fast with 0xb40b0/0xb5f10; env link = the build's listing): the copy, then the
+// counter and the state 36 (248 bytes); counter, copy, state 36; the copy first with retail's endpoint
+// reads 35 (252); `flags = flag ? 0x40 : 0` 28 (244; neg/sbb select, not retail's or-byte); a
+// pre-increment 32 (same code). Env only: the three stores through a struct-initialized endpoint copied
+// to `*connection->endpoint` 92 instructions (a stack temporary); the copy's terminator through its
+// returned destination 89.
 // @retail 0xb5d40
 bool s_http_connection_ab::connect(long address, word port, char const *path, bool flag)
 {
@@ -584,6 +627,11 @@ short function_b5000(s_transport_endpoint *endpoint, void const *buffer, short l
 // `if (sent != -2) return result;` then the restore and the goto 25 (retail's order, folded false);
 // success arm first in an if/else 10; position declared before the loop 10. Retail's shared
 // return (BL, not folded) follows the would-block test, so it comes first in its source order.
+// Round 90: accepted-send else/continue with the restore after it 10; the nonnegative-guard
+// equivalent 10; result from the sentinel before the conditional restore 74; result assigned
+// before the restore 10; both negative paths returning result 37; only the blocked path returning
+// result 44; result from a second sentinel test after the restore 75; success-first direct negative
+// return 30; error/sentinel else-if chain 50. Original body restored.
 // @retail 0xb6000
 bool s_http_connection_ab::send()
 {

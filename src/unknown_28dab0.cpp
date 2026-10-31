@@ -177,6 +177,21 @@ void __stdcall swarm_delete(long arg_0);
 // its NONE/zero stores remain); on that, the allocation in its own local with the result set on success
 // and the delete path as an else 89; the limit read first and replaced when nonpositive 94; the result
 // declared after the tag with the tag-field test nested 92.
+// Round 45 (lane 16): the delete path returning NONE directly 96 (first +0xb, the result then shares
+// EBP from the start); the NONE result assigned in the failed-test arm of an if/else 92 (NONE made after
+// the first call); the success block returning on its own 95 (`--fast`, callee caveat); retail's store
+// order with the if-form limit and the delete path returning NONE 92 (plain, first +0xb); the
+// result as an unsigned dword 44 (plain, same code).
+// Round 177: the tag field compared against the result with the result/tag names in either sort order
+// 44/44 (same code), on the s2 shape 92/92 (same code: names never break this tie); the tests as a
+// `do { ... break; ... } while (false)` chain 149 (328 bytes), on s2 132; the tag pointer `const` 44 (same
+// code); the tag field read at the loop call instead of a local 106 (the tag then takes EBX and the NONE
+// value stays in EDI, copied to ESI for the result: NONE prefers EDI even with ESI free).
+// Round 24 (lane 14, fast; the 0x28dbd0 call setup is already retail's, EAX definition and ECX
+// placement): on the s2 shape (92), the definition index read before the allocation 98; the origin
+// point read once into a named pointer for both copies 92 (same code); the record fields stored in
+// declaration order 92. On this body, the delete path as an else arm without the goto, count test
+// `> 0` first, 56; the same with the `<= 0` delete arm first 44 (identical code, kept: no goto or label).
 // @retail 0x28dab0
 long __stdcall function_28dab0(long arg_0, s_28dab2 const *arg_1)
 {
@@ -205,11 +220,12 @@ long __stdcall function_28dab0(long arg_0, s_28dab2 const *arg_1)
 			{
 				swarm_delete(local_0);
 				local_0 = NONE;
-				goto local_6;
 			}
-			local_3->initial_creature_count = local_3->creature_count;
+			else
+			{
+				local_3->initial_creature_count = local_3->creature_count;
+			}
 		}
 	}
-local_6:
 	return local_0;
 }

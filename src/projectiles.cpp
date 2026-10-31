@@ -15,6 +15,7 @@ detonation. */
 #include "object_iterator.h"
 #include "effects.h"
 #include "sound_sources.h"
+#include "impacts.h"
 #include <math.h>
 #include <string.h>
 
@@ -383,6 +384,16 @@ bool function_fa580(real speed, point3f const *origin, point3f const *target, ve
 }
 
 /* the rotation a spinning projectile makes each tick */
+// score 3 (was 3): this round: retail keeps the rotating-flag OR and store ahead of the
+// angle duplicate and the first axis load; ours still hoists that load above the flag
+// store and sinks the store below the duplicate. The axis copy-in and the normalizer
+// re-read as an array (the helper's v->n[] terms, and a local real *axis_values) leave
+// the load hoisted (3, 3, 3; component stores through that pointer 68); the helper
+// without the inline keyword leaves real calls (168, and 0xfa580 stops matching);
+// __forceinline and a const pointer parameter change nothing (3, 3); a reference to the
+// axis (all, copy only, normalize only) and a helper taking a reference parameter give
+// 14/3/14/14; the flag through a dword pointer is 3 and through a pointer local does
+// not compile.
 // score 3 (was 3): the flag OR/store crosses the angle duplicate and first
 // axis load differently. Forced inline, speed/axis/angle declarations, the
 // first-product order and *= no change; shared normalize 14; j+(k+i) 14;
@@ -574,96 +585,27 @@ struct s_projectile_material_response
 
 s_projectile_material_response g_547660;
 
-// score 34 (was 34): word input, material-pointer formation and ordinal/loop entries still differ.
-// Prior: Input index load width, loop entry alignment and response cursor calculation differ.
-// Indexed responses 69; pointer stepped in body 69; entry result 67; direct count 75;
-// direct material global 72; body range validation 69; single exit 69; entry result/indexed 67;
-// native current ancestry index 69; entry result/current index 67.
-// Native table-end traversal: cached count / result-gated 54/36, relational 54/36;
-// per-use count 60/65/60/65; result-gated ordinal 57/55, nullable material 57/55;
-// indexed producer/result-first/current-short combinations 58/56/58/56;
-// direct table bound 36, with result first 34; without unused parameter reference 49/49.
-// Kept direct table bound/result-first 34 (147/145 bytes), plain confirmed;
-// input index width, loop entries and cursor arithmetic remain.
-// Short ancestry with direct endpoint 34; positive ordinal/body cursor 49; unguarded ordinal 55;
-// positive while ordinal 49; short ancestry/ordinal 48; per-use count/ordinal 66;
-// multiply-used response base 34; response base/short ancestry 34. Word input and cursor/loop entries remain.
-// Typed material table: cached header endpoint/count once or per-use 34/65; cached header ordinal 49/66;
-// per-use header endpoint 34/71 and ordinal 69/66. Typed parent member does not repair the word input.
-// Result-owned response cursor: endpoint 40, ordinal 39, relational endpoint 40;
-// direct ordinal/endpoint success returns 79/67; result cursor with per-use count
-// ordinal/endpoint 70/73; short ancestry with result ordinal 39. Restored.
-// Ordinal reset before material lookup, ancestry/entry lifetime with cursor/indexed candidates
-// 58/56/58/56; immutable current-material values with those four forms 58/56/58/56.
-// Native word input and response scan entry remain; opening body restored.
-// Round 6: counted response loop 56 (retail's single guard and counter, registers rotate, inner
-// loop unaligned), with a count guard 47, with a pointer cursor 55; the NULL-default material
-// getter shape around those 34/56/47; short walk local without/with the reference 51/34, counted
-// 65/56. Compiled alone with every argument on the stack, each form (short, word or long
-// parameter, walk local, read through the reference) loads the index as a dword, never retail's
-// word load that keeps it off the register-argument list.
-// Round 8: compiled alone, the index loads as a word only when nothing reassigns it in a loop (the
-// loop-carried copy widens the entry load), so the walk is not a loop over the parameter as written;
-// counted response loop 56 (alone: retail's guard/counter shape, but index EDI, material ECX and the
-// response ESI where retail has ESI/EDI/EDX), NULL-default getter with it 56, while-counted 56,
-// tail-recursive call on the parent 72 (made a loop, result dropped), counted without the reference
-// 64, walk local read through the reference 34. Round 101: a word parameter with short-cast range
-// tests 56 (146 bytes, movzx); `return` of the call on the parent when nothing matched 69 (VC makes
-// a rotated loop, still a dword load); the counted loop reading the element through the index at
-// each use 56 (140 bytes); the counted loop testing the definition's count at each pass 70; the
-// parent read only when nothing matched 74. Screened alone (synthetic shapes too): every loop form
-// over a short index, with the index read through the parameter's address or not, loads a dword;
-// the read through the address gives the word load only when the value is not loop-carried
-// (0x1ed70). A scan of the matched functions finds no word-loaded parameter that a loop reassigns.
-// 64, walk local read through the reference 34.
-// Round 10: retail's entry jmp over the loop pad follows from its 5-byte word load. A walk local
-// initialised from the parameter 34 (copies coalesce), with the counted response loop 55, either
-// without the reference 51/65 (the index then arrives in EDX); a pointer to the index walked from
-// the parameter to each parent field 49 (word loads, but at the loop head), with the counted loop
-// 47; the existing global_material_get (inline in damage.cpp) for the lookup 34 (same code).
-// Round 12: a counted scan gives retail's shape but colours index/material/counter/pointer EDI/ECX/
-// EDX/ESI (retail ESI/EDI/ECX/EDX) with the dword entry load: a named response base indexed 54,
-// the element indexed off the definition 56, a walk local read through the reference 56, the
-// material declared before the loop 56; the pointer scan with a walk local read through the
-// reference 34 (same code). A read through the reference loads a word only when no loop carries it.
-// Round 440: Material-pointer ancestry, live/cached table and full/short identity, endpoint/ordinal scans
-// 173/150/168/140/162/131/150/126. Existing native material-value parameter endpoint/count graphs
-// 40/40/40/40/21/21/21/21; the counted form reaches 145 bytes but rotates index/material/scan homes.
-// That aggregate parameter is exact-only and restored. Its ordinal zero before admission/lookup,
-// direct/NULL lookup 50/50/51/54. Original scalar parameter, unused reference, callers and body restored.
 // @retail 0xfd4c0
 s_projectile_material_response *__stdcall projectile_get_material_response(s_projectile_definition const *definition,
-	short material_index)
+	c_type_47f957 material_type)
 {
 	s_projectile_material_response *result = NULL;
-	/* retail keeps material_index on the stack */
-	short const *reference = &material_index;
 	long response_count = definition->material_response_count;
-	byte *materials = (byte *)g_4e034c;
+	long i;
 
-	while (!result && material_index != NONE && material_index >= 0 &&
-		material_index < *(long *)(materials + 0x150))
+	while (!result && global_material_get(material_type.m_index))
 	{
-		byte *material = *(byte **)(materials + 0x154) + material_index * 0xb4;
-
-		if (!material)
-			break;
-
-		if (response_count > 0)
+		for (i = 0; i < response_count; i++)
 		{
-			s_projectile_material_response *response = (s_projectile_material_response *)definition->material_responses;
+			s_projectile_material_response *response = (s_projectile_material_response *)definition->material_responses + i;
 
-			while (response != (s_projectile_material_response *)definition->material_responses + response_count)
+			if (response->material_index == material_type.m_index)
 			{
-				if (response->material_index == material_index)
-				{
-					result = response;
-					break;
-				}
-				++response;
+				result = response;
+				break;
 			}
 		}
-		material_index = *(short *)(material + 8);
+		material_type.m_index = *(short *)(global_material_get(material_type.m_index) + 8);
 	}
 	if (!result)
 		result = &g_547660;
@@ -1002,6 +944,11 @@ real function_30bf0(vector3f *v);
 // speed defaulted at its declaration with the forced test first 238; the horizontal variable reused
 // for the velocity's horizontal length 232; the time-scale speed chosen by a ternary with an else 261
 // (971 bytes); six spilled-scalar renames 232 (harness).
+// Round 22 (m3 lane 15, --fast with the five callers, which alone builds another convention): t2 divided by
+// `(a * 2.0f)` 248 (callers lost); optimal time from `-1.0f / (a * 2.0f)` 271; forced speed read through its
+// reference at both uses 232 (same code); minimum speed as if/else 232 (same code); time-scale clamp as a stored
+// product with if/else-if 253. The read through the address folds back to the parameter, which ours enregisters in
+// EDI from entry, so the distance output is not kept in EDI from entry as retail keeps it for 0xfa580.
 // @retail 0xfa1a0
 bool function_fa1a0(real speed, real gravity_scale, point3f const *origin, point3f const *target,
 	real *minimum_speed, real const *time_scale, real const *forced_speed, bool high_arc, vector3f *direction,
@@ -1239,6 +1186,11 @@ extern vector3f *g_4687ac;
 // radius local 188/170; origin-side endpoints first 174 (frame 0x30); endpoints through
 // vector3f_add_scaled 158 (F0 spill as retail); with a named negative radius 159; offset queries
 // joined by || 158. Not kept: 0x1c8df0 then inlines three of its 0x16a040 calls (170 -> 457).
+// Round 22 (m3 lane 15, one-file harness exact at 163, radius form 181 in --fast too): radius field at each use
+// 181 (definition in EBP as retail); single-exit result 184, with the radius at use 187; first query vector through
+// vector3d_from_points3d 163, with the radius at use 188; side delta through it 163, with the radius 181, both 188;
+// endpoint declarations at the block top 163; first query vector reused for both offset queries 163, with the
+// radius 180; a separate opposite query vector 164; opposite endpoints computed first 186.
 // @retail 0xfc030
 bool function_fc030(long projectile_index, point3f const *point, s_collision_result_1697c0 *collision)
 {
@@ -1304,6 +1256,14 @@ long function_189fe0(s_sound_request const *request, long tag_index);
 
 /* the effects and sounds of an effects block (a material's response) at
    a point */
+// score 4 (was 4): this round: retail's 0xfd740 takes its six selector outputs
+// in the order (effect index 0, sound 2, effect index 1, effect index 2,
+// sound 0, sound 1), the first two on the stack and the last four in ecx, edx,
+// esi and edi; our callee takes them in the order (effect index 0, sound 0,
+// effect index 1, sound 1, effect index 2, sound 2) and reads the last four
+// from esi, edi, ebx and edx. The four addresses are the same set, so only
+// the registers and their order differ; matching them needs the callee's
+// parameter order changed, which is not ours to change. BLOCKED-BY 0xfd740.
 // score 4 (was 4): only the register arguments of the 0xfd740 call differ (retail
 // passes the first sound in esi, the second effect in ecx, the second sound in edi
 // and the third effect in edx; ours ebx/edi/esi/edx), set by that callee's own body.
@@ -1402,6 +1362,10 @@ void function_fcea0(long effects_index, point3f const *point, vector3f const *di
 // cannot keep retail's zero in EBX across that call (the point then takes EBX). Flag-bit
 // member for both `|= 4` 115 (same code); tag before the flag 115 (same code); markers
 // before the scales 115; compression before the point copy 117; velocity copy first 178.
+// Round 22 (m3 lane 15): NUMBEROF bounds 115 (retail's `jb` in both loops; positional count unchanged); dword
+// counter 115; sound index read at each use 115; sibling 0xfcea0's request order with NUMBEROF 120; sound records
+// at function scope 115. Retail pushes the 16-bit material raw to 0xfd740 where ours zero-extends it for that
+// callee's `long` parameter: BLOCKED-BY 0xfd740 for its parameter width as well as its EBX argument.
 // @retail 0xfd0e0
 void function_fd0e0(long definition_index, real scale_a, real scale_b, vector3f const *direction,
 	point3f const *point, vector3f const *normal, word index, bool attached, long object_index,
@@ -1746,6 +1710,12 @@ real function_17c900(short function_type, real input);
 // The salt written at both uses again gives retail's convention, 329, and with the three exits 328
 // (aligned difference 140, 70 with registers masked: the rotation's products and the normalized
 // components' homes remain). Body restored.
+// Round 22 (m3 lane 15): the header normalize_inline 348; lead field read at each use 369; the file normalize
+// helper with one exit 344 (1454 bytes, four points; 0xfa580 stays matched, 0xfbd40 3); that with the output
+// written at three exits 358; plus the salt computed in the wander branch 345 (projectile in ESI as retail, index
+// EAX to EBX, output EBP, frame 0x2c); plus a target pointer local 345 (same code).
+// On the one-exit helper: salt in the wander branch alone 359; three exits + wander salt + lead read at each use
+// 351 (1463 bytes); three exits + lead at each use 361; lead at each use 352 (1463 bytes).
 // @retail 0xf87f0
 void function_f87f0(long projectile_index, point3f *aim_point)
 {
@@ -2571,7 +2541,7 @@ PRIVATE __forceinline void projectile_impact_effect_parameters(s_effect_paramete
 /* a projectile's collision: damage to what it hit, the response of the
    material hit (detonating, bouncing, reflecting, attaching), the impact
    effects and sounds, then the projectile's action */
-// score 1197 (was 1197): Frame 0x220 versus 0x218, stacked velocity and normalization/effect scheduling remain.
+// score 1190 (was 1197): Frame 0x220 versus 0x218, stacked velocity and normalization/effect scheduling remain.
 // Earlier 1162 (was 1185): frame 0x220 versus 0x218, velocity on the stack versus eax, input normalization and effect scheduling remain.
 // Independent damage scopes 1162 (kept); direct sound/late effects/both/scoped both 1223/1185/1223/1199; role names/chains/external normalization 1185/1185/1323.
 // Full count/potential conjunction/input aggregate/assignment helper/uninitialized direction 1201/1216/1198/1198/1185; array aggregates/plain loop/unsigned index 1166/1348/1185.
@@ -2609,6 +2579,12 @@ PRIVATE __forceinline void projectile_impact_effect_parameters(s_effect_paramete
 // Round 440: Native normal/point/both geometry values 1329/1262/1362, producer and entry storage alike;
 // both library-copy forms 1362. Frames 0x228/0x234 regress; original geometry reads and every body statement restored.
 // Native material-value callee and consistent call construction 1190; restored with the exact-only callee.
+// Round 22 (m3 lane 15): 1197 -> 1190 from 0xfd4c0 taking the material type (both calls wrap the index). The
+// velocity stays on the stack because the unmatched 0xfd7d0 takes an out-pointer in ESI, so ours reloads the
+// velocity after that call (BLOCKED-BY 0xfd7d0); retail also pushes the material to it raw (16-bit parameter).
+// Material local as c_type_47f957 1210; second lookup from c_type_47f957(damage.material_index) 1196; the damage
+// record view's material field typed c_type_47f957 1196 (0xfc330 527 -> 522); both 1210; one function-scope
+// damage record 1197 (frame 0x278).
 // @retail 0xfaa60
 void function_faa60(vector3f *velocity, long projectile_index, s_collision_result_1697c0 const *collision,
 	point3f *end_point, vector3f *displacement, short collision_count)
@@ -2715,7 +2691,7 @@ void function_faa60(vector3f *velocity, long projectile_index, s_collision_resul
 	*(short *)((byte *)projectile + 0x132) = material_index;
 	*(vector3f *)((byte *)projectile + 0x134) = collision->normal;
 
-	s_projectile_material_response *response = projectile_get_material_response(definition, material_index);
+	s_projectile_material_response *response = projectile_get_material_response(definition, c_type_47f957(material_index));
 	real impact_cosine = 0.0f - (collision->normal.k * velocity->k + collision->normal.j * velocity->j +
 		velocity->i * collision->normal.i);
 
@@ -2807,7 +2783,7 @@ no_effects:
 		function_30bf0(&damage.direction);
 		damage.unknown84 = *((byte *)definition + 0x128) & 0x3f;
 		damage.material_index = collision->unknown24;
-		damage.unknown80 = projectile_get_material_response(definition, collision->unknown24);
+		damage.unknown80 = projectile_get_material_response(definition, c_type_47f957(collision->unknown24));
 		damage.location = collision->location;
 		damage.unknown7e = *(short *)((byte *)projectile + 0x1a8);
 		damage.scale = damage_scale;
