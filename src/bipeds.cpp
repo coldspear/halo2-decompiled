@@ -2906,7 +2906,17 @@ PRIVATE inline point3f *biped_rigid_body_position(s_havok_component *component, 
 /* places one of the ragdoll's bodies: hanging from its constraint's pivot on
    the body placed before it (kept within reach of the ragdoll's center and
    out of the world, turned to follow), or the first body at the point */
-// score 488 (was 488): Frame 0xfc versus 0x12c; origin/index carriers, pivot-transform
+// score 494 (was 488, after the logic walk of 2026-10-31; it adds 6 points but fixes behaviour): retail's final
+// placement subtracts the pivot rotated by the turned axes alone (0xe2260-0xe2312: no scale, no position, with the
+// out-alias test `cmp edi,[esp+0x10]` of function_2477b1), so it goes through function_2477b1 instead of a second
+// scaled point transform (505). Which pivot is parent follows retail's registers (0xe1d33-0xe1d6f: esi/edi
+// outputs of 0x1cff80, equal property -> parent is the edi one; it writes the same point to both, so values agree)
+// (494). Verified against retail with no difference: 0x1417b0 call (0xe220c-0xe221c: ecx = delta, edx = back,
+// matching `(&rotation, &delta, &back)`), 0x142eb0 register setup, both 0x30bf0 orders, 0x1697c0 argument order,
+// 0x168f40 argument order, offset/target/placed/delta sign and operand order, constants (0.025, -1, 0, 1e-6),
+// the branch holding each piece, callers 0xe1b60/0xe23e0 (still MATCH). Tried after: scalar x/y/z locals in the
+// point transform (549), limit computed after the distance (512).
+// Frame 0xfc versus 0x12c; origin/index carriers, pivot-transform
 // expansion, native homes and final rotation/translation scheduling differ. Early collision material
 // initialization/lifetime 499; with entry false result 499, point setter 504, workspace names 499;
 // origin setter alone 486; existing point-transform calls 1108; guarded single result 514;
@@ -2951,13 +2961,13 @@ bool __stdcall function_e1c40(long arg_159e6d, point3f const *point, real value,
 		havok_component_contact_properties_get(component, contact_index, &property_a, &property_b);
 		if (property_a == parent_body_index)
 		{
-			parent_pivot = &pivot_b;
-			child_pivot = &pivot_a;
+			parent_pivot = &pivot_a;
+			child_pivot = &pivot_b;
 		}
 		else
 		{
-			parent_pivot = &pivot_a;
-			child_pivot = &pivot_b;
+			parent_pivot = &pivot_b;
+			child_pivot = &pivot_a;
 		}
 		biped_matrix_transform(&parent, parent_pivot, &world_pivot);
 		biped_matrix_transform(&matrix, child_pivot, &child_world);
@@ -3004,10 +3014,13 @@ bool __stdcall function_e1c40(long arg_159e6d, point3f const *point, real value,
 				function_30bf0(&matrix.up);
 			}
 		}
-		biped_matrix_transform(&matrix, child_pivot, &child_world);
-		matrix.position.x = target.x - (child_world.x - matrix.position.x);
-		matrix.position.y = target.y - (child_world.y - matrix.position.y);
-		matrix.position.z = target.z - (child_world.z - matrix.position.z);
+		vector3f rotated_pivot;
+
+		/* retail 0xe2227-0xe2312: only the turned axes carry the pivot (no scale, no position) */
+		function_2477b1(&matrix.rotation, (vector3f const *)child_pivot, &rotated_pivot);
+		matrix.position.x = target.x - rotated_pivot.i;
+		matrix.position.y = target.y - rotated_pivot.j;
+		matrix.position.z = target.z - rotated_pivot.k;
 	}
 	else
 	{
