@@ -639,6 +639,11 @@ void simulation_player_collection_swap(s_type_c67652 *collection, long player_in
 // `(&collection->players[i])->key` or `(collection->players + i)->key` 36 each; the last record's
 // reads before the update pointer 40, swapped 47, read at their stores 110 (1053 bytes); every
 // combination of those 32 forms 36-110 (real --fast agrees: 36/36/110, 0x84e90 still matches).
+// Round 177: `collection` declared in each branch where it is used 32 (same code; 36 on the swap order
+// above, aligned 24 against 14: the swap call becomes retail's, the occupied block's ECX/EDX and the last
+// record's two source reads swap); the machine pointer taken after the `unknown14 == NONE` test 186 (1071
+// bytes); the conflict scan's `memcmp(...) == 0` 32; the machine table filled with memcpy 32; the last
+// record's machine copied with memcpy 32 (all same code).
 // @retail 0x83610
 void __stdcall function_83610(s_simulation_world_owner *watcher, long *count, s_simulation_player_update *updates)
 {
