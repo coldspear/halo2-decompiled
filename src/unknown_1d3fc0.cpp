@@ -67,6 +67,12 @@ PRIVATE __forceinline void function_1d3fc1(vector3f *arg_0)
 // (sums i,k,j); file helper for forward with header normalize3d for the rest 354 (normalize3d stays out
 // of line, 718 B); normalize_inline for the third normalization 149 (projection schedule moves only);
 // for the third and the left 152.
+// Round 29 (lane 11): the existing normalize3d (header, with a __forceinline redeclaration so it inlines
+// under /Ob1) for up and left with the file helper for forward 152, for all four 155, for forward only 152;
+// the dot's argument order with the six projection statement orders 149 each (same code: the terms are
+// ordered by rank); `*=` for the k product or all three products the same code (compile-only listing).
+// Compile-only listing: with nothing after the forward normalization every component is load-multiply-store;
+// the preloads (ours k,j,i into xmm4-6, retail j,i) appear only once the dot reads forward afterwards.
 // @retail 0x1d3fc0
 void __stdcall function_1d3fc0(long arg_0, s_havok_component *arg_1)
 {

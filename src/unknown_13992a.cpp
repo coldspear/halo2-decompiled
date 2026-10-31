@@ -130,6 +130,11 @@ long function_14de70(long arg_1);
 // definition folded into the seat expression 70; the seat index in a short local 97 (the unit reload
 // then goes to eax after the result store as in retail, the parent to ecx); NONE-first tests 70; the
 // parent's header element through a pointer 70. Permuter: 48 tries, nothing better.
+// Round 20 (lane 15, fast; the reduced image gives 48 here): the seat word read into a short local before the
+// parent test 46 (the result store then comes first and the unit reloads into EAX as in retail, but the seat
+// is read before the parent and the parent is held in EAX), that local also passed to 0x22bff0 392 (1827 bytes);
+// the seat assigned inside the condition 48; the parent test nested with the seat local inside it 48; the 0x48
+// flag store first in the block (diagnostic) 520.
 // @retail 0x13992a
 void function_13992a(byte *arg_1, long arg_2)
 {
