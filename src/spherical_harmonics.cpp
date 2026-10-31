@@ -276,6 +276,13 @@
 // result[12] zz5 term first, sqrt7 initialised 6 each; zz declared before sqrt15 and assigned after band2
 // or after xx_yy 6/6. Names and declaration order never move zz5's slot, and none of these statement or
 // operand orders moved the quadratic sqrt15 load ahead of the x87 z*z.
+// Round 55 (lane 12; a one-file LTCG harness reproduces this function and 0x146020 exactly; 0x146020 matched in
+// every trial): legal forms only. The named sqrt3 root with band3_35 defined right after sqrt2 (before zz5) 55
+// (band3_35 then takes sqrt(15)'s slot as retail; a gain of 4, not kept); that with sqrt(35) named 77, with
+// sqrt(21) named 71; band3_35 first with both roots named 80; the sqrt3/band3_35 form with band3_21 defined before
+// sqrt105 73. Harness, on the sqrt3/band3_35 form: `sqrt2 * sqrt(35.0)` / `sqrt2 * sqrt(21.0)` operand orders
+// (same code), sqrt105 defined right after sqrt2 (much worse), result[15] at each earlier position (worse), and
+// every single-statement move of the nine cubic statements (none better).
 // @retail 0x143360
 void spherical_harmonics_evaluate_direction(vector3f const *direction, dword order, real *result)
 {
