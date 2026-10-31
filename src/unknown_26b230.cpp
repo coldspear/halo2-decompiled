@@ -2126,6 +2126,13 @@ void function_269250(long clump_index, long actor_index)
 // are no longer hoisted); target-clear arm through prop_get at each use 220; the existing prop walk
 // struct 3; node iterator declared beside the prop iterator 3. On the opening body the deletion arm as
 // `if (unit) continue; break;` 89 (identical code).
+// Lane 16 r48 (fast): the 3 form under s_prop_pool_storage leaves only the pool registers (ours node pool
+// EDI / prop pool EBP; retail the other way). Under separate pool globals the 3 form matches but
+// 0x25d770 2 and 0x25d810 91 (335 B; result/actor registers permute): 0x25d770's walk as a for loop 114
+// (208 B, the step is duplicated); the prop pool defined in this file instead of globals.cpp 2/91; prop
+// declared before datum in 0x25d770 2/91; both pools as one two-element array 252 (709 B: the pools are
+// no longer hoisted; 0x26aaf0 0 -> 70). Ours gives the pool the loop references first the first
+// callee-saved register (reverse order with the struct); retail gives the prop pool it in all three.
 // @retail 0x26ae30
 void function_26ae30(long object_index)
 {

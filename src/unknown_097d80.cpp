@@ -127,6 +127,11 @@ struct c_aggregate : c_child
 // store before the child read 45; the dispatch gate as nested ifs 45; a const dispatch cursor 45;
 // the cleanup item read into its local before the test 89 (368 bytes). BLOCKED by the build flag:
 // the retail frame needs `produced` to share a slot, which only a non-LTCG object gives.
+// Lane 16 r48 (fast): the collection loop in a block of its own 45 (frame 0x8024); the cleanup bound
+// named from the block 65; the cleanup loop bounded by starts[3] 45; `*source` read once before the
+// collection loop 145 (389 B); the item cleared before its release 59. Retail's slot 0x10 holds
+// produced, then the dispatch cursor and the cleanup countdown (strength-reduced loop temporaries),
+// which our LTCG build gives slots of their own.
 // @retail 0x97d80
 long c_aggregate_450cf4::function_97d80(dword *source, s_request *request)
 {
