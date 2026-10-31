@@ -409,6 +409,9 @@ void c_turret_entity_definition::v21(s_entity *entity)
 // EBP caches the last argument); object read as a raw byte offset from the pool data 77 (folded back
 // into the shared header address); the in/out mask parameter's own address instead of the local copy
 // 87 (152 bytes; the copy is retail's).
+// Round 25 (fast): the field store and attach as a call of the existing 0xbb780 (inlined) 49 (same
+// code); with an early bool result 77, flagged arm first 75; bool result with the clear-in-test and
+// memory retest, 0xbb780 on the stored/local index 67/53. Data and index still shared. Restored.
 // @retail 0xa5a60
 bool c_object_type_definition::v22(s_entity *entity, long b, s_entity_info *info, long d, long e, long f)
 {
