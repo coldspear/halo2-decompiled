@@ -766,6 +766,9 @@ void __stdcall function_bc300(long object_index)
 // src/unknown_0b8ca0.cpp, src/unknown_118e80.cpp, src/unit_object_type.cpp) the function matches
 // byte for byte, but 0x118510 rises 83 -> 102 (its call site then loads the size into ECX where
 // retail uses EAX): BLOCKED-BY 0x118510.
+// Round 30 (lane C): declaring the third parameter `short` alone makes the reduced image match
+// byte for byte, but the full tree then fails to link (LNK2001: ?function_bc380@@YI_NJJJJ@Z is
+// still referenced by declarations in four other files), so the parameter stays `long`.
 // Forms (score 42 then): a shared absolute index 42; the header reused for the refreshed lookup
 // 68; a function-scope block pointer 42; allocator noinline 42; old size read before allocation
 // 81; size optimization 107; global optimization off 151; shared index, block scope and allocator
