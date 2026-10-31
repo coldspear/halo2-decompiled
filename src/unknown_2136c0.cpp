@@ -97,6 +97,9 @@ void function_213970(void);
 // src/unknown_213d20.cpp, with an extern in src/unknown_214c30.cpp; block B: g_55bd04/g_55bd08 in
 // src/unknown_12be90.cpp). Scalar zero stores before the clears 131, without the size pragma 158;
 // enabled flag before the NONE stores 131; NONE stores before the zero stores 131, without the pragma 161.
+// Round 37 (lane 1, fast): still BLOCKED-BY the global layout. Block A's NONE store between its two
+// arrays 131; the enable flag before the NONE stores 131; NONE stores and flag first 131; retail's
+// NONE/flag order right after the clears 131; the zero stores before the clears 131.
 // @retail 0x2136c0
 void function_2136c0(void)
 {
