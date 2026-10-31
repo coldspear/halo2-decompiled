@@ -96,7 +96,7 @@ void function_262800(long actor_index, s_reference reference, bool unknown);
 
 /* slot type 0x23, update: once the actor stands at its prop's position, it
    turns to face it; then it lets the prop go */
-// score 7 (was 47): only argument temporaries differ: the 0x1f4f40 short argument is converted into DX
+// score 7 (was 7): only argument temporaries differ: the 0x1f4f40 short argument is converted into DX
 // and pushed after `mov eax, ebp` (retail converts AL in place into AX and pushes it first), and the
 // 0x262800 reference is loaded into EAX (retail ECX).
 // Earlier (47): the actor index, actor, view and state registers differ (retail EBP/EDI/EBX/ESI,
@@ -163,6 +163,11 @@ void function_262800(long actor_index, s_reference reference, bool unknown);
 // early store and return 79, view through the index getter after/before the node 74/88, one shared store
 // 52; the guard clause 7. On 7: the final call under a positive test 7, `(short)` cast 7, the type byte
 // declared signed char 7, a positive test around the 0x1f4f40 call 7.
+// Round 23 (lane 15, plain): the type byte in a named char local, tested and passed 11; the 0x262800
+// reference read into a local first 7 (its temporary moves EAX -> EDI, retail ECX); the state pointer
+// declared before the actor 9; the readiness in a named bool stored and tested 22 (byte setcc); the
+// completion store shared after an `if (view)` block 51 (276 bytes). At 0x1afb30's call to 0x1f4f40
+// our build converts the byte in place as retail does; here EAX holds the actor index too early.
 // Lane 16 r46 (plain): the 0x262800 reference copied into a named local first 7 (its temp moves to EDI).
 // @retail 0x1b89d0
 void __stdcall function_1b89d0(long actor_index, s_slot *slot)

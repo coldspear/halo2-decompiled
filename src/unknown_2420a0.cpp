@@ -1161,6 +1161,11 @@ void c_game_engine_markers::v21(long object_index)
 // (432 bytes), the unit's player index read through the object getter at both reads 113 (entry becomes v24's,
 // object kept across the type test), `bool away = !flag` after the player pointer 86 (438 bytes; tail and the
 // hoisted call setup retail's, but `not cl; test cl, 1` and the EDX hold remain), `bool home = flag; if (!home)` 119.
+// Round 23 (lane 15, fast agreeing with the full count): const player pointer 40 (identical); the object in a
+// local after the type test with the slot read from it 119 (428 bytes: the object is kept, not re-fetched);
+// engine type `== 9` with the arms swapped 48; on the team at each call, the players' data read into a local
+// before the absolute index 120 (the data load still folds into the add); the player-index and flag tests
+// joined in one condition with the absolute index, player and team inside 93.
 // Round 109 (lane 6, fast): permuter 600 s, 10 tries, none below 40; a separate local for the event block's second
 // player-index read 40 (same code); team at each call with a const player and the unit looked up before the slot
 // 119 (428 bytes); the engine-type arms swapped (`== 9` first) 48; a const player pointer 40 (same code). The
