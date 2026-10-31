@@ -1558,6 +1558,14 @@ static __forceinline real function_x82e52f(dword *seed, char const *file, long l
 // look angle divided then clamped in its own statement 160/119; the mode lookup after the spring
 // defaults 173/129; `first_weapon = user->weapons` 157/116 (identical); spring defaults declared
 // d, c, b, a 161/127; user flags read and set directly without the flags local 157/116 (identical).
+// Round 24 (lane 14, fast; aligned counts by sequence alignment, base 116): the movzx flag test (a named
+// `long` copy of the channel byte, two bit tests), the active preset and the `== 0 ? right : left` callback
+// together 358 (2199 bytes, aligned 109); with the overlay set read once (negative flags) 372; those three
+// with positive zoomed/scoped bools in retail's order, the clear test without the extra `zoomed &&` and a
+// plain `else` for the play arms 328 (aligned 70); that with the play and save in each arm and the set read
+// once 306 (2190 bytes, aligned 53: two instructions short, retail's `cmp zoomed; je` in the else arm); the
+// positive bools alone on the original body 401. Unit/mode slots (ours -0x18/-0x1c), the look homes and
+// shared reciprocal and the ESI/EDI save region are unchanged by all of them.
 // @retail 0x166d75
 void __stdcall function_166d75(long user_index)
 {
