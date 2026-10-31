@@ -449,10 +449,18 @@ void __stdcall function_25dd50(
 // after the if/else 275 (893 bytes), side = 0 there keeps zero in EBX (222 before). Also: cover as
 // `covers + index` 38, face as `faces + index` 38, a named face index 38, the cover array read
 // from the context field at each use 38.
+// Round 3 (lane 17): the face index read as dword at the lookup 38, at the test and the lookup 38;
+// `char side = 0;` 203 (840 bytes); the two loop-top tests as separate continues 38; the cover pointer
+// assigned after the null test 38; reversed subscripts and a forceinline edge getter (diagnostics) 38:
+// the base/index order is not source order.
 // Round 7 (m3 lane 2): the cover index read before the cover array 38 (the load is sunk); the trace as
 // s_sector_trace_result with its blocked/edge_index fields 38 (same code); `position->reference.unknown0
 // + covers` 38 (canonicalized: the scaled index stays the add's destination); the facing test written
 // constant-first 38; the embedded pathfinding assignment split into its own statements 38 (not kept: no gain).
+// Round 34 (fast): the two transform calls as a positive `if (a && b) side = ...; else continue;` 38
+// (same code); the facing test with the failing arm first as an if/else 85 (839 bytes); covers
+// declared at the loop-body top 38; no cover pointer, `covers[index]` at both uses 38; the face flags
+// read through `bsp->pathfinding` 165 (844 bytes; the face address keeps `[edx + ecx + 5]`).
 // @retail 0x25e430
 void __stdcall function_25e430(
 	long actor_index,

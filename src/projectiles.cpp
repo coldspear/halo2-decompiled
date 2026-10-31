@@ -631,6 +631,19 @@ s_projectile_material_response g_547660;
 // 40/40/40/40/21/21/21/21; the counted form reaches 145 bytes but rotates index/material/scan homes.
 // That aggregate parameter is exact-only and restored. Its ordinal zero before admission/lookup,
 // direct/NULL lookup 50/50/51/54. Original scalar parameter, unused reference, callers and body restored.
+// Round 31 (lane 10): with the existing c_type_47f957 by value (callers wrap the index), retail's
+// structure is the unguarded counted for (zero, one count test, base load after it); ours then
+// coalesces the material with the imul temporary in ECX (retail `lea edi,[ecx+edx]; test edi,edi`),
+// which moves index/counter/response to DI/EDX/ESI: pointer cursor 50, indexed 50 (137 bytes), with
+// `if (count > 0)` around it 23 (145, repeated test), count in the loop test 70, named base 53/55;
+// harness (exact for all of these): the existing global_material_get in the condition or body with
+// six loop forms, both compare orders, member/class parent update and declaration orders 21-52 (21
+// only with the repeated guard); short/class walk copies 21-71; counter/count widths, operator==,
+// &a[i], fallback ternary, counter declared outside 34-58.
+// More harness forms: do/while on the result 21-33; a NULL-initialised function-scope material 21-50;
+// `while ((material = get) != NULL)` with `if (result) break;` before or after the parent read
+// 21-68 (gives retail's counter ECX and material EDI, but a second parent read); lookup tested
+// before the result 46.
 // @retail 0xfd4c0
 s_projectile_material_response *__stdcall projectile_get_material_response(s_projectile_definition const *definition,
 	short material_index)
@@ -993,6 +1006,15 @@ real function_30bf0(vector3f *v);
 // divisions 248 (no reciprocal: both become x87 fdiv as in retail, frame 0x2c), that with
 // `root * (-1.0f / two_a)` 248 (retail's fld -1/fdiv/fmul order); the named two_a with that
 // order 232 (the SSE reciprocal returns); sqrtf for the horizontal length 232. Body restored.
+// Round 10 (m3 lane 2, one-file harness identical to the real build): three causes remain, none
+// with a natural form: retail never enregisters the forced-speed and time-scale pointers (it loads
+// each at its use, so EDI is free for the distance output that 0xfa580 takes in EDI), it keeps the
+// horizontal root in the entry block (stored as a float, compared in SSE), and it divides by two_a
+// twice without a reciprocal. Two_a written out with the forced-speed test first 237 (ret 0x28, loses
+// 0xfa6a0, 0x26f150, 0x1f8100 and 0x2900b0); gravity and horizontal tests as nested ifs 232; chosen
+// speed defaulted at its declaration with the forced test first 238; the horizontal variable reused
+// for the velocity's horizontal length 232; the time-scale speed chosen by a ternary with an else 261
+// (971 bytes); six spilled-scalar renames 232 (harness).
 // @retail 0xfa1a0
 bool function_fa1a0(real speed, real gravity_scale, point3f const *origin, point3f const *target,
 	real *minimum_speed, real const *time_scale, real const *forced_speed, bool high_arc, vector3f *direction,
@@ -1217,6 +1239,12 @@ extern vector3f *g_4687ac;
 // scalar input/direct up/both 164 each, with bounded first ray 166. Uniform radius
 // fields on endpoint reuse alone/all-input graph 181, with bounded first ray 173 each.
 // All original executable source restored; frame 0x34 and tag/query allocation remain.
+// Round 10 (m3 lane 2): retail computes each endpoint product twice (no common side * radius between
+// the start and end points: separate radius copies, as an inlined two-point ray test's parameters
+// give); block scopes give the slot sharing but not the products. Each query vector in its own block
+// 166 (frame 0x30); the two side query vectors only 164; all three with the radius read again inside
+// the radius block 171; endpoints through vector3f_add_scaled with 0 - radius / -radius 180/180 (769
+// bytes). Body restored.
 // Lane 15 round 18: retail inlines the two-point ray test 0x16a040 for all three queries (its
 // vector homes give retail's sharing: first query/start, both offset queries). With 0x16a040
 // made `inline` (noinline declaration dropped): three calls 187 (frame 0x3c); radius field at
@@ -1725,6 +1753,12 @@ real function_17c900(short function_type, real input);
 // normalize_inline 326 (aligned 168); with a wander direction vector 362 (aligned 150). Remaining:
 // retail's zero register in XMM4 from the to_target block and the normalized components kept in
 // XMM1-3. Body restored.
+// Round 10 (m3 lane 2): output written in each of the three exits with the entry salt 377 (1477
+// bytes); salt named after the center pointer 347; game time named in the wander branch 348; that
+// with the salt named there too 365; the wobble clock as an if/else in place of the ternary 348.
+// The salt written at both uses again gives retail's convention, 329, and with the three exits 328
+// (aligned difference 140, 70 with registers masked: the rotation's products and the normalized
+// components' homes remain). Body restored.
 // @retail 0xf87f0
 void function_f87f0(long projectile_index, point3f *aim_point)
 {

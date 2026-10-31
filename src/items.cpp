@@ -1329,6 +1329,10 @@ static __forceinline void item_release_impulse_10b4d0(long object_index)
 // round's trials in this file left them where they are
 // Frame 0xac agrees; release-byte RMW/tail, event-point homes and location-call setup remain.
 // Frame 0xac agrees; release-byte RMW/tail, event-point homes and location-call setup remain.
+// Frame 0xac agrees; return byte +0xe versus +0xf, release-byte RMW/tail and event/location homes remain.
+// Earlier: the frame 0xac agrees; the release byte's read-modify-write,
+// Earlier: Frame 0xac agrees; release-byte RMW/tail, event-point homes and location-call setup remain.
+// Frame 0xac agrees; release-byte RMW/tail, event-point homes and location-call setup remain.
 // Earlier: Frame 0xac agrees; release-byte RMW/tail, event homes and protected location-call setup remain.
 // Earlier 154 (was 154): frame 0xac agrees; release RMW/tail, event homes and location-call setup remain.
 // Frame 0xac agrees; release-byte RMW/tail and event/location homes remain.
@@ -1420,6 +1424,7 @@ static __forceinline void item_release_impulse_10b4d0(long object_index)
 // home graph with byte accumulator 159 (873 bytes). Names do not move the +0xe return byte to
 // +0xf; frame 0xac, release tail and event homes remain. Original names, declarations, Boolean
 // accumulator, impulse helper and complete body restored.
+// Round 46: Captured-spin logical OR previous-first/spin-first/conditional 185/188/202; byte bitwise/logical accumulation 159/182; long bitwise/logical 178/205; entry bool with logical OR 186. Original body restored.
 // @retail 0x10b4d0
 bool __stdcall function_10b4d0(long object_index)
 {

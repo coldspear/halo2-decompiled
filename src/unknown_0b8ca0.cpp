@@ -698,6 +698,9 @@ static __forceinline long object_query_next_ab(s_record_pool *data, long index)
 // unsigned full handle alone/pool/unit/all 257/257/247/247; all with Boolean result 274.
 // Direct radius in all; original complete body restored.
 // Round 293: Consumer-stage visibility receiver/word ordinal/bit, all seven subsets, then all with unsigned bit production: 239 each. Both known callers preserved; direct original radius in each trial. Complete original body, inherited radius storage and interfaces restored.
+// Round 205: Existing marker-position provider with long/Boolean/word/byte results, inherited/direct radius:
+// 230/251, 280/295, 238/255, 260/272. One-point 230 rejected; all original forms restored.
+// Caller-dependent self-alignment, full-handle spills and scalar/angle homes remain.
 // @retail 0xbba80
 bool function_bba80(long object_index)
 {
@@ -1662,6 +1665,9 @@ void function_bba20(long index);
 
 transform4x3f *function_b8bd0(long object_index, short node_index);
 
+// Round 27: the parent lookup written through pool->data, the activity bit carried in a byte, the
+// shift-form bit-7 test and the type-below-eight test each regress (298/285/292/292 against 285);
+// the original body is restored.
 // score 285 (was 285): the frame (0x64) agrees; 1239 bytes against 1236. The entry now matches up to
 // +0x76 (pool in EBX, -1 in EAX). Retail inlines the node matrix lookup (0xb8bd0's body, here called
 // out of line because its file is /Ob1) and re-derives pool->data into EBX after the ancestry loop
@@ -1729,6 +1735,17 @@ transform4x3f *function_b8bd0(long object_index, short node_index);
 // The two-point pointer forms are exact-match-only and rejected; original declaration and body
 // restored. Accepted header-table reload, expanded node query and transform carriers remain.
 // Round 194: Node-address/inverse phases after node, link and header writes 290/281/289/291/292/287; before first parent write 281/285. Native activity on inverse phases 278/286/283/280. On 278, hidden/connection/component shift subsets 285/281/278/284/285/281/284. Best 278 gains seven, rejected; original header and body restored.
+// Round 205: Shared rotation/axis providers 332/332; shared point provider alone/rotation/axis 542/431/447;
+// rotation/axis with the native activity member 315/330; rotation with the earlier inverse phase 334.
+// All restored; frame, accepted table transport and node-query expansion remain.
+// Round 4 (lane 18, fast): the header's active bit as a byte bitfield of the header view 281 (retail's
+// byte shr/and; four-point gain, not kept); on it the bit-7 flag test by shift 285, the header from
+// OBJECT_HEADER_GET(index) 302, the type test as `!((1 << type) & 0x80)` 290, the active flag not
+// volatile 289, the 0xc0 bit 6 test by shift 281. The slot_handler.h node-matrix helper can't be
+// included here (its header view clashes with this file's). Restored.
+// Round 205: Shared rotation/axis providers 332/332; shared point provider alone/rotation/axis 542/431/447;
+// rotation/axis with the native activity member 315/330; rotation with the earlier inverse phase 334.
+// All restored; frame, accepted table transport and node-query expansion remain.
 // @retail 0xb93b0
 void __stdcall function_b93b0(long parent_index, volatile long index, volatile short node)
 {

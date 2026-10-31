@@ -128,6 +128,20 @@ __forceinline bool function_13c253(s_13c251 const *arg_1)
 // Round 231: complete priority-zero result, long / unsigned / short / enum
 // 176/176/181/176; each with ordinary cardinality 280/280/276/280. Original
 // ranking, inherited count and body restored; receiver reloads and ranking handoff remain.
+// Round 45 (lane 9): the fallback block walk as a plain indexed `for` (byte offsets) 144, same count, kept
+// (count/item now in retail's ECX/EDX). Retail shape: count a non-volatile stack local (immediate 1 on known-empty
+// appends, one read per later append), index ranking loop over a count copy held in EBX, 0x5000720 kept apart.
+// Count not volatile + index ranking over a `candidate_count` copy + preferred apart (switch case, then
+// `if (preferred == NONE) preferred = best`) 205 (823 bytes; aligned 93 -> 78, ranking and tail exactly retail's);
+// with `local_3[local_2++]` appends 249; appends through an inline helper taking &count 205 (same code); count and
+// entries as one {count; entries[4]} local 206 (aligned 20, every append retail's); plus the block walk as a `for`
+// with a pointer local 206 (aligned 21), reading the block address at each use 206 (aligned 11: only the carried
+// weapon lookup and padding left); second pointer local for the 0x213 slot 206; both slots through the existing
+// 0xcbd50 getter 206; a count store between the slot reads (diagnostic) 119 at 839 bytes, merge stays; main's
+// volatile count with the `for` and the count-copy ranking 173. Left on the aligned-11 body: retail reloads the
+// pool data and unit pointer for the 0x213 slot read (only `index * 12` kept, `lea; shl ecx, 2`); ours merges the two
+// lookups in every form (compile-only screen: pointer locals, scopes, if/else, ternary, long/char slots, inline
+// weapon-in-slot helper, unrolled two-slot loop, empty do/while at the join: all merged).
 // Round 28 (lane 10): retail's count is a non-volatile memory local (the first append and the
 // fallback's first append store the constant 1 after `count == 0`, each later append rereads it, and the
 // ranking loop reads it once into EBX), and retail does not merge the second and third unit lookups
@@ -212,21 +226,14 @@ void __stdcall function_13c250(long arg_1, long arg_2, long arg_3)
                 {
                     byte *local_19 = (byte *)g_4e3b44[*(long *)local_18->field_8 & 0xffff].bytes;
                     long local_20 = *(long *)(local_19 + 0x1c0);
-                    if (local_20 > 0)
+                    for (long local_21 = 0; local_21 < local_20; local_21++)
                     {
-                        byte *local_21 = *(byte **)(local_19 + 0x1c4) + 4;
-                        do
+                        long local_22 = *(long *)(*(byte **)(local_19 + 0x1c4) + local_21 * 8 + 4);
+                        if (local_22 != NONE)
                         {
-                            long local_22 = *(long *)local_21;
-                            if (local_22 != NONE)
-                            {
-                                long local_31 = local_2++;
-                                local_3[local_31] = local_22;
-                            }
-                            local_21 += 8;
-                            --local_20;
+                            long local_31 = local_2++;
+                            local_3[local_31] = local_22;
                         }
-                        while (local_20);
                     }
                 }
             }

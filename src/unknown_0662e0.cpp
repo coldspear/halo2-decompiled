@@ -692,12 +692,12 @@ void network_configuration_set_defaults()
 	g_network_configuration.value1b0 = g_network_configuration.value28;
 	g_network_configuration.value1b8 = 150;
 	g_network_configuration.value1bc = 3;
-	g_network_configuration.value1c8 = 50;
-	g_network_configuration.value1d4 = -200;
-	g_network_configuration.value1d8 = -200;
-	g_network_configuration.value1dc = -200;
-	g_network_configuration.value1e0 = -200;
-	g_network_configuration.value1e4 = -200;
+	g_network_configuration.value1c0[2] = 50;
+	g_network_configuration.value1c0[5] = -200;
+	g_network_configuration.value1c0[6] = -200;
+	g_network_configuration.value1c0[7] = -200;
+	g_network_configuration.value1c0[8] = -200;
+	g_network_configuration.value1c0[9] = -200;
 	g_network_configuration.value1e8 = 200;
 	g_network_configuration.value1ec = 100;
 	g_network_configuration.value1f0 = 4;
@@ -707,10 +707,10 @@ void network_configuration_set_defaults()
 	g_network_configuration.value344 = 180;
 	g_network_configuration.value348 = 2.0;
 	g_network_configuration.value350 = 100;
-	g_network_configuration.value1c0 = 100;
-	g_network_configuration.value1c4 = 80;
-	g_network_configuration.value1cc = 0;
-	g_network_configuration.value1d0 = -100;
+	g_network_configuration.value1c0[0] = 100;
+	g_network_configuration.value1c0[1] = 80;
+	g_network_configuration.value1c0[3] = 0;
+	g_network_configuration.value1c0[4] = -100;
 
 	bool flags[9] = { false, true, false, false, false, false, true, true, false };
 	memset(g_network_configuration.value1fc, 0, sizeof(g_network_configuration.value1fc));

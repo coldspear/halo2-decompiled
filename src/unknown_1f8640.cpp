@@ -367,6 +367,10 @@ struct s_1f8a70_actor
 	byte unknown00[0x4ac];
 	s_1f8a70_frame frame;
 };
+// Round 27: the route switch's real default and the failure block's own false reach retail's frame
+// 0x80 but score 415; dropping the result initializer matches retail's prologue order and its frame
+// yet loses retail's `xor bl,bl` before the 0x1f86a0 call (416); retail's mode 3 also sets route_mode
+// = 1 and our case 3 does not (423 alone, 405 with the actor pointer hoisted); the original is kept.
 // score 228 (was 228): frame 0x84 versus retail 0x80; pool/data entry schedule and unit-output/route/result homes differ.
 // Round 46 leads (aligned diff 59 at 228): retail's failure block stores result = false itself and the
 // route switch has a real default storing false (`default: result = false; break;` and `failed:
@@ -420,6 +424,9 @@ struct s_1f8a70_actor
 // each; all with unit phase scope 228; signed long 411, returned mode output 412; three-choice enum
 // 411/412, scoped enum 411/412. Round 215: route short/word/signed-byte/byte 420/366/416/336; each with
 // returned unit-output consumption 416/371/422/350.
+// Round 208: Scratch path receiver reuse with unit-output/source-settings/default-lifetime masks
+// 0..7: 228/232/228/232/258/262/258/262. Original receiver, scopes and defaults restored; frame 0x84
+// and result/output homes remain.
 // @retail 0x1f8a70
 bool __stdcall function_1f8a70(long actor_index, long unknown)
 {

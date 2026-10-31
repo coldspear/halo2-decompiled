@@ -208,6 +208,9 @@ const dword g_455978[81] = {
 // Round 234: Complete native radius-offset vector on planar scratch, producer/sample lifetime and
 // component/shared setter 358/358/358/358; each with complete table contribution 357/357/347/347. All
 // restored; optional homes and selective helper expansion remain.
+// Round 205: Complete native full/planar/both sample inputs 373/298/373; ray-origin setter 317;
+// full-origin/planar-origin/all inputs 370/317/370; all with shared ray difference 370.
+// All restored; optional-state homes and selective location/range expansion remain.
 // @retail 0x1d48f0
 bool function_1d48f0(point3f *arg_11, s_havok_component *arg_0, long arg_1, long arg_2, point3f const *arg_3,
  vector3f const *arg_4, s_location *arg_5, real arg_6, real arg_7, bool arg_8,

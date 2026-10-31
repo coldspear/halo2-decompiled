@@ -1696,6 +1696,7 @@ void function_b7360(long object_index);
 // complete body restored; pool/actor/output ownership and the forty-byte gap remain.
 // Empty-success leaf group before outer cases 0/4/7/8/10/5/9/13: 471 each, 1808/1848 bytes.
 // All eight have the original masked instruction prefix through the first table; full original case order, return graph and callback restored.
+// Round 322: Coupled movement-query publication with positive/negative success-or-fallback admission, bool/byte/short/long: 539/531/533/534 each. Original stores, returns, dispatch and body restored; entry actor/output carriers and length deficit remain.
 // @retail 0x258cf0
 short __stdcall function_258cf0(long arg_0, long arg_1, s_cs_state *arg_2, long arg_3)
 {
@@ -2156,6 +2157,10 @@ short __stdcall function_259d90(long actor_index, long object_index, s_cs_state 
 // Round 312: first/second/both request receivers at uses 489/491/489; physical selector alone/first/second/both
 // 491/489/491/489; both receivers and selector with the two-stage native flag value 491 (reduced control 491,
 // full 478). Two-point reduced gains rejected; every receiver, physical declaration and original body restored.
+// Round 322: Shared vector assignment at turning/state/current publication subsets 1-7: 566/586/624/618/632/639/639; all plus facing initialization 618 (fast control 491). All original vector copies, helper boundaries, case order and body restored; actor/state ownership remains.
+// Round 238: complementary dispatch-ready/same-unit/facing-incomplete decisions, seven
+// subsets 491/491/491/493/493/493/493; all as long 583 (fast control 491; full 478).
+// Original internal decisions, byte completion, iterator and every vector/call restored.
 // @retail 0x259430
 short __stdcall function_259430(long arg_0, long arg_1, s_cs_state *arg_2, long arg_3)
 {

@@ -50,7 +50,8 @@ extern short const g_44aee8[20] =
 	3, 7, 3, 3, 3, 3, 1, 2, 2, 4, 4, 4, 5, 5, -1, 3, 7, 7, 7, 4
 };
 
-// score 90 (was 90): the five handles are now filled by memset (retail's NONE in EDX, LEA ECX
+// score 72 (was 90): First +0x30 uses the second-bit word mask; native bit merge, NONE/array carriers and later registers differ.
+// Earlier at 90: the five handles are now filled by memset (retail's NONE in EDX, LEA ECX
 // base and five stores); aligned on retail the body differs in 6 instructions (49 before),
 // but the second flag bit's load is hoisted above the branch and its store merged after it
 // (retail ORs/ANDs the byte in memory in each arm), which shifts the positional listing by one,
@@ -70,17 +71,24 @@ extern short const g_44aee8[20] =
 // Round 200: shared byte/word second-bit setters 92/92; word first bit with original/byte/word
 // second bit 103/107/103; byte first bit with original/byte/word second bit 106/106/106.
 // Shared setters do not recover the word mask or per-arm memory stores; original body restored.
+// Round 207: native word/dword complete commits, original/reversed bit order, 102/103/104/103;
+// reversed direct bit stores 95; reversed native Boolean fields 72 plain, kept;
+// adjacent-bit word extraction 105; first-bit conditional arms 90. The original word clear
+// remains before both native bit writes; subsequent initialization and all game calls are unchanged.
+// On native reversed fields: shared source word 75; shifted first bit 72; both 75;
+// byte second bit 102, with shared source/shifted first/both 101/102/101;
+// directly assigned extracted bits 95. Native fields at 72 retained.
 // @retail 0x200c20
 void function_200c20(byte const *definition)
 {
 	long index = record_pool_allocate(g_51e9d8);
 	s_squad_datum *squad = squad_get(index);
 	*(word *)((byte *)squad + 2) = 0;
-	*(word *)((byte *)squad + 2) |= (word)((*(dword const *)(definition + 0x20) >> 8) & 1);
 	if (*(dword const *)(definition + 0x20) & 0x200)
-		*((byte *)squad + 2) |= 2;
+		squad->flag1 = true;
 	else
-		*((byte *)squad + 2) &= ~2;
+		squad->flag1 = false;
+	squad->flag0 = (*(dword const *)(definition + 0x20) & 0x100) != 0;
 	squad->first_actor_index = NONE;
 	squad->first_vehicle_index = NONE;
 	*(long *)((byte *)squad + 0x78) = NONE;
@@ -848,6 +856,12 @@ done:
 // Round 225: complete scenario/definition-owner/both/mode/scenario-mode/owner-mode/all/
 // all with full-width result 188/198/192/194/207/175/205/192. Owner-mode gains only
 // one at retail length, with a larger frame; below threshold. Original reads and scans restored.
+// Round 30 (lane 10, one-file harness exact): retail compares the bottom `next` in memory and reloads
+// it at the loop top, and keeps `result` in its stack slot (store, then reload at the exit); ours
+// carries `next` in CX across the back edge and holds NONE in EBX from entry. Current cleared at entry
+// 173; first scan as a while loop 202 (617 bytes); `goto done` on the exhausted iterator 185 (619);
+// block selection as if/else 176; squad lookup without the word cast 176; third scan without the
+// palette re-read 188.
 // @retail 0x205010
 short function_205010(s_squad_iterator *iterator)
 {
@@ -1202,6 +1216,12 @@ struct s_squad_tree_definition
 // Round 436: native external group/squad/both count-and-element descriptors 31/31/31;
 // actual group/squad/paired descriptor receivers 31/31/31/31, readonly pair 31.
 // All native descriptor declarations and executable forms restored; folded parent loads remain.
+// Round 30 (lane 10): no other retail function has the folded-load/dead-add/copy shape with the
+// pointer dead afterwards. Group pointer reused for the parent and the walk 31; record bound to
+// `T *const &` in pass 3/4/both 31/31/31; `T const &` elements in both passes 31; `long const &`
+// parent field in pass 4 31 (pass 3 37); pass-3 append through an inline helper taking the group
+// pointer 31; sibling walk as a while loop 74; pass-4 while loop without the pragma 175; /Ob1 file
+// flags without the pragma 31 (diagnostic: same code as the pragma).
 // @retail 0x2009d0
 void function_2009d0(void)
 {
@@ -1817,7 +1837,7 @@ PRIVATE __forceinline void squad_area_consider(byte *squad, byte const *definiti
     }
 }
 
-// score 224 (was 257): Frame 0x3c agrees; count/definition/best/point homes, entry loads and packed reference tests remain.
+// score 224 (was 224): Frame 0x3c agrees; count/definition/best/point homes, entry loads and packed reference tests remain.
 // Packed comparisons 393; shared actor walk 344; split point scopes 344; early target 365;
 // native reference indices 350; entry fields at use 344; inline distance call 678.
 // Native player iterator 305; native entry cursor 316; word validation 305; matching-area
@@ -1877,6 +1897,9 @@ PRIVATE __forceinline void squad_area_consider(byte *squad, byte const *definiti
 // Round 436: lookup palette long 224 plain (kept); lookup area/both long 261/253;
 // consideration palette/area/both long 259/304/305; both palette inputs/all indices long 258/276.
 // The four-point lookup-both gain is below threshold; all other formal widths restored.
+// Round 207: promoted repeated entry indices 253; fallback palette 253; both 273;
+// retained absolute squad ordinal 347, with entry/fallback/both indices 335/329/305;
+// ordinal with complete reach expression 347. Original carriers and helper body restored.
 // @retail 0x204450
 void function_204450(long definition_index, long squad_index)
 {
@@ -2021,6 +2044,13 @@ bool function_1e11b0(long actor_index, bool active);
 // (retail's full-width return exactly); on that body squad_get, parameter address taken, parameter read
 // through its address, squad re-fetched after the loop, extra parameter uses 71-95: the parameter never
 // gets a callee-saved register, so the pointer is never split.
+// Round 30 (lane 10, one-file harness exact): a diagnostic extra read of the parameter at the top of
+// the loop body (every pass) gives it a callee-saved register and splits the squad pointer around the
+// loop as retail does; the same read beside the conditional store does not, so retail's parameter
+// outweighs the pointer without any every-pass use. Word flag store as 0x203d70 62 (199 bytes); that
+// with 0x203d70's short-view flag test 61; the existing step with the statement pragma 71 (191);
+// existing squad_get with the word store 62; squad re-fetched after the loop 79 (212). A 32-form
+// screen of loop form, flag store width, return spelling, pragma placement and lookup: 62 or more.
 // @retail 0x203bf0
 bool function_203bf0(long squad_index)
 {
@@ -2719,6 +2749,9 @@ bool function_1fb8a0(long arg_0, short arg_1);
 // Round 436: native trigger table, raw/native entries and mutable/read-only cached receivers
 // 50/50/50/50; the same complete tables observed at every use 91/91/91/91.
 // All table/entry declarations and executable forms restored; the index reload remains.
+// Round 207: incoming-index, trigger-table/count and combined role names 50/50/50;
+// two-use trigger predicate counted as bool/byte/long/word 131/131/135/135,
+// Boolean count with the role names 131. Original trigger count and body restored.
 // @retail 0x202be0
 void function_202be0(long arg_0, long arg_1)
 {

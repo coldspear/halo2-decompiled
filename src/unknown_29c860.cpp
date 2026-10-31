@@ -146,6 +146,13 @@ __forceinline void function_29c9ee(vector3f const *arg_0, vector3f const *arg_1,
 // Round 208: queued output pointer/reference returns 21/21 (689 bytes); native output memcpy 2;
 // complete float trig pair 40 (692); immutable lookup pointers/helper values 2/2;
 // vector-local names/helper-value names 2/2. All restored; the second cross load/fold remains.
+// Round 49 (lane 12): every 0x11cc90 spelling (named cross before/after the acos, `0 >` test,
+// `-angle`, ternary, early return, if/else clamp, clamp inside the acos call, result local) leaves the
+// inlined loads as they are; only removing the 0x1e5450 call before them, or taking the angle before
+// that call (42), gives retail's pair. Point parameters as 2-D vectors 2; `object_get(arg_1)->tag_index`
+// 2; a named turn-angle local instead of reusing arg_4 2; the two limits in separate locals 39;
+// one-expression angle sum 34 (with separate limits 2); a named object pointer after/before the
+// actor lookup or first 2/2/13; 0x11cc90's parameters declared (b, a) 2; all three first forms 2.
 // @retail 0x29c860
 void function_29c860(long arg_0, long arg_1, point2f const *arg_2,
 	point2f const *arg_3, real arg_4, vector3f *arg_5)

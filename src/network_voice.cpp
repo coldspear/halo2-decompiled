@@ -19,6 +19,7 @@
 #include "unknown_067e10.h"
 #include "unknown_058ee0.h"
 #include "crc.h"
+#include "bit_vector.h"
 
 void function_caf90(long unit_index, point3f *position);
 bool juggernaut_is(short player_index);
@@ -958,7 +959,7 @@ void voice_record_voice_mail(long port, DWORD maximum_time, DWORD buffer_size, B
 static inline long voice_get_unknown00(void)
 {
 	long result = 0;
-	if (voice_available())
+	if (g_4c9878.initialized && g_476fc8.initialized)
 		result = g_4c9878.unknown00;
 	return result;
 }
@@ -1324,6 +1325,12 @@ bool voice_channels_have_player(s_voice_channels *channels, long player)
 // Round 217: forward group-end ownership, outer/inner short-long, short-short, long-long,
 // long-short with post/pre-tested inner spans 224/222, 258/237, 236/240, 260/260. Tiny gains
 // rejected; other forms lose 0x54990 or regress. Original grouped traversal restored.
+// Round 30 (lane 10, one-file harness exact): retail's unrolled copies address channel 0 at +4 with
+// fixed offsets and one 0x5c0 step; indexed forms strength-reduce to a biased base (+0x17c or
+// +0x2ec, as matched 0x56160 does) and pass channels on the stack (0x54990 1). Indexed with an
+// element pointer 109, the same through a cursor `&channel[i]` 108, `channel + i` / `channel[i]`
+// 128 (368 bytes), indexed with a separate result 112; cursor, flag, total order 99 (350 bytes);
+// the cursor step in the for statement 94 (same code).
 // @retail 0x56220
 long voice_channels_get_bandwidth(s_voice_channels *channels, long player)
 {
@@ -2629,7 +2636,7 @@ static __forceinline bool function_56790(dword arg_0, long arg_1)
 }
 
 // @retail 0x56790
-void function_56790(long *capacity, dword *remaining, dword allowed, word *selected,
+void function_56790(dword *remaining, long *capacity, dword allowed, word *selected,
 	bool preserve_one, long excluded, bool *blocked)
 {
 	for (long i = 0; i < 16; i++)
@@ -2660,9 +2667,13 @@ long __stdcall function_53b00(long player, byte *output, long capacity)
  return result;
 }
 
+// score 19 (was 124): frame, flag block and register roles now agree; retail calls 0x53c70 before
+// pushing the other 0x56790 arguments (ours pushes four first; a named or multiply-assigned result,
+// a long result, `inline` on 0x56790 and 0x53c70 opaque in the harness all keep it after them), and
+// three scratch registers in the final arms differ (remaining loaded into EAX, the bit into EDX).
 // Round 19: unchanged; the capacity/preserve homes, the preferred-bit scheduling and the 0x53c70
 // call order still differ; no new form was found.
-// score 124 (was 124): capacity/preserve homes, preferred-bit scheduling and the 0x53c70 call order differ;
+// Earlier at 124: capacity/preserve homes, preferred-bit scheduling and the 0x53c70 call order differ;
 // retail tests the availability flags once (no re-read) and recomputes 1 << preferred for the final ors.
 // Frame 0x14 agrees; capacity/preserve homes, preferred index/bit and helper setup differ.
 // Earlier: capacity/preserve homes, preferred-bit scheduling and session-field load differ.
@@ -2697,6 +2708,16 @@ long __stdcall function_53b00(long player, byte *output, long capacity)
 // Round 86: mode in an if/else 157, declared first 135; word deferred with selected ored first 138; output
 // stores in each finish arm 160; bit tests through function_56790(dword, long) 165; local renames move no
 // slot; with the plain getter the mode becomes a cmov and selected loses EBP; a 154-form toggle search 124+.
+// Round 30 (lane 10, one-file harness exact, whole-file mode): `capacity = 1` stored once after the
+// eligibility chain gives retail's frame (preserve 0, capacity 4, deferred 8, mode 0xc) 134; with plain
+// flag reads in the preferred getter 121; then the bit: a named bit local 148, the 32 mixes of the local
+// and the recomputed shift 76-175, the shift at every use (retail recomputes it in both final arms)
+// with `deferred` as a word and `selected` declared first 23; 0x56790's register pointers in retail's
+// setup order (remaining, capacity) 19. Kept as the existing bit test for the two tests and the existing
+// word_flags_set for the three ors (same code). On that body: blocked-arm ors swapped 70, nonblocked
+// arm swapped 21, `if (!preserve) deferred = 0; else if ...` 59, cast-free ors 19, operand orders in
+// the tests and masks 19, a single-exit nested opening 19 (identical), the goto replaced by a test of
+// blocked 124 on the old body (identical code, not kept).
 // @retail 0x565c0
 void __stdcall function_565c0(s_voice_routing *routing, dword remaining, s_voice_route *output)
 {
@@ -2712,22 +2733,17 @@ void __stdcall function_565c0(s_voice_routing *routing, dword remaining, s_voice
  if (g_4c9878.initialized)
   mode = g_4c9878.unknown04;
  dword eligible = voice_get_current_member_value();
- dword preferred_bit = 1 << (long)preferred;
- bool blocked = false;
  word selected = output->members;
- dword deferred = output->unknown02;
- if (!(eligible & preferred_bit))
- {
+ bool blocked = false;
+ word deferred = output->unknown02;
+ if (!function_56790(eligible, preferred))
   preserve = false;
-  if (mode == 2)
-   capacity = 1;
- }
  else if (preserve && (mode == 1 || mode == 2))
  {
   blocked = true;
   goto finish;
  }
- else if (mode == 2)
+ if (mode == 2)
   capacity = 1;
  {
   long kind = voice_get_session_kind();
@@ -2736,9 +2752,9 @@ void __stdcall function_565c0(s_voice_routing *routing, dword remaining, s_voice
   if (deferred)
    blocked = true;
   if (kind == 2)
-   function_56790(&capacity, &remaining, function_53c70(), &selected, preserve, preferred, &blocked);
+   function_56790(&remaining, &capacity, function_53c70(), &selected, preserve, preferred, &blocked);
   if (capacity != 1 || !preserve || !blocked)
-   function_56790(&capacity, &remaining, (dword)-1, &selected, preserve, preferred, &blocked);
+   function_56790(&remaining, &capacity, (dword)-1, &selected, preserve, preferred, &blocked);
  }
 finish:
  if (preserve)
@@ -2746,12 +2762,12 @@ finish:
   if (blocked)
   {
    deferred |= (word)remaining;
-   selected |= (word)preferred_bit;
+   word_flags_set(&selected, preferred, true);
   }
-  else if ((remaining & preferred_bit) != 0)
+  else if (function_56790(remaining, preferred))
   {
-   selected |= (word)preferred_bit;
-   deferred |= (word)preferred_bit;
+   word_flags_set(&selected, preferred, true);
+   word_flags_set(&deferred, preferred, true);
   }
  }
  else
@@ -3075,6 +3091,9 @@ struct s_voice_route_choice
 // Round 86: a choice cursor declared first and stepped at the end of the body 392 (frame 0x48); a reference to
 // the listener mask 399; the headset test inverted 406; the distance comparison reversed 363 and the nearest
 // test nested 363 (same code).
+// Round 446: Unsigned nearest/player field plus ordinal/both, signed headset alone/with nearest/
+// with player/all three, and player field alone: all eight 363 on the byte-bitwise graph.
+// Unsigned mode field did not compile; original mode, records and full body restored.
 // @retail 0x57eb0
 void function_57eb0(s_voice_player_settings *settings, long talker,
 	const s_voice_route_choice *choices, long count)
@@ -3275,6 +3294,9 @@ static inline long voice_packet_clamp_count(byte count, long minimum, long maxim
 // Round 86: cursor with a channel-index local in the relay arm 158, with a dword member mask 190, with split
 // NONE/kind tests 164; index local, late stride and early counter 158; index local in the other arm 162;
 // a 245-form toggle search 139+.
+// Round 446: Direct count bounds disjunction/lower-first/upper-first 185/179/180;
+// byte admission with original clamp 139; byte/long direct bounds 185/182;
+// direct/byte bounds with independent cursor 177/177. Original complete body restored.
 // @retail 0x55e10
 long __stdcall function_55e10(s_voice_channel *channel, byte *data, long size, bool relay)
 {

@@ -1337,14 +1337,12 @@ PRIVATE inline long score_string_list_1608e0()
 	}
 	return result;
 }
-// score 689 (was 710): native rectangle objects recover retail length; frame 0x790 versus 0x79c;
+// score 689 (was 689): baseline frame 0x78c versus retail 0x79c; early player/panel roles and coordinate/color homes remain.
 // this round's reduced listing shows the frame at 0x790 against retail's 0x79c
 // (2858 bytes against 2879), so every stack home is twelve bytes off and the absolute addresses are
 // compared instead of masked; retail also computes the player index in ebx before the pushes, ours in
 // edi after them.
-// score 689 (was 689): this round the reduced image scores the function 710 (the full build scores
 // 689); the frame, the player and coordinate registers and the fade clamps still differ.
-// score 689 (was 689): native rectangle objects recover retail length; frame 0x790 versus 0x79c;
 // the local player sits in EDI (retail EBX) and the
 // x coordinate in EBX (retail EDI); the color locals' slots (retail keeps background below foreground)
 // and the shared 0.0/1.0 registers of the fade clamps differ.
@@ -1469,6 +1467,10 @@ PRIVATE inline long score_string_list_1608e0()
 // pooled fields/word ordinals 726; index/word ordinals 703 (seven-point gain rejected);
 // all three and native position initialization 753 each. Frame 0x790 versus 0x79c,
 // viewer/coordinate/color homes remain; original pooled receiver and long walks retained.
+// DL round 206: native score/time/both/name/score-name/time-name/all column widths
+// 699/701/696/689/699/691/699; all with the existing player getter 721. The combined
+// width form revisits the earlier pre-rectangle graph on the current 0x78c frame.
+// Original long widths, native rectangles and body restored.
 // @retail 0x1608e0
 void __stdcall function_1608e0(long player_index, s_score_panel_1608e0 *panel, real alpha)
 {
@@ -1742,8 +1744,21 @@ PRIVATE __forceinline void score_text_161420(byte const *widget, long valid)
 // Round 189: Actual widget/validity and validity/widget pointer contracts 172/172; sole validity
 // member base in both orders 156/156; indexed team fields with all four contracts 154 each.
 // Bounds/receiver scheduling and team induction remain. Original helper and body restored.
+// Round 107: retail's team loop is indexed (counter incremented before the row pointer, as in the
+// player loop); indexed, ours is 12 bytes longer because each widget's bounds temporary takes ECX
+// where retail keeps EDX and loads the receiver before the push, so the justification rotates into
+// EDX/ECX (`mov [moffs], edx` is a byte longer than eax's form) and the player loop head gets padded.
+// Draw through the existing 0x1fa30 (out of line) 475; one justification variable shared by a
+// row's widgets 122 (copy-propagated); preamble through the existing 0x13edb0 (out of line) 425;
+// receiver named before the draw 122; typed template drawer 1411 (not inlined).
 // Round 440: Pointer-only team/player text/icon traversal masks 1/2/3/4/5/6/7 score 217/154/230/488/511/504/524;
 // complete graph with guarded team range 539. Every native traversal and helper restored.
+// Round 129: indexed team text 148 again (1863 B but aligned 104 -> 60: retail's 0x2ec base; what
+// remains is scratch rotation: retail takes AL for every later justification and EDX/ECX for each
+// text call with the receiver before the push, ours rotates CL/DL/AL); the font/style block as a
+// call to the existing 0x13edb0 425, with indexed team 416 (not inlined, 1754/1767 B); indexed team
+// with a short counter 252; player row pointer per iteration 148 (1832 B), with indexed team 140
+// (1851 B, aligned 251).
 // @retail 0x161420
 void function_161420(long player_index, real alpha)
 {

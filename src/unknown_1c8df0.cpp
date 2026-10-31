@@ -159,6 +159,8 @@ __declspec(noinline) short __stdcall function_1c8df0(short arg_3, short arg_2, p
 // Round 197: Complete immutable positive-quarter/negative-quarter/triple probe points,
 // masks 1..7, and all mutable aggregate points each score 5 on the shared-outcome graph.
 // X/Z load scheduling remains; the added result byte is exact-only and every form is restored.
+// DL204: shared-outcome side/fallback setters and named normalization length, masks 1..7,
+// 5/254/254/26/26/254/254; complete graph with fallback library copy 26. Exact-only forms restored.
 // @retail 0x1c8df0
 short __stdcall function_1c8df0(short arg_3, short arg_2, point3f const *arg_4, long arg_0,
  void const *arg_1, long arg_5, bool arg_6, bool arg_7, bool arg_8, long *arg_9)

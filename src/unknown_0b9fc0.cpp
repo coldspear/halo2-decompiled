@@ -53,8 +53,8 @@ struct s_machine
 	byte unknown0c2[0xd4 - 0xc2];
 	long value_d4;
 	byte unknown0d8[0x10a - 0xd8];
-	byte flags_10a;
-	byte unknown10b[0x12a - 0x10b];
+	word flags_10a;
+	byte unknown10c[0x12a - 0x10c];
 	short animation_state_offset;
 	dword device_flags;
 	long position_group_index;
@@ -371,7 +371,9 @@ void __stdcall function_115220(long machine_index)
 	}
 }
 
-// score 273 (was 273): frame 0xc8 and early flag acquisition agree through +0x5f; the initial
+// score 52 (was 273): frame 0xc8 and retail length agree; first difference +0x461 (was +0x5f): the
+// marker dot (retail i, k, j with xmm0 reused) and the parent walk's flag load remain.
+// frame 0xc8 and early flag acquisition agree through +0x5f; the initial
 // clamp spill and later float/portal/movement scheduling remain.
 // Earlier: its flag tests and the type-mask test read as field bits (TEST_FIELD_BIT) give retail's load-and-shift; the rest still differs.
 // Frame 0xc8 agrees; early flag carriers, the extra clamp spill, floating schedule and portal/movement homes remain.
@@ -400,6 +402,16 @@ void __stdcall function_115220(long machine_index)
 // bool/byte/short/long predicate 273/273/435/321. Keep only the guarded bool, ordinary full 273,
 // 1899/1887, first +0x5f; all baseline matches preserved. Both predicate uses stay inside the enable
 // block; the word snapshot, every call, field read and floating group are unchanged.
+// Round 21 (lane 13), kept (52, 1887 bytes): the gear velocity blends by position (+0x134), not
+// power, as retail does 271; the flags word read at each bit test 368 (aligned better); the clamp
+// as a ternary on a minimum local 281; `(1 << type) & 2` and the +0x10a flags as a word 188; the
+// door flag assigned whole 188; the lower bound named 142; one `return changed` 145; the parent
+// walk tested `!moved && parent_index != NONE` 118 (1887 bytes); `long portal_index` 52.
+// Still differs: the marker dot (retail i, k, j with xmm0 reused) and the parent walk's flag load.
+// MATCH (not kept): `s_machine *parent = header->machine;` read before the flag test (14 with the
+// first) plus `real dot = fwd.i * dir.i; dot += fwd.k * dir.k; dot += fwd.j * dir.j;` (a `+=`
+// split). A compile-only screen of 216 one-expression dot forms (term order, grouping, operand
+// order, assignment order) and a named `dot` local found no exact form.
 // Round 236: guarded word/short/dword/long masks, then each with later animation-state constants 450/450/440/440/345/345/347/347.
 // Original executable body restored.
 // @retail 0x1152e0
@@ -410,20 +422,16 @@ bool __stdcall function_1152e0(long machine_index)
 	s_animation_state *state = NULL;
 	bool animated = false;
 	bool changed = false;
-	word object_flags = machine->flags_c0;
 
-	if (TEST_FIELD_BIT((object_flags >> 12) & 1))
+	if (TEST_FIELD_BIT((machine->flags_c0 >> 12) & 1))
 	{
-		bool full_position = TEST_FIELD_BIT((object_flags >> 10) & 1);
-		if ((!(0.0001f > (real)fabs(machine->position)) || (full_position)) &&
+		if ((!(0.0001f > (real)fabs(machine->position)) || TEST_FIELD_BIT((machine->flags_c0 >> 10) & 1)) &&
 			machine->havok_component_index != NONE)
 		{
 			s_havok_component *component = havok_component_get(machine->havok_component_index);
-			real position = (full_position) ? 1.0f : 0.0f;
+			real minimum = TEST_FIELD_BIT((machine->flags_c0 >> 10) & 1) ? 1.0f : 0.0f;
 
-			if (machine->position > position)
-				position = machine->position;
-			function_1d24a0(component, position);
+			function_1d24a0(component, machine->position > minimum ? machine->position : minimum);
 			changed = true;
 		}
 	}
@@ -441,8 +449,8 @@ bool __stdcall function_1152e0(long machine_index)
 			machine->channels[0].set_frame_ratio(machine->power);
 		machine->power_velocity = 0.0f;
 
-		real velocity = (1.0f - machine->power) * definition->depowered_velocity +
-			definition->powered_velocity * machine->power;
+		real velocity = (1.0f - machine->position) * definition->depowered_velocity +
+			definition->powered_velocity * machine->position;
 
 		if (fabs(velocity) > 0.0001f)
 		{
@@ -490,7 +498,7 @@ bool __stdcall function_1152e0(long machine_index)
 					(s_machine_unit_definition_view *)g_4e3b44[unit->definition_index & 0xffff].bytes;
 				bool can_open = true;
 
-				if (TEST_FIELD_BIT(((1 << header->type) >> 1) & 1) && !(TEST_FIELD_BIT((local_98b918->unit_flags >> 20) & 1)))
+				if (((1 << header->type) & 2) && !(TEST_FIELD_BIT((local_98b918->unit_flags >> 20) & 1)))
 					can_open = false;
 				else if (TEST_FIELD_BIT((unit->flags_10a >> 2) & 1))
 					continue;
@@ -534,18 +542,17 @@ bool __stdcall function_1152e0(long machine_index)
 	{
 		bool closed = false;
 
-		if (machine->power_group_index != NONE &&
-			((machine->device_flags & 0x100) && MACHINE_DEVICE_GROUP_GET(machine->power_group_index)->value != 0.0f ||
-			machine->power != 0.0f))
+		if (machine->power_group_index != NONE)
 		{
-			closed = true;
+			closed = (machine->device_flags & 0x100) && MACHINE_DEVICE_GROUP_GET(machine->power_group_index)->value != 0.0f ||
+				machine->power != 0.0f;
 		}
 
 		for (long i = machine->first_portal_reference; i < machine->first_portal_reference + machine->portal_reference_count; i++)
 		{
-			short portal_index = MACHINE_STRUCTURE_BSP->portal_references->portal_indices[(word)i];
-			real obstruction = (definition->obstruction_upper_bound - definition->obstruction_lower_bound) * machine->power +
-				definition->obstruction_lower_bound;
+			long portal_index = MACHINE_STRUCTURE_BSP->portal_references->portal_indices[(word)i];
+			real lower_bound = definition->obstruction_lower_bound;
+			real obstruction = (definition->obstruction_upper_bound - lower_bound) * machine->power + lower_bound;
 
 			if (closed)
 				MACHINE_PORTAL_BITS[portal_index >> 5] |= 1 << (portal_index & 0x1f);
@@ -577,26 +584,24 @@ bool __stdcall function_1152e0(long machine_index)
 		function_bd020(machine_index);
 		machine->device_flags &= ~4;
 	}
-	if (!moved)
+	for (long parent_index = machine->parent_object_index; !moved && parent_index != NONE; )
 	{
-		for (long parent_index = machine->parent_object_index; parent_index != NONE; )
-		{
-			s_machine_header *header = MACHINE_HEADER_GET(parent_index);
+		s_machine_header *header = MACHINE_HEADER_GET(parent_index);
 
-			if (header->flags & 4)
-				moved = true;
-			parent_index = header->machine->parent_object_index;
-			if (moved)
-				break;
-		}
+		if (header->flags & 4)
+			moved = true;
+		parent_index = header->machine->parent_object_index;
 	}
 	if (moved)
 	{
 		machine_keyframe_rigid_bodies(machine_index, false);
+		changed = true;
 		function_bba20(machine_index);
-		return true;
 	}
-	machine_release_rigid_bodies(machine_index);
+	else
+	{
+		machine_release_rigid_bodies(machine_index);
+	}
 	return changed;
 }
 

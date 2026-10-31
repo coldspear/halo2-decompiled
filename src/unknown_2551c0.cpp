@@ -131,10 +131,16 @@ short __stdcall function_2551c0(long actor_index)
 // added (`+ cross * sine`) 159 (820 bytes); the same with three scalar axis-by-vector cross terms
 // 139 (814 bytes; the early products become retail's pair but the whole rotation reschedules);
 // found declared before best_score 45; found set before the best score and direction 48; the
+// direction loop as a do/while 43 (same code).
+// Round 3 (lane 17): the rotation helper's locals declared first in four orders, then assigned in the
+// kept order 43 each (VC numbers by assignment); the helper reading the axis global itself (no axis
+// parameter) 75 (820 bytes); the trace result declared outside the loop 43.
 // direction loop as a do/while 43 (same code). Round 19 (lane 13), on the existing 0xe70b0 call (70, 820
 // bytes; its inlined body perturbs the early cross products and both dots): its state local declared at
 // the function top 70; found before the best score 72; forward and best direction declared first 70; trace
 // first in the loop 70; direction first in the loop 70.
+// Round 20 (lane 15, fast): `0.f < length` 43 (same code); the best update as direction, found, score 48 and as
+// direction, score, found 47; the distance part named (`reach`) 56 (815 bytes); the loop as `i != 8` 109 (814 bytes).
 // @retail 0x2551f0
 bool __stdcall function_2551f0(long actor_index, s_slot *slot)
 {

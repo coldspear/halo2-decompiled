@@ -143,6 +143,9 @@ static __forceinline long real_to_long(real value);
 // report) 6; the else branch through vector3d_from_points3d 2 (kept); the helper's result
 // ignored 2; a facing pointer before the call or before the test 6/6 (j term first); the
 // direction declared from the helper's result 51. Retail keeps each product's text order.
+// Round 88: dot3f argument orders 6/6; direct < 0 2; slot-field projection 50;
+// vector3f_add_scaled 2; with point difference 39; manual point difference 39;
+// real_point3d_set 2. Original two-difference body restored.
 // @retail 0x1ab4b0
 bool __stdcall function_1ab4b0(long actor_index, s_slot *slot)
 {

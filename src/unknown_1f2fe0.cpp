@@ -167,22 +167,14 @@ bool function_1f3230(long actor_index, real radius)
 	return result;
 }
 
-// score 6 (was 6): only the actor lookup's registers differ: ours loads the pool into EDX and
-// builds the index product in ECX (`add ecx, edx`); retail loads the pool into ECX, the product
-// into EAX and forms the actor with `lea ecx, [eax + edx]`, because its false result (AL) is not
-// live across the lookup. Forms with the result defined after the lookup move the product to EAX
-// but fold the first flag load (`[eax + edx + 0x50c]`). Tried: the result set from the active
-// test 48; the path fields read through the getter 56; the actor first, then the result 17
-// (with getter tests 54); the inner result named, then copied 6.
 // @retail 0x1f3430
 bool function_1f3430(long actor_index)
 {
+	s_actor_moving *actor = actor_moving_get(actor_index);
 	bool result = false;
 
-	if (actor_moving_get(actor_index)->unknown50c && actor_moving_get(actor_index)->unknown504 == 1)
+	if (actor->unknown50c && actor_moving_get(actor_index)->unknown504 == 1)
 	{
-		s_actor_moving *actor = actor_moving_get(actor_index);
-
 		if (actor->path_index >= actor->path_count)
 		{
 			result = true;

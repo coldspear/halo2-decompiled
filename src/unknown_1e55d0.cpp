@@ -68,6 +68,10 @@ static __forceinline void capsule_update_1e55d0(c_z_shape_view *shape, byte *com
 	else *(dword *)out &= ~2;
 }
 
+// Round 16: retail takes its first argument in EAX and copies it to EBX at once, and reads the
+// third argument from [ebp+0xc]; ours takes the same three arguments in the same registers, but
+// keeps the output pointer in EDI and the input pointer in EBX where retail keeps them the other
+// way round.
 // score 319 (was 319): Aligned 0x94 frame agrees; move/input register ownership, physics reloads and velocity null test remain.
 // Earlier: retail's aligned frame (and esp, -16; 0x94) and prologue. Left: the move and
 // input pointers trade EBX and EDI (retail move EBX, input EDI, physics read from its stack slot at

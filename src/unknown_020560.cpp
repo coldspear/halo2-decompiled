@@ -1267,6 +1267,10 @@ bool function_0bfe60(dword const *flags, long bit);
 // 52; the clamp as if/else 52; a const set 52. Without LTCG every spelling of the bitset row
 // (row pointer, &row[0], flat index, pointer arithmetic, const, a separate global or struct row)
 // gives ADD; retail's LEA costs the one byte that shifts the exits.
+// Round 49 (lane 12), screened in an LTCG mini-link with the D3D objects (it reproduces ours but for
+// 0xbfe60's bitset argument, so only differences count): loop counter, index or set declared at the
+// top no change; bitset row declared before the test index +17; the index from an if +3; status as
+// long no change; a while loop +5.
 // Round 7 (m3 lane 2): retail's LEA comes back when the row is first computed as 0xbfe60's argument
 // (`function_0bfe60(g_51f40c.bitsets[set], index)`) and the store goes through a row pointer named at
 // the store (CSE'd and spilled as retail): 38, only the colours left (a mixed read, kept only on a
@@ -1277,6 +1281,12 @@ bool function_0bfe60(dword const *flags, long bit);
 // before the loop 52; the push pointer read as `*(dword volatile **)device` 52; the test index written
 // at both calls 142 (as lane 13); status declared before the test index 53; `slot->b == player` 52;
 // `player == g_5234c4` 53.
+// Round 31 (lane 10): on the round-7 row form (38) the rest is one register permutation (retail
+// counter/total EBP, player EBX, slot fields and test index EDI, device EBX; ours EDI, EBP, EBX,
+// EDI). The total as short or word 125/125 (the clamp re-extends); the row named at the loop top 85;
+// round-7 form with a short total 135; with the mask tested before the player 135; with the slot
+// tests as a `continue` filter 38. A one-file harness with the D3D objects linked is not exact (60:
+// it cannot reproduce MakeRequestedSpace's register argument).
 // @retail 0x20bb0
 void __stdcall function_20bb0(long player, dword mask, long const *indices, long count, bool query, visibility_draw_callback draw)
 {
@@ -1372,6 +1382,9 @@ long __stdcall function_3bf20(s_slot *slot, byte *data);
 // sinks), read before the storage test 6; written inside the bitset test 72 (the load stays, the
 // divide moves after the clamp); the bit test through function_0bfe60 90; the bit test before
 // the clamp 79.
+// Round 88: availability before validity, direct/shared bit test 77/77; blocked polarity
+// and row pointer 68/68; availability before the slot 90; full counter there 90;
+// inline target 6; const slot 6. Early dependencies move the divide and bit work; restored.
 // @retail 0x3c270
 bool __stdcall function_3c270(dword value)
 {

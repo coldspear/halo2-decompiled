@@ -687,6 +687,11 @@ struct s_device_machine_view
 // what leaves edx free for the index); nested direct masks 120; the second test as a ternary inside
 // the first 120. Retail's shared `mov ax, [eax + n]; test al, 1; test al, 2` appears in no matched
 // function (only in unmatched 0x2c0d60; matched 0x1bdd70 loads into dx and keeps the pointer).
+// Round 3 (lane 17): a file-local inline `(group->flags & 1) && (group->flags & 2)` test on the group
+// pointer 120, with a result variable 120, with a word local inside 120; the result set by a ternary
+// on the bool form 42; a const group pointer with the bool form 42; `second` declared beside the
+// flags and assigned later 42. In the mask forms the pointer is dead after the flags load (esi is
+// popped after the first test), so it is a coalescing choice, not a longer live range.
 // @retail 0x106d70
 bool __stdcall device_export_function(long device_index, long name, real *value, bool *active)
 {
@@ -926,6 +931,15 @@ bool function_108530(long device_index, long name)
 // Isolated ramp-down zero/min/both if-clamps 121/121/121; const initial velocity 121;
 // all-read/all-read-write ramp-down references 121/130; shared velocity with stored initial 125;
 // entry velocity copy plus reused parameter 152. Original body restored.
+// Round 3 (lane 17): LTCG passes a float in XMM only when the whole parameter stays in one register;
+// a volatile ramp-down (diagnostic, removed) gives ret 0x14 with the initial velocity in a register, so
+// retail spills the ramp-down entirely at the clamp/pin peak where ours spills the initial velocity.
+// The min clamp into a named local, motion-field tail 109 (511 bytes, the ramp-down then the register
+// parameter; 0x108670 13 -> 28); that local with the velocity tail 143; both clamps into it 134/144;
+// parameter renames 121; early returns 121/134; `fabs(duration) >= 0.0001f` and `>` 132/142;
+// pointer-taking inline clamps 122/125; MIN-macro upper clamps 121/134; the initial velocity read back
+// from its motion field 121/134; the inner stores first 144/134 (the ramp-down in xmm7, ret 0x14);
+// the initial-velocity store first 131/140.
 // Round 106: retail keeps the ramp-down time only in its stack slot and gives XMM6 to the initial
 // velocity (XMM register count is the trade); the ramp-down minimum with the time on the left 121;
 // the cruise velocity through the motion field (no velocity local) 134 (aligned 53 against 72: retail's
@@ -938,6 +952,12 @@ bool function_108530(long device_index, long name)
 // duration and ramp times in xmm1-3 (ret 0xc) and 0x108670 13 -> 42. That last form shows LTCG passes
 // an unmodified float in a register only when the callee holds it from entry: retail spends no
 // register on the ramp-down time in the clamp phase, which frees xmm6 for the initial velocity.
+// Round 22 (lane 13): both doubling factors constant-first (`2.0f * acceleration`) 121; the ramp-down
+// zero clamp first 121; on the per-branch cruise-velocity form (134, which also hoists retail's 2.0
+// into xmm3 and gives its tail, with the initial velocity loaded late into xmm5 and the distance in
+// xmm6) the initial-velocity store first in the branch 134; the delta and distance locals after the
+// reset stores 121; the target pinned before the position 141 (507 bytes, target then passed in a
+// register; 0x108670 13 -> 28).
 // @retail 0x107ab0
 void device_motion_start(s_device_motion *motion, real target, real duration, real ramp_up_time,
 	real ramp_down_time, real final_velocity, real initial_velocity)

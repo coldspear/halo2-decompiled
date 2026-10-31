@@ -1611,6 +1611,9 @@ PRIVATE inline void camera_prism_point_16a8e0(s_prism const *prism, point2f cons
 // Round 434: nearest-edge/radii/squared-limit scalar lexical homes, all seven
 // subsets 552 each; complete names with accepted radii before accumulator storage 551
 // (one-point gain rejected). Original scalar homes, word counts and geometry restored.
+// Round 238: point-count-owned upper cap with word/face-long/edge-long/both-long
+// accepted counts 605/561/567/587; each with readonly prism 605/561/567/587.
+// Original cap, accepted word counts, prism view and complete geometry restored.
 // @retail 0x16a8e0
 bool __stdcall function_16a8e0(long flags, point3f const *point, real radius,
 	long ignore_object, long ignore_parent, point3f *out, real *out_radius)

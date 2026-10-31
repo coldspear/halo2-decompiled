@@ -851,7 +851,7 @@ PRIVATE __forceinline void store_shader_mask(byte *state, word packed, long inde
     }
 }
 
-// score 157 (was 157): frame 0xc versus retail 0x10; entry/value homes and deferred descriptor observations remain.
+// score 157 (was 157): Frame 0xc versus retail 0x10; entry/value homes and deferred descriptor observations remain.
 // frame 0xc versus 0x10, value/entry homes and delayed selector reads differ.
 // Distinct branch-counter homes 157; shared writer input mask alone/with counters 185; common store
 // alone/with counters 294; shared bank result alone/with body entry steps 311; decoded register test 177.
@@ -916,6 +916,9 @@ PRIVATE __forceinline void store_shader_mask(byte *state, word packed, long inde
 // Round 437: Symmetric preserved/incoming operand graphs 1-7 with body cursor steps 155 each; all-
 // commuted graph with one shared masked input 185, matched writer sibling 88. Two-point forms
 // rejected; full writer and both walks restored.
+// Round 445: Per-leaf preserved-result lifetimes alone/shared incoming mask/named indexed
+// dirty bit/both 157/185/157/185; same four with ordinary body cursor steps 155/185/155/185.
+// Two-point reductions rejected; complete shared writer and both original walks restored.
 // @retail 0x17170
 void function_17170(byte *state, word const *range)
 {
@@ -1347,7 +1350,7 @@ void __stdcall function_18560(byte *context, s_packed_shader_range const *range)
     }
 }
 
-// score 267 (was 267): frame and sampler agree; mapped flag width, deferred indices and post-store descriptor reads remain.
+// score 267 (was 267): Frame 0x28 and sampler agree; deferred index and post-store descriptor rereads remain.
 // Earlier: frame and sampler agree; deferred index and post-store descriptor rereads remain.
 // Frame and sampler agree; deferred index and post-store descriptor rereads remain.
 // Direct descriptor pointer/reference 267/267; mapped pre-rescale reload 267; mapped descriptor across pack 263 (not kept: a gain under 8);
@@ -1440,6 +1443,9 @@ void __stdcall function_18560(byte *context, s_packed_shader_range const *range)
 // unconditional 163; mapped arms with a dword `packed` 227. The store as a function-like macro (index
 // re-evaluated) gives the same 130 but 0x17170 291 (198 with mask/value locals); evaluating mask/value
 // once in it 254 and loses 0x176a0. Not kept: the reference store has one caller, 0x17170 rises with it.
+// Round 445: Native short/word/byte/signed-char four-channel rescale ordinals with
+// long outer ordinals 356 each, with bounded short outer ordinals 355 each.
+// Bodies shrink to 1166/1167 versus 1196/1225; original complete body and writer restored.
 // @retail 0x19ca0
 void function_19ca0(byte *state, word const *range)
 {

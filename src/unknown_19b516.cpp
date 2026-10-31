@@ -125,27 +125,9 @@ void c_widget::v15(c_widget *widget)
 	}
 }
 
-/* the first of the widget's siblings */
-static __forceinline c_widget *widget_first_sibling(c_widget *widget)
-{
-	while (widget->prev)
-	{
-		widget = widget->prev;
-	}
-	return widget;
-}
-
-/* the last of the widget's siblings */
-static __forceinline c_widget *widget_last_sibling(c_widget *widget)
-{
-	while (widget->next)
-	{
-		widget = widget->next;
-	}
-	return widget;
-}
-
-// score 12 (was 20): only the entry differs: retail finds the first widget in EAX/EDX, saves ESI after it
+// score 2 (was 12): only the loop's shared tail differs: retail copies the next widget to ESI and tests ESI,
+// ours tests EAX before the copy (`test eax, eax; mov esi, eax`).
+// Before round 9, score 12 (was 20): only the entry differs: retail finds the first widget in EAX/EDX, saves ESI after it
 // and joins the loop's `mov esi, eax; test esi, esi` tail; ours finds it straight into ESI (push first).
 // Forms with the old candidate copied at the loop head (all 20 unless given): shared widget view; immutable
 // current 26; initial/later/both reverse for; current initially empty; direct existing predicate/focus;
@@ -162,10 +144,15 @@ static __forceinline c_widget *widget_last_sibling(c_widget *widget)
 // From another lane (all with the old candidate copy): candidate-tested while with a body widget 26; one
 // stepping loop from this 64; break then focus under if (widget) 47; widget assigned before the loop and at
 // its end 20; first-sibling walk local 20.
+// Round 9: the base class's next_wrapped (a single-exit `result` set in an if/else) at the entry and the
+// step 2 (the result is not merged into ESI at the entry, so the entry joins the shared tail as retail);
+// harness screens on the twin 0x22ec1b: the same helper as a ternary or with an early return 12; a result
+// from a ternary, a reassigned parameter, an out pointer or a NULL-initialised result 2 each; a `break`
+// with the focus after the loop, the search in the loop condition or a do-while under a test 2 to 6.
 // @retail 0x22ebc3
 void c_widget::v16()
 {
-	c_widget *widget = next ? next : widget_first_sibling(this);
+	c_widget *widget = next_wrapped();
 	while (widget)
 	{
 		if (widget->function_22e37f())
@@ -174,11 +161,14 @@ void c_widget::v16()
 			widget->function_22ecb4(true);
 			return;
 		}
-		widget = widget->next ? widget->next : widget_first_sibling(widget);
+		widget = widget->next_wrapped();
 	}
 }
 
-// score 12 (was 12): only the entry differs: retail finds the first widget in EAX/EDX, saves ESI after it
+// score 2 (was 2): only the loop's shared tail differs: retail copies the previous widget to ESI and tests
+// ESI, ours tests EAX before the copy (`test eax, eax; mov esi, eax`).
+// Before round 9, score 12 (was 20): only the entry differs: retail finds the first widget in EAX/EDX, saves ESI after it
+// only the entry differs: retail finds the first widget in EAX/EDX, saves ESI after it
 // and joins the loop's `mov esi, eax; test esi, esi` tail; ours finds it straight into ESI (push first).
 // Forms with the old candidate copied at the loop head (all 20 unless given): entry/repeat/both link
 // cursors; entry/repeat/both last-widget results; link for scans; selected declaration first; transient
@@ -195,16 +185,32 @@ void c_widget::v16()
 // or a named previous 12; a named entry result 35 (92: entry as retail, but the inverted loop tests the
 // name, so no shared tail); ternary into the head-copy candidate 39 (92); last-sibling helper with its own
 // next cursor 21; early-return helper 43; eligibility in the loop condition with focus after 44 (92).
+// Round 9: the base class's previous_wrapped (a single-exit `result` set in an if/else) at the entry and
+// the step 2; a result from a ternary 2; the copy before the loop with ternary steps 35 (92 bytes); the
+// helper at the entry and a ternary step 3 (92 bytes, harness); reassigned parameter, out pointer,
+// NULL-initialised result, member function, `break` with the focus after the loop, for loop, do-while
+// under a test, `continue` arm 2 each (harness); the helper's own walk loop 12 (harness).
 // Round 126 (real, 12 unless given): the step as if/else into the widget 12; entry and step both if/else
 // 12; entry as if/else 12; the step through a named previous local 12; if-form entry into a head-copy
 // candidate with a ternary step 39 (92). Screened (one-link LTCG): ternary head copy in while/for 33 (40
 // instructions); head copy as the body's first statement or in an if/do-while: base code; the widget
 // passed to a forceinline search helper: base code; an out-of-file previous-or-last function is not
 // inlined at /O1 (called). Retail's entry result stays a scratch value copied in the shared loop head.
+// Round 11 (lane 2): retail's head is the widget phi (copies from EAX on every incoming edge, merged);
+// the step as an if/else into the widget (last_sibling in the else arm) gives exactly that tail, but the
+// entry then either keeps its own rotated test on the scratch value (helper entry) or is computed into
+// ESI and threaded into the body (if/else entry). Real: helper entry + if/else step 35 (92 bytes); if/else
+// entry and step 12; `widget = previous; if (!widget) widget = last` entry with if/else step 41 (86
+// bytes); `break` with the focus after the loop, if/else step 37 (94 bytes); head-copy candidate with an
+// if/else step 2 (same code). Harness grid (entry helper/ternary/if-else/inverted if-else/assigned then
+// fallback/from a `this` widget x step helper/ternary/if-else/inverted/named previous x while/guarded
+// do-while, 60 forms): only helper/helper gives 2; the walk written with its own local in the step, an
+// inner do-while in the step, and the search in the loop condition do not keep the entry scratch; a 600 s
+// permuter run (55 tries) found none below 2.
 // @retail 0x22ec1b
 void c_widget::v17()
 {
-	c_widget *widget = prev ? prev : widget_last_sibling(this);
+	c_widget *widget = previous_wrapped();
 	while (widget)
 	{
 		if (widget->function_22e37f())
@@ -213,7 +219,7 @@ void c_widget::v17()
 			widget->function_22ecb4(true);
 			return;
 		}
-		widget = widget->prev ? widget->prev : widget_last_sibling(widget);
+		widget = widget->previous_wrapped();
 	}
 }
 

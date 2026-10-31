@@ -178,12 +178,26 @@ PRIVATE inline void decal_project_corner_17d9a0(transform4x3f const *matrix, rea
 // ternary 156, both lengths named 150, first length named with if/else 143 (986 bytes, aligned 131:
 // zero path stores the shared zero as retail; the epsilon load is hoisted and the projection lookup
 // and product orders remain). Next: the edge helper with if/else plus a form for the lookup.
+// Round 107 (fast; aligned count = unmatched instructions after alignment, base 94/93): bounds by
+// value to the corner helper 192; corner helper forceinline 138 (identical); edges through
+// vector2d_from_points2d with an if/else inverse 143 (986 bytes, aligned 86/87: the tail is retail's
+// but for the epsilon load and the determinant reusing e1.j); that plus each corner through the
+// existing 0x120810 180 (975 bytes, aligned 50/54: lookup, stores and tail retail's; left are the
+// products' operand order per corner, retail's `mov al, [positive]` before each corner's products
+// with `movzx` at the index, the first corner's axis in ax/positive in cl, and the plane store
+// through the normal's base); with real_point3d_set as the lookup's argument 180; with the side
+// byte read before the point 180 (aligned 56/60).
 // Lane 15 r17, on the existing 0x120810 per corner (189): plane pointer 198, with a point-first dot
 // 196 (store base as retail; the first two dot products then load the point first); edges as a
 // vector2f through vector2d_from_points2d with the inverse as if/else 182 (975 bytes; the tail is
 // then retail's but for the first cross product, which loads e0.i where retail copies e1.j's
 // register); natural cross order 182 and retail's corner-1 product operand orders 182 (both identical
 // code: in this form every product loads the matrix field first whatever the source order).
+// Round 129: in the corner helper, the table row as `positive + axis * 2` 138; a named long row
+// index 140 (aligned 152 -> 121: later corners' product operand orders move toward retail's); with
+// y stored before x 140 (aligned 119); row index named in axis-first order 140 (aligned 121); both
+// coordinates read through the row index into named values 176 (970 B). Retail's lookup is
+// `shl eax,1` + two movsx loads, y copied through xmm0 and stored first.
 // @retail 0x17d9a0
 void function_17d9a0(transform4x3f const *matrix, real const *bounds, s_decal_quad_17d9a0 *quad)
 {
@@ -664,6 +678,10 @@ PRIVATE __forceinline void decal_rotate_vector_17fd20(vector3f const *forward, v
 // Round 429: exact-frame count order 563 (one-point gain rejected); edge fields at use 694;
 // both 694; complete group-owned selection workspace 769; count/workspace 768; edge/workspace
 // and all three 790/790; all with ring anchor at use 707. Original body restored.
+// DL round 206: selected edge direction at acceptance 647; with early pivot offset 633;
+// with native point setter 648; early offset and point setter 682; those four with
+// the staged shared cross product 647/633/648/682. Frames shrink to 0x21d4/0x21cc;
+// original endpoints, pivot timing, helper operations and complete body restored.
 // @retail 0x17fd20
 void function_17fd20(s_decal_mesh_view const *mesh, long tag_index,
 	s_decal_output_17dd80 *output, s_decal_projection_17fd20 *projection, s_decal_placement const *placement)

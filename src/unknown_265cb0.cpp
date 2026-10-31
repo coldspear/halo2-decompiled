@@ -494,15 +494,18 @@ real function_30bf0(vector3f *vector);
 // 152/152/152/152/152/152/152/183. Original complete executable body restored.
 // Round 214: existing dot/basis-dot plane producers, both operand orders: copied normal 150 each; native normal 290 each.
 // Exact-only sum forms restored; no gain meeting the margin, result/range/amount homes and inverse SIMD groups remain.
-// score 150 (was 144): the volatile result anchor and the pointer-to-whole-local side
+// Earlier: the volatile result anchor and the pointer-to-whole-local side
 // operand are gone, so the result, range and delta stack homes and the delta/motion SIMD
 // register blocks differ from retail again.
-// score 152 (was 152): the facing branch is entered on retail's negated condition and the cross
+// Earlier: the facing branch is entered on retail's negated condition and the cross
 // product's multiply operands now follow retail's order; the result, range and delta stack homes
 // and the delta/motion SIMD register blocks still differ.
 // Coordinator review: the facing branch on the negated condition with the volatile result kept scores 150 (was 152);
 // with int result as well 150. Neither meets the 8-point bar, so main's code stays; the 144 above also had the cross
 // product's operand order, which is not in this file.
+// Round 240: reusable mode test/all-axis origin scalars/all-axis point scalars and their pairs/all
+// 323/346/319/364/342/380/395; all with ordinary result 395. Original input observations and
+// complete body restored; mode caching grows the frame to 0x354.
 // @retail 0x263810
 short function_263810(point3f const *origin, long actor_index, point3f const *point, point3f const *endpoint, char posture, short mode, bool use_facing, bool *out_of_range)
 {
@@ -1253,6 +1256,11 @@ long function_146650(void);
 // subsets 423/256/425/133/424/257/426; all with the rounded-count name 426. Every signed-short
 // product remains exactly representable. Original literals, count name and full body restored;
 // hoisted clock conversion, joined count copy and geometry homes remain.
+// Round 21 (lane 13): ahead as a copy of the position plus `+=` steps 209 (1974 bytes);
+// real_point3d_set 14; vector3f_add_scaled 14; length_sq3f and dot3f for the two sums 14;
+// offset zeroed by a chained assignment 18. A compile-only model of this file gives our exact
+// homes: names, declaration order/scope and symbol count never move them; the slot order follows
+// how many references each vector has (two fewer `&direction` uses give retail's order).
 // Round 43 (per-arm decay form): target/movement/both library copies 14/14/14;
 // target/movement/both vector setters 77/186/224; library target plus movement setter 186;
 // target setter plus library movement 77. The setters disturb the scalar/geometry allocation;
@@ -1793,6 +1801,9 @@ real function_2683f0(long actor_index, long node_index, short type)
 // Existing transform/relative/both complete setters 528/528/528; safe in-place transform
 // 705 (frame 0x74), with relative/point/both 705/712/708; native transform initializer with
 // relative and point producers 528. All vector producers restored; frame and saved homes remain.
+// Round 240: complementary established/visibility/both/retention/established-retention/visibility-retention/
+// all decisions 502/560/562/505/505/560/562; byte complementary direct decisions 562.
+// Original independent searches, shared positive producer and all body values restored; frame 0x84/0x80 remains.
 // @retail 0x266640
 void function_266640(long actor_index)
 {

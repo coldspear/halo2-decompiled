@@ -3,6 +3,7 @@
 #include "camera_storage.h"
 #include "unknown_0259d0.h"
 #include "globals.h"
+#include "bitmap_sequences.h"
 
 struct s_4e6950
 {
@@ -36,18 +37,29 @@ bool function_22acb4(long);
 void function_1396c7(long, point2f *);
 void function_2d140(long, real const *, long, long, s_filter_vector const *);
 
-// score 64 (was 64): the offsets switch's default block still comes first instead of last and the
+// score 6 (was 64): only the schedule of two bound conversions differs: retail converts the
+// bottom bound after the first two right-bound stores and the top bound after the first left-bound
+// store; ours converts each before them. Round 18 (lane 14): the bitmap tag read through the
+// sequence/sprite structs 0x22ae21 uses, with the index declared in each count branch (zero tests
+// against the zero register, sprite address [eax + ebx]); the offsets added in place to the point
+// as 0x22aa16 does (retail's switch layout, the default path reloads the point after the join); the
+// blends computed x-low, y-low, x-high, y-high: 64 -> 6. Tried on the way: default arm first 64; default
+// assigning y first 64; point copied before the switch with overwriting cases 128; index declared per
+// branch alone 63. Compile-only screens on 6 (no change from 4 harness differences): the bound and
+// reciprocal declarations in all 720 orders, the grid rows in all 720 orders, each blend product's
+// operand order (16), the global stores moved before the reciprocals/grid/blends/blend stores 4/20/20/20.
+// Earlier (score 64 (was 64)): the offsets switch's default block still comes first instead of last and the
 // sums still sit in xmm4/xmm5 instead of xmm5/xmm6; the two zero tests are still test reg,reg
 // instead of cmp against the zero register.
-// score 64 (was 114): the offsets switch sums each case's pair onto the point and the default
+// Earlier (score 64 (was 114)): the offsets switch sums each case's pair onto the point and the default
 // copies the point, the x reciprocal comes first with the four bounds converted in retail's
 // dd2, dd6, dd4, dd0 order, and the grid's column 0/1 stores precede the four blends.
 // Still: the offsets switch keeps its default block first instead of last and the sums sit in
 // xmm4/xmm5 instead of xmm5/xmm6, and two of the zero tests are test reg,reg instead of cmp.
-// score 114 (was 120): permuted declaration order (local_9 before local_8, local_16 before
+// Earlier (score 114 (was 120)): permuted declaration order (local_9 before local_8, local_16 before
 // local_15), the case-2 offset written 4 + field_44 and the short local_10 split from its
 // initialiser. Mode/resource/point homes and offset/bound schedule remain.
-// score 120 (was 120): mode/resource/point frame homes permuted, offset join and bound schedule.
+// Earlier (score 120 (was 120)): mode/resource/point frame homes permuted, offset join and bound schedule.
 // Retail's offset switch has no return: each case converts its pair and shares the adds, the
 // default keeps the point. Per-case sums with a default copy 157 (switch shape retail's, frame
 // and bound schedule worse; case/default order 157); offsets added in place 145; a copy plus
@@ -94,42 +106,34 @@ void function_22b8e2(s_22b8e2 const *arg_0, long arg_1, color4f const *arg_2)
 	}
 	if (arg_0->field_24 != NONE)
 	{
-		byte const *local_5 = g_4e3b44[arg_0->field_24 & 0xffff].bytes;
-		if (local_3 >= 0 && local_3 < *(long const *)(local_5 + 0x3c))
+		s_bitmap_tag_22ae21 const *tag = (s_bitmap_tag_22ae21 const *)g_4e3b44[arg_0->field_24 & 0xffff].bytes;
+		if (local_3 >= 0 && local_3 < tag->sequence_count)
 		{
-			byte const *local_7 = *(byte const *const *)(local_5 + 0x40) + local_3 * 0x3c;
-			long local_9 = 0;
-			long local_8 = *(long const *)(local_7 + 0x34);
-			if (local_8 > 0)
+			s_bitmap_sequence_22ae21 const *sequence = &tag->sequences[local_3];
+			if (sequence->sprite_count > 0)
 			{
-				if (local_8 > 1 && function_22acb4(arg_1))
-					local_9 = 1;
-				local_2 = *(short const *)(*(byte const *const *)(local_7 + 0x38) + local_9 * 0x20);
+				long index = 0;
+				if (sequence->sprite_count > 1 && function_22acb4(arg_1))
+					index = 1;
+				local_2 = sequence->sprites[index].bitmap_index;
 			}
-			else
+			else if (sequence->bitmap_count > 0)
 			{
-				short local_10;
-				local_10 = *(short const *)(local_7 + 0x22);
-				if (local_10 > 0)
-				{
-					if (local_10 > 1 && function_22acb4(arg_1))
-						local_9 = 1;
-					local_2 = *(short const *)(local_7 + 0x20) + local_9;
-				}
+				long index = 0;
+				if (sequence->bitmap_count > 1 && function_22acb4(arg_1))
+					index = 1;
+				local_2 = sequence->first_bitmap + index;
 			}
 		}
-		else if (local_3 == 0 && *(long const *)(local_5 + 0x3c) == 0 && *(long const *)(local_5 + 0x44) > 0)
+		else if (local_3 == 0 && tag->sequence_count == 0 && tag->bitmap_count > 0)
 			local_2 = 0;
 	}
 	function_1396c7(arg_0->field_1c, &local_4);
-	real local_26;
-	real local_27;
 	switch (local_0)
 	{
-	case 0: local_26 = (real)arg_0->field_44[0] + local_4.x; local_27 = (real)arg_0->field_44[1] + local_4.y; break;
-	case 1: local_26 = (real)arg_0->field_44[2] + local_4.x; local_27 = (real)arg_0->field_44[3] + local_4.y; break;
-	case 2: local_26 = (real)arg_0->field_44[4] + local_4.x; local_27 = (real)arg_0->field_44[5] + local_4.y; break;
-	default: local_26 = local_4.x; local_27 = local_4.y; break;
+	case 0: local_4.x += arg_0->field_44[0]; local_4.y += arg_0->field_44[1]; break;
+	case 1: local_4.x += arg_0->field_44[2]; local_4.y += arg_0->field_44[3]; break;
+	case 2: local_4.x += arg_0->field_44[4]; local_4.y += arg_0->field_44[5]; break;
 	}
 	real local_15 = 0.5f / (g_4b9dd6 - g_4b9dd2);
 	real local_16 = 0.5f / (g_4b9dd4 - g_4b9dd0);
@@ -140,14 +144,14 @@ void function_22b8e2(s_22b8e2 const *arg_0, long arg_1, color4f const *arg_2)
 	real local_21[9][4];
 	local_21[8][0] = local_21[5][0] = local_21[2][0] = local_13;
 	local_21[6][0] = local_21[3][0] = local_21[0][0] = local_11;
-	local_21[7][0] = local_21[4][0] = local_21[1][0] = local_26;
+	local_21[7][0] = local_21[4][0] = local_21[1][0] = local_4.x;
 	local_21[8][1] = local_21[7][1] = local_21[6][1] = local_14;
 	local_21[2][1] = local_21[1][1] = local_21[0][1] = local_12;
-	local_21[5][1] = local_21[4][1] = local_21[3][1] = local_27;
-	real local_17 = 1.0f - (local_26 - local_11) * local_15;
-	real local_18 = 1.0f - (local_13 - local_26) * local_15;
-	real local_19 = 1.0f - (local_27 - local_12) * local_16;
-	real local_20 = 1.0f - (local_14 - local_27) * local_16;
+	local_21[5][1] = local_21[4][1] = local_21[3][1] = local_4.y;
+	real local_17 = 1.0f - (local_4.x - local_11) * local_15;
+	real local_19 = 1.0f - (local_4.y - local_12) * local_16;
+	real local_18 = 1.0f - (local_13 - local_4.x) * local_15;
+	real local_20 = 1.0f - (local_14 - local_4.y) * local_16;
 	local_21[0][2] = local_17;
 	local_21[0][3] = local_19;
 	local_21[1][2] = 1.0f;

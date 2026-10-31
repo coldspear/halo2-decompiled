@@ -985,6 +985,8 @@ PRIVATE inline void channel_loop_clear(c_animation_channel *channel)
 // Round 197: Existing validity provider at prior/phase/publication masks 1..7 gives
 // 251/209/329/245/286/243/313; all with native-byte prior-loop truth 313.
 // The one-point phase gain is rejected; original predicates and body restored.
+// DL204: conditional blend/loop preservation 328/322/309/368; native three-long name-prefix
+// comparison alone/with blend updates 338/349/361/386. All original executable forms restored.
 // @retail 0x1cd070
 bool s_animation_state::animation_set(long mode, long weapon_class, long weapon_type, long set, long state_flags, long channel_flags)
 {

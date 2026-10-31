@@ -1739,6 +1739,8 @@ static __forceinline s_player_slot_flags *function_74aa1(s_player_slot_flags *ar
 // Request descriptor type once in long/dword 709/709; key once in long/dword
 // 725/725; both in signed/unsigned and mixed native storage 725 each. Original reads and
 // whole body restored; key forms recover length but enlarge the aligned frame.
+// Round 45: twice-used initial-request comparison as bool/byte/char/long, mutable
+// and immutable, 737 each; frame grows to 0xc8. Original complete body restored.
 // @retail 0x74aa0
 void function_074aa0(void)
 {

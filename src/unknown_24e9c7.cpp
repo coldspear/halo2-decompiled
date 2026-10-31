@@ -170,6 +170,7 @@ struct s_24e9c7_bounds
 // pair's home stays below result: across built in the side vector and scaled in place by the half
 // width, with `0.0f -` 139; with unary minus 144; `0.0f -` alone (a listed form, as a base) 138;
 // negated-component locals scaled by size 138; scale read before size with `0.0f -` 137.
+// Round 322: Shared upper-origin point copy/value/twice-used coordinates/first vertex at assembly 168/147/190/147; at the height producer 153/146/189/147. Original corner sums, geometry and body restored; early across spill and shifted scalar homes remain.
 // @retail 0x24e9c7
 real function_24e9c7(s_24e9c7_marker const *marker, s_24e9c7_placement const *placement)
 {

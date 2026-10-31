@@ -152,6 +152,9 @@ c_vertex_shape::c_vertex_shape(s_shape_source *source, byte type, long data, lon
 short function_120850(const vector3f *vector);
 bool function_23a220(const point2f *point, short count, const point2f *points, real epsilon);
 
+// Round 16: retail's frame is 0x90 against our 0x84: it preloads the ray start's components,
+// keeps the shape in ESI and lets the compiler unroll the polygon copy four ways, ours copies
+// the origin vertex with integer moves and writes the unroll out.
 // score 192 (was 192): frame 0x84 versus 0x90: retail keeps origin.x/y in xmm6/xmm7 until the
 // offset (ours re-reads all three from the shape), so it spills first.i/second.i into homes and puts
 // the found byte at +0x38 and the plane at +4; every later stack offset differs by that. Retail also

@@ -511,6 +511,10 @@ bool function_1fef40(s_type_c3b527 const *target, long actor_index);
 extern vector3f *g_4687b0;
 void rotate_direction(vector3f *vector, vector3f const *axis, real sine, real cosine); /* forced inline in src/unknown_1eb8a0.cpp */
 // score 130 (was 130): frame 0x20 agrees. Retail tests the planar length after the scale products
+// Round 28: the existing rotate_vector_170d70 (src/unknown_170d70.cpp) for rotate_direction 130 at retail's 850
+// bytes (aligned 106 -> 88; lead), with the output through vector3f_scale 147 (830); vector3f_scale for the output
+// alone 147 (828); rotate_direction with scalar cross terms (dot first, or (1 - cosine) first) 134/134 (0x1ecf50
+// 120 -> 148). No existing 2D dot or perp-dot helper exists for the facing/side tests.
 // with the zero in xmm0 and does not carry that zero into the inlined rotation (memory 0.0 for i, a
 // fresh xorps for j/k); ours zeroes xmm6 before the divide and keeps it through the rotation, whose
 // loads, dot order and registers then differ. Retail multiplies the facing components as registers

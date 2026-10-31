@@ -144,6 +144,8 @@ PRIVATE inline c_channel_effects_view *channel_effects()
 // Native send word stores/tests, stores, stores/tests with routing, tests on gain graph
 // 545/538/562/550; complete library speaker copy with store-only/both views, then native
 // gain values, 566/557/566/557. Three- and seven-point gains rejected; original body restored.
+// DL204: staged routing-result bool/byte/short/long 532 each; guarded interval and
+// conditional-absolute delta forms 589/544/589/544 (reduced control 532, full 545). Restored.
 // @retail 0x21fa80
 void function_21fa80(long channel_index, s_looping_channel_properties const *properties,
 	s_looping_effect_playback const *effects, bool force)

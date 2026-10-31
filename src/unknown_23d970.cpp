@@ -608,6 +608,21 @@ PRIVATE inline s_player_state *local_player_state(long local_index)
 // the distance on x87); there u.k takes retail's xmm0 only when no distance store sits between
 // the call and the products (dropped or moved after them: 19-21 differing SSE lines against 33);
 // none of 48 helper/operand/copy-placement combinations does better than the base.
+// Round 322: Complete scalar up snapshot i/j/k permutations all 107; memcpy snapshot 57; memmove 327 at retail length. Original aggregate copy, products and body restored; up K/distance scheduling remains.
+// Round 127 (lane 4): cross3f_staged for the second product 217 again (1270 bytes; aligned, only
+// the first product's colours (right.i/k swapped), the second product's operand order (ours loads
+// forward's component and multiplies right's register, retail copies right's register and
+// multiplies forward from memory) and the else branch's stores remain); on it: a force-inline
+// helper reading the angles through the observer and writing through the output pointer (as the
+// matched 0x23d790 builds its forward vector) 221, alone 222; a forward pointer local for the copy
+// and both products 221; the distance in a named local 217 (same code). Diagnostic only: one no-op
+// product on the distance before the staged products 55 at 1262 bytes (the staged code shrinks by
+// 14 bytes), two/three 203/223: the operand orders follow VC's tuple numbering, as in 0x293130.
+// Round 46 (lane 9): a forward pointer in the camera branch only (copy and both products through it) 221
+// (1273 bytes), with the staged second product 221 (1272); the second product reading the direction local 224
+// (1268), staged 224; the player state named before the previous_up copy 57 (identical). On the base the first
+// product is retail's sequence with up.k in xmm1 (loaded before the distance store) where retail loads it into
+// xmm0 after the store, so right's j/k colours swap and the second product is not staged.
 // @retail 0x23de50
 void __stdcall function_23de50(void *state, void *input, s_observer_command *output)
 {

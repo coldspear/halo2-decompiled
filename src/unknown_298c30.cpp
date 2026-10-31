@@ -406,6 +406,9 @@ __forceinline void function_2994a1(point2f const *arg_0, real arg_1,
 // Round 313: Separate transform output, original/ordinary result 733/730; with shared difference
 // 733/730. Planar pivot 762/761, with shared difference 762/761. Three-count ordinary-result gain
 // rejected; frames 0x124/0x118 still differ from 0x114. Original helpers and body restored.
+// Round 239: one actual reused trace context, crossed with independent transform
+// output, ordinary result and shared sine: 854/854/826/826/850/850/814/814. Frames
+// 0x120/0x124/0x128 versus 0x114; original context reads and complete body restored.
 // @retail 0x299460
 bool function_299460(long arg_0, s_298c46 *arg_1, s_298c30 const *arg_2,
 	point3f const *arg_3, vector3f const *arg_4, vector3f const *arg_5,

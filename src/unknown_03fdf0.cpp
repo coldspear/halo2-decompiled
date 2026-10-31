@@ -274,6 +274,16 @@ void function_4a1e0(s_view_source *source, s_view_camera *camera, long resource_
 // Plain group reset loops count/first/flags, count/flags/first, first/count/flags,
 // flags/count/first with block and indexed receivers 54/54/54/54/144/144/144/144. Scaled-index
 // and copy/count homes remain; original body restored.
+// Lane 15 r19: retail's caller 0x404b0 passes the index in EDX and pushes mode; retail spills its
+// scaled-index temporary above the loop locals where ours spills the named block pointer below them
+// (every loop slot 4 bytes off). The per-iteration entry copy removed 54 (identical, kept); block
+// pointer before the clears 148 (492 bytes); early return on `count <= 0` 54 (same code); indexed form
+// without the entry copy 144 (492 bytes); entries before first 54 (same code).
+// Round 107 (fast; the block form's entries cursor is biased +0xc, the second non-base read): indexed form
+// 144 (492 bytes; index in EDX as retail, count CX/EDX and zero EAX where retail has AX/EAX and ECX, first
+// in EAX across the copy where retail loads it into EDI and spills it); on it, current and first both
+// read from previous 140 (495), `&g_4ba138[first]` as the copy destination 144, a for loop over n 144,
+// the selection computed before the copy 170 (490).
 // @retail 0x402b0
 void function_402b0(long cache_index, long mode)
 {
@@ -296,24 +306,23 @@ void function_402b0(long cache_index, long mode)
         long index = first;
         while (n < block->count)
         {
-            s_44940_entry const *entry = entries;
-            if (entry->unknown00 & selection & 0x1fffff &&
-                entry->unknown00 & 1 && entry->unknown10[0xa] > 0 && (entry->flags & 0x1f0) == 0x1f0)
+            if (entries->unknown00 & selection & 0x1fffff &&
+                entries->unknown00 & 1 && entries->unknown10[0xa] > 0 && (entries->flags & 0x1f0) == 0x1f0)
             {
                 byte weight = g_4c0b78.weights[index];
-                long shape = entry->flags & 0xf;
+                long shape = entries->flags & 0xf;
                 byte material_index = g_4c0b78.material_indices[(short)index];
                 long material = NONE;
                 if (material_index != 0xff)
                     material = g_4c0b78.materials[material_index];
-                byte *geometry = (byte *)function_449e0((short)index, false, (bool)((entry->unknown00 >> 12) & 1));
+                byte *geometry = (byte *)function_449e0((short)index, false, (bool)((entries->unknown00 >> 12) & 1));
                 if (geometry)
                 {
                     for (long part = 0; part < *(long *)geometry; ++part)
                     {
                         s_render_part_context context;
                         if (function_45ce0((short)index, (byte *)&context, (short)part, (short)shape) &&
-                            function_460d0(*(dword const **)(entry->unknown10 + 4), (short)index, part))
+                            function_460d0(*(dword const **)(entries->unknown10 + 4), (short)index, part))
                         {
                             long chosen = context.material;
                             if (material != NONE)

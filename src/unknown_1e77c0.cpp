@@ -481,7 +481,7 @@ struct s_request_profile
 	byte field_148[0x1e0 - 0x148];
 };
 
-// score 108 (was 108): aligned frame 0x1e8 agrees; player/version registers and flag reads differ.
+// score 61 (was 108): aligned frame 0x1e8 agrees; the pointer induction variable and the registers it rotates differ.
 // Default profile 164; early memset 150; unsigned version 143; aligned byte prefix 180;
 // unsigned local index 143; aligned dword prefix 180; common bits 370; separate tick reset 335.
 // All use ordinary player data and native loops; original profile and body retained.
@@ -497,6 +497,16 @@ struct s_request_profile
 // Round 421: matched full-value query in one native 32-entry loop, indexed long/short/word/dword
 // counters 348/321/321/348; advancing destination with those counters 349/321/321/349.
 // All remove the inherited qualified global data read; original body restored at 108/540.
+// Round 105 (kept, 108 -> 61): no state pointer (fields through g_51e9c0[local_index] at each use, so
+// the flag pair is read through the memcpy destination as retail), the profile index read at each use
+// with a plain player data read (gives retail's unfused `add eax, esi`), and each element through the
+// existing 0x1e7a10 query, ticks first. Still differs: our pointer IV starts at element 1's ticks
+// (+6, index bias 3) where retail's starts at its state (+4, bias 2), which moves the local index from
+// EDX to EBX. Tried: state first 134-136 (IV right, ticks stores one element late, loop padding);
+// natural i..i+3 spelling 86; per-element pointers 133-135; plain 32-entry loops stay rolled 345/354;
+// a bool local per element 137; state = 0 then `if (query) state = 5` 106; with the volatile read 175;
+// profile index local 164. Diagnostic only: element 1 alone state-first gives retail's IV and
+// registers (36 with this spelling, 79 natural), so the IV follows element 1's first store.
 // Round 44: VC unrolls a constant-trip loop only with one store in its body (two stores never unroll, even from an
 // inlined helper in another file: 339 rolled). Plain loop storing a transition record 166 (565 bytes); both flag
 // words read at each use 205, with natural i..i+3 elements 177; natural four-way body calling 0x1e7a10 150 (583 bytes,
@@ -512,13 +522,12 @@ void function_1e73b0()
 		long player_index = local_index == NONE ? NONE : g_4e8c20->entries[local_index];
 		if (player_index != NONE)
 		{
-			s_player_request_view *player = (s_player_request_view *)(*(byte *volatile *)&g_4e8c24->data + (player_index & 0xffff) * 0x21c);
-			long profile_index = *(long *)((byte *)player + 0x24);
-			if (profile_index != NONE)
+			s_player_request_view *player = (s_player_request_view *)(g_4e8c24->data + (player_index & 0xffff) * 0x21c);
+			if (*(long *)((byte *)player + 0x24) != NONE)
 			{
 				s_request_profile profile;
 				long version;
-				s_player_slot *slot = &g_54e8e0[profile_index];
+				s_player_slot *slot = &g_54e8e0[*(long *)((byte *)player + 0x24)];
 				if (slot && (*(byte *)slot & 0x10))
 				{
 					profile = *(s_request_profile *)((byte *)slot + 0x18);
@@ -529,37 +538,18 @@ void function_1e73b0()
 					memset(&profile, 0, sizeof(profile));
 					version = NONE;
 				}
-				s_local_player_state_view *state = &((s_local_player_state_view *)g_51e9c0)[local_index];
-				memcpy(state->request_flags, profile.flags, sizeof(profile.flags));
-				state->version = version;
-				dword flags0 = state->request_flags[0];
-                dword flags1 = state->request_flags[1];
-                for (long i = 2; i - 2 < 32; i += 4)
+				memcpy(((s_local_player_state_view *)g_51e9c0)[local_index].request_flags, profile.flags, sizeof(profile.flags));
+				((s_local_player_state_view *)g_51e9c0)[local_index].version = version;
+				for (long i = 2; i - 2 < 32; i += 4)
 				{
-					{
-						s_request_transition *transition = &state->transitions[(i - 2)];
-						transition->ticks = 0;
-						long value = ((flags1 & (1 << (i - 2))) ? 2 : 0) + ((flags0 & (1 << (i - 2))) ? 1 : 0);
-						transition->state = value == 3 ? 5 : 0;
-					}
-					{
-						s_request_transition *transition = &state->transitions[(i - 1)];
-						transition->ticks = 0;
-						long value = ((flags1 & (1 << (i - 1))) ? 2 : 0) + ((flags0 & (1 << (i - 1))) ? 1 : 0);
-						transition->state = value == 3 ? 5 : 0;
-					}
-					{
-						s_request_transition *transition = &state->transitions[i];
-						transition->ticks = 0;
-						long value = ((flags1 & (1 << i)) ? 2 : 0) + ((flags0 & (1 << i)) ? 1 : 0);
-						transition->state = value == 3 ? 5 : 0;
-					}
-					{
-						s_request_transition *transition = &state->transitions[(i + 1)];
-						transition->ticks = 0;
-						long value = ((flags1 & (1 << (i + 1))) ? 2 : 0) + ((flags0 & (1 << (i + 1))) ? 1 : 0);
-						transition->state = value == 3 ? 5 : 0;
-					}
+					((s_local_player_state_view *)g_51e9c0)[local_index].transitions[(i - 2)].ticks = 0;
+					((s_local_player_state_view *)g_51e9c0)[local_index].transitions[(i - 2)].state = function_1e7a10(local_index, i - 2) ? 5 : 0;
+					((s_local_player_state_view *)g_51e9c0)[local_index].transitions[(i - 1)].ticks = 0;
+					((s_local_player_state_view *)g_51e9c0)[local_index].transitions[(i - 1)].state = function_1e7a10(local_index, i - 1) ? 5 : 0;
+					((s_local_player_state_view *)g_51e9c0)[local_index].transitions[i].ticks = 0;
+					((s_local_player_state_view *)g_51e9c0)[local_index].transitions[i].state = function_1e7a10(local_index, i) ? 5 : 0;
+					((s_local_player_state_view *)g_51e9c0)[local_index].transitions[(i + 1)].ticks = 0;
+					((s_local_player_state_view *)g_51e9c0)[local_index].transitions[(i + 1)].state = function_1e7a10(local_index, i + 1) ? 5 : 0;
 				}
 			}
 		}

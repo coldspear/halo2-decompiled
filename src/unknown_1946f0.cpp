@@ -23,7 +23,7 @@ s_direction_face g_475480[32];
    then each component scaled by its inverse */
 static __forceinline real normalize_decoded_direction(vector3f *v)
 {
-	real m = (real)sqrt(v->i * v->i + v->k * v->k + v->j * v->j);
+	real m = (real)sqrt(v->k * v->k + (v->i * v->i + v->j * v->j));
 	if (!(fabs(m) < k_real_epsilon))
 	{
 		real inv = 1.f / m;
@@ -85,7 +85,18 @@ static __forceinline void decode_direction(long index, vector3f *direction)
 	direction->k = z * face->axes[2].k + y * face->axes[1].k + x * face->axes[0].k + face->origin.k;
 }
 
-// score 47 (was 47): what still differs is the normalization: ours keeps the decoded k on the x87
+// score 4 (was 47): what still differs is the magnitude sum's first pair: ours sums j*j + i*i, then k*k,
+// retail j*j + k*k, then i*i (the decoded k is now popped and reloaded as in retail). Round 127: the
+// file's decode-path normalizer (normalize_decoded_direction, grouped k*k + (i*i + j*j)) in place of
+// normalize3d, 47 -> 4 (0x195070 56 -> 6); on it: the groupings i*i + (j*j + k*k) (0x294050's
+// magnitude form) and j*j + (i*i + k*k) (normalize_inline's) 47/47 (k kept on x87 again; a written
+// inner order makes no difference); the normalization inside the decoder 4; the inner pair written
+// j*j + i*i 4 (same code); the magnitude as its own inline helper inside the normalizer 4;
+// diagnostics: extra no-op products after the normalization 4, before it (with i*i + (j*j + k*k))
+// 91/131/145 (k still kept and first); a branch before the normalization with the grouped forms
+// 204 (the decode moves to SSE stores).
+// Earlier (score 47): what still differs is the normalization: ours keeps the decoded k on the x87
+// what still differs is the normalization: ours keeps the decoded k on the x87
 // stack (fst) and squares it first; retail pops it and sums j*j, k*k, then i*i from memory, as if a
 // block ended after the decode (a diagnostic branch there gives retail's order). These sum orders
 // follow VC's tuple numbering, not the source order. Round 13: the decoder builds its grid point
@@ -165,7 +176,7 @@ void function_194d30(s_bitstream *stream, vector3f const *up, vector3f const *fo
 		}
 		function_195720(stream, index, k_direction_bits);
 		decode_direction(index, &direction);
-		normalize3d(&direction);
+		normalize_decoded_direction(&direction);
 	}
 	else
 	{
@@ -176,7 +187,11 @@ void function_194d30(s_bitstream *stream, vector3f const *up, vector3f const *fo
 	function_195720(stream, real_to_long((angle - -k_pi) * 40.42535400390625f), 8);
 }
 
-// score 56 (was 96): only the normalization differs, as in 0x194d30: ours keeps the decoded k on
+// score 6 (was 56): only the magnitude sum's order differs: ours j*j + i*i, then k*k; retail i*i +
+// k*k, then j*j. Round 127: normalize_decoded_direction's sum grouped k*k + (i*i + j*j) (shared with
+// 0x194d30) 56 -> 6 at retail's 449 bytes; i*i + (j*j + k*k) and j*j + (i*i + k*k) 56/56 (k kept on
+// x87); the normalization inside the shared decoder 6.
+// Earlier (score 56): only the normalization differs, as in 0x194d30: ours keeps the decoded k on
 // the x87 stack and squares it first; retail pops it and sums i, k, j from memory (a block boundary
 // before the normalization), then scales the normalized vector in place. Round 13: the shared grid
 // decoder in place of this function's hand-written copy of it, 96 -> 56. Earlier, on that copy:

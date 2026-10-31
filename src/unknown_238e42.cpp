@@ -947,6 +947,13 @@ bool __stdcall function_2399da(long controller_index)
 // Round 439: complete selected-identity copies before lookup/after membership, native/library
 // copies at producer/entry lifetimes, 174/174/174/174 and 147/147/147/147. Exact-only snapshots
 // regress and grow the frame; original producer pointer and all callees restored.
+// Round 10 (m3 lane 2, harness identical to the real build): with the rank dispatch removed
+// (diagnostic) the identity pointer takes EAX as in retail, so the cause is the rank value's
+// temporary winning EAX over the identity pointer's; the positional count is the 2-byte move
+// shifting every later jump. Empty have_member arm folded into `if (!have_member)` 92 (430 bytes);
+// the rank-3 test inverted with the update first 92; own rank read before the identity test 90;
+// the identity test with `!= 0` and other spellings 90; `if (!may_change) { deny; return; }`
+// inside `if (!have_member)` 114.
 // Round 2 of lane 18: validity test through an inline helper (as 0x24b5bc's file has it) 90; flat
 // dispatch (remove, deny, rank 3, set) 90; set-rank first with deny and rank-3 returns 95; removal
 // re-deriving the identity from the selection 147; one shared controller-mask local 176.

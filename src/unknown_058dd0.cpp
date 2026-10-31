@@ -1861,6 +1861,10 @@ bool network_session_host_become_leader(c_class_58d20 *session);
 // seconds 48. Round 11 (0x6e720's file held by another lane): nested ifs with the timer reset in both
 // else arms 48 (same code); the leave arm first (`mode != 3`) worse (51 on a relink screen where the
 // current form is 43); result set before the mode call 48.
+// Round 86: combined mode gate with bool/long/signed-byte/dword readiness 96/86/96/86;
+// NONE duration sentinel 131; preparation and duration in one gate 138; completion nested in
+// the success arm 97; bool readiness with the failure arm first and combined mode gate 96.
+// Original body restored.
 // @retail 0x72700
 bool c_session_state_start_match::update()
 {

@@ -527,6 +527,9 @@ extern point2f *g_468778;
 // Round 428: native short/word/long/dword completion result 404/404/406/406;
 // those result widths with actor-first acquisition 401/401/403/403. All 1549 bytes;
 // result spill and actor/settings/prop allocation remain; original bool result and lookup order restored.
+// Round 238: complementary rejection result bool/byte/short/long 394/394/403/401;
+// those domains with actor-first acquisition 419/419/406/404. Original positive
+// bool result, lookup order, early distance and complete body restored.
 // @retail 0x1aa0d0
 bool __stdcall function_1aa0d0(long arg_0, s_slot *arg_1)
 {

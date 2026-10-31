@@ -1030,6 +1030,11 @@ PRIVATE __forceinline byte *unit_action_seat_get(s_unit_action_unit *unit)
 // existing word hand getter, Boolean active field and long player value; only constant setup
 // reordered. Every field read, call tuple and success commit is
 // unchanged.
+// Round 21 (lane 13): the first lookup through UNIT_ACTION_HEADER_GET 19; the grenade test as
+// if/else with the player notice in the else 19; the player notice ending in `return result` 45
+// (958 bytes); immediate and animated throws as one if/else chain 19; animate and player-index
+// tests nested 19. A compile-only model keeps the exit block last for every structured, goto and
+// inline-helper shape; retail's failure jumps reach the success path's exit copy instead.
 // @retail 0xe7fb0
 bool __stdcall function_e7fb0(long unit_index, s_unit_request *request)
 {
@@ -1257,14 +1262,6 @@ void __stdcall function_fff40(long weapon_index, bool silent, bool immediate);
 
 /* a unit's weapon animations: its vehicle seat's weapon's, or the
    default */
-// score 73 (was 75): same length as retail now; registers differ. Retail keeps the object array
-// in ebx, the tag table in ebp and the seat index in di, and keeps both names on the stack where
-// ours keeps the default name in ebp. The seat flags as the seat definition's bitfields give
-// retail's shift-and-test reads after the weapon lookup, and the hand helper's short slot index
-// gives retail's movsx; the seat flags read as a dword after the weapon 88, with the hand helper 85.
-// Round 432: chained defaults 73; parent/seat/both snapshots 73/73/77;
-// shared header/tag/both/full producers 73/73/73/74; all restored.
-// Name-home renames/action-first declarations/state-first acquisitions 73/73/73/73/73/73/72/72; restored.
 // @retail 0xe8620
 void __stdcall function_e8620(long unit_index, bool flag)
 {
@@ -1274,17 +1271,15 @@ void __stdcall function_e8620(long unit_index, bool flag)
 
 	if (unit->parent_object_index != NONE && unit->seat_index != NONE)
 	{
-		s_unit_action_unit *parent = UNIT_ACTION_UNIT_GET(unit->parent_object_index);
-		s_unit_seat_definition *seat = (s_unit_seat_definition *)(*(byte **)(g_4e3b44[parent->definition_index & 0xffff].bytes + 0x1cc) +
-			unit->seat_index * 0xb0);
-		long weapon_index = unit_action_hand_weapon_get(parent, 0);
+		s_unit_seat_definition *seat = (s_unit_seat_definition *)unit_action_seat_get(unit);
+		long weapon_index = unit_action_hand_weapon_get(UNIT_ACTION_UNIT_GET(unit->parent_object_index), 0);
 
 		if (TEST_FIELD_BIT(seat->flags.bit3) && !TEST_FIELD_BIT(seat->flags.bit2) && weapon_index != NONE)
 		{
 			byte *s_type_67e06b = g_4e3b44[UNIT_ACTION_UNIT_GET(weapon_index)->definition_index & 0xffff].bytes;
 
-			action_name = *(long *)(s_type_67e06b + 0x28c);
 			state_name = *(long *)(s_type_67e06b + 0x288);
+			action_name = *(long *)(s_type_67e06b + 0x28c);
 		}
 	}
 	function_10fd40(unit_index, action_name, state_name, flag);
@@ -2636,6 +2631,12 @@ void function_a8b10(long unit_index);
 // for the flag clear 9 (same code; kept, 68 without the flag); the 0xb58c0 owner in a local 9; the
 // action name as if/else 9; the 0xcbd50 result passed as the slot 9; action/state declarations swapped 11; vehicle read first 9 (all plain;
 // --fast adds a pool reload after 0xbef30 the full build lacks).
+// Round 21 (lane 13): BLOCKED-BY 0xe0070: ours takes the unit index in ESI with a 0x1c frame,
+// retail in EDI with 0x20 (retail's `mov edi, esi` and reload around that call are the 6 missing
+// bytes, and the EBP/EDI unit/index swap follows). Vehicle index read before the type flag 68
+// (plain; fast 92 from the reload); type flag after the early return 154 (and 0xeaad0 lost its match);
+// the unit through UNIT_ACTION_HEADER_GET 68; vehicle index read after the early return 68;
+// `!unit->object_type` at the 0xe0070 call 68 (all plain).
 // @retail 0xea8e0
 void __stdcall function_ea8e0(long unit_index, bool hurried)
 {
@@ -2764,6 +2765,13 @@ transform4x3f *function_ba160(long object_index, transform4x3f *matrix);
 // matrix_transform_vector 55/46; scale statements k, j, i 58; `scale * v` 55; sums written
 // forward first 55/40; scale read per use 103; vector3f_assign 35; graph at the call, the
 // model local only, a channel pointer 35; scalar copies 97/102; a byte OR through the helper 48.
+// Round 21 (lane 13): the existing 0x142640 called for the scale and rotation 254 (296 bytes: LTCG
+// keeps the call, its file is /Ob1 and it is not inline), with a __forceinline declaration 254;
+// state declared before the definition chain 35; the channel's animation id read into a local
+// before the call 10 (fixes the whole EBX/EDX chain; a one-use local, kept only with a match);
+// `real scale` then x/y/z copies of the velocity scaled in place and up*z + left*y + forward*x
+// rows 25; both together MATCH (not kept: the scaled copies write the helper body out by hand).
+// BLOCKED-BY 0x142640: retail inlines it here; once it is inline its call plus the id local should match.
 // @retail 0xeac90
 void __stdcall function_eac90(long unit_index, bool hurried, bool push)
 {
@@ -3309,7 +3317,7 @@ struct s_unit_request_seat_animation
 
 /* plays a seat animation (type 36): the request's, or the one following
    the unit's current animation */
-// score 76 (was 252): Frame and entry carriers agree; one extra byte, provider output role and
+// score 76 (was 76): Frame and entry carriers agree; one extra byte, provider output role and
 // selector tail blocks remain. All original values retained.
 // Shared dispatch 134; selected-name result 159; Boolean result 144; vector copies 134; live mode
 // 159; scalar reservation 134; vector role names 159; if chains 140; false-result exits 134/134;
@@ -3317,6 +3325,12 @@ struct s_unit_request_seat_animation
 // result with precise/initial context 76/125; reverse/third-first case orders 76/76. Keep precise
 // contexts, one dispatch and one real result exit; original case order and selected provider output
 // retained.
+// Round 34: retail switches on 0x10f630's first output (`[esi]`, the state at +0x70), not the
+// second: switching on it is a value fix that gives retail's output slots and registers, 76 (kept).
+// What remains is one merged case block: retail keeps the 0x110001b4 block after the query
+// switch's 0x120001b5 block, ours after the call. All 36 case orders of the two switches 76; the
+// branches in the other order 76 (same code); the query branch setting the mode for one name
+// switch 139; early `return false` exits and a returned call 133.
 // @retail 0xebb40
 bool __stdcall function_ebb40(long unit_index, s_unit_request *request)
 {
@@ -3361,7 +3375,7 @@ bool __stdcall function_ebb40(long unit_index, s_unit_request *request)
 
 			if (!function_10f630(unit_index, &current_action, &field_c_4))
 				goto done;
-			switch (field_c_4)
+			switch (current_action)
 			{
 			case 0xb0006c4:
 				state_name = 0xc0006c3;
@@ -3384,12 +3398,14 @@ done:
 
 /* plays the return from a seat animation (type 37): the request's, or the
    one following the unit's current animation */
-// score 76 (was 252): Frame and entry carriers agree; one extra byte, provider output role and
+// score 76 (was 76): Frame and entry carriers agree; one extra byte, provider output role and
 // selector tail blocks remain. All original values retained.
 // Related common result and precise contexts 76; reverse/third-first case orders 76/76; initially
 // selected request context 113; isolated common exit 109; precise contexts without common result
 // 133; shared dispatch 134; selected-name result 159. Keep original case order, one dispatch,
 // genuine contexts and one Boolean completion exit; selected provider output unchanged.
+// Round 34: switching on 0x10f630's first output, as retail does (a value fix, as in 0xebb40),
+// 76 with retail's output slots; the same merged case block (0x10000229) is placed after the call.
 // @retail 0xebd30
 bool __stdcall function_ebd30(long unit_index, s_unit_request *request)
 {
@@ -3434,7 +3450,7 @@ bool __stdcall function_ebd30(long unit_index, s_unit_request *request)
 
 			if (!function_10f630(unit_index, &current_action, &field_c_4))
 				goto done;
-			switch (field_c_4)
+			switch (current_action)
 			{
 			case 0xc0006c3:
 				state_name = 0xb0006c4;
@@ -4235,11 +4251,19 @@ void function_201520(short value, long type, long a, long b, long c);
 
 /* a surprise: waiting out a paused animation, then its time, then what
    follows it */
-// score 75 (was 87): frame 8 and output homes agree; unit/animation registers, channel tests,
+// score 74 (was 75): frame 8 and output homes agree; unit/animation registers, channel tests,
 // true-exit sharing and final call inputs remain. Action receiver first/pointer names 87/87; native
 // channel flags/combined channel test/unit Boolean 87/87/87; uniform countdown 75; natural guard 87;
 // names/flags/countdown 75; chained clearing 87, with unit Boolean 87, countdown 75, both 75;
 // countdown at its original first read, alone/with clearing and Boolean 99/99.
+// Round 34: the 0x201520 call given retail's arguments (1, value, type, 1, 0; retail passes the
+// first in EAX) 74, kept; the state tests without the goto 74 (same code), kept; the 0x10a flag
+// as TEST_FIELD_BIT 69 (retail's shr/test, a gain below 8); the ticks read from the field at each
+// use (retail's `cmp word [edi+0x38], 0` and reload) 83 at 220 bytes; with chained NONE stores 83;
+// the channel bits as bool conversions 83; as bitfields of the channel's +0x11 byte 83 (still
+// merged into `test 9`). What remains: our build keeps the constant 1 in EAX (test masks, the
+// true return, the call argument), so the state name moves to ECX; retail loads the channel's
+// +0x11 byte into BL and tests 1 and 8 apart.
 // @retail 0xed710
 bool __stdcall function_ed710(long unit_index, long type)
 {
@@ -4251,22 +4275,13 @@ bool __stdcall function_ed710(long unit_index, long type)
 
 	function_10f630(unit_index, &action_name, &state_name);
 	short remaining_ticks = actions->surprise_ticks;
-	if (state_name == 0x700005c)
+	if (state_name == 0x700005c && !(*((byte *)state + 0x6c) & 1) && TEST_FIELD_BIT(state->channels[0].flag0) &&
+		!(state->channels[0].unknown11 & 1) && !(state->channels[0].unknown11 & 8))
 	{
-		if (!(*((byte *)state + 0x6c) & 1) && TEST_FIELD_BIT(state->channels[0].flag0) &&
-			!(state->channels[0].unknown11 & 1) && !(state->channels[0].unknown11 & 8))
-		{
-			return true;
-		}
+		return true;
 	}
-	else if (state_name == 0x800061e)
-	{
-		goto tick;
-	}
-	if (remaining_ticks <= 0)
+	if (state_name != 0x800061e && remaining_ticks <= 0)
 		return function_ed600(unit_index, actions);
-
-tick:
 	if (remaining_ticks <= 0)
 		return true;
 	--remaining_ticks;
@@ -4274,7 +4289,7 @@ tick:
 	if (remaining_ticks > 0)
 		return true;
 	if (!((unit->flags_10a >> 2) & 1))
-		function_201520(actions->surprise_value, actions->surprise_type, 1, 0, 1);
+		function_201520(1, actions->surprise_value, actions->surprise_type, 1, 0);
 	actions->surprise_value = NONE;
 	actions->surprise_type = NONE;
 	return false;
