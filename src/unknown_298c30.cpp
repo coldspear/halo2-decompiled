@@ -632,7 +632,8 @@ __forceinline void function_29a20e(vector3f *arg_0)
 	}
 }
 
-// score 445 (was 493): the callee's pointer-to-parameter trick is gone, so the call site and the entry
+// score 445 (was 445): Frame 0x580 agrees; scalar/vector homes, planar root scheduling and tail placement differ.
+// Earlier score 445 (was 493): the callee's pointer-to-parameter trick is gone, so the call site and the entry
 // schedule agree with retail; the frame homes still differ (our s_298c30 pointer at esp+0x14 and our
 // float at esp+0x10 against retail's esp+0x10 and esp+0x18), and retail keeps the flattened forward
 // vector's length on the x87 stack with fst/fabs/fcompi where ours stores and reloads it.
@@ -651,6 +652,9 @@ __forceinline void function_29a20e(vector3f *arg_0)
 // field by field 550; the angle arms as explicit `a = a - d` / `a = d + a` 550; the dead success test
 // as break-first 550; the failure statements written at each of the three gotos 583 (2622 bytes, not
 // merged).
+// Round 448: Planar normalizer complete XY capture / early epsilon rejection / scalar home roles,
+// all seven nonempty combinations, then native whole-vector capture 449/445/449/445/449/445/449/670.
+// Original body and helpers restored; Frame 0x580 agrees; scalar/vector homes and planar root scheduling remain.
 // @retail 0x29a190
 void function_29a190(long arg_0, long arg_1, vector3f const *arg_2, vector3f *arg_3,
 	short *arg_4, real *arg_5, bool *arg_6, bool *arg_7, short arg_8)
