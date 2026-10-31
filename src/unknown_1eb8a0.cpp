@@ -91,44 +91,6 @@ PRIVATE __forceinline void rotate_direction(vector3f *vector, const vector3f *ax
 	vector->k = vector->k * cosine + projected * axis->k - cross_k * sine;
 }
 
-// score 2 (was 93): only the first dot product's i term differs (ours loads direction.i, retail
-// up.i). Round 125: the rotation as 0x2551c0's matched helper (written-out projection first, three
-// scalar cross terms), the axis through cross3f and the normalize result tested directly took
-// 120 -> 2 (cross3f with the length local 116). On it (one-link harness, exact here): dot3f or the
-// written-out dot with either argument order or term order 2/4; the clamp as if/else, MIN/MAX or one
-// statement 2/27/132; input pointer locals 8-12; early returns 2/89; copy/normalize orders 19/65;
-// the helper's cross statement orders 2-39. Earlier at 120: frame 0x18 agreed; rotation axis
-// products and cosine/projection homes differed.
-// Round 263: aggregate/sequential/setter/partial-sum publication with projection first
-// 209/209/120/149; with cross first 218/218/138/125. All helper and caller source restored.
-// Round 194: complete normalized-axis input/native-library/original-entry storage 184/184/184/184;
-// those four with the shared cross constructor 188/188/188/188. Input copies add 0xc
-// to the frame and do not recover axis loads or cosine reuse; original axis, helper and body restored.
-// Round 256: Staged axis construction original/angle/entry storage with named/direct normalization
-// 141/170/141/170/141/170; native aggregate axis with named/direct normalization 120/160. All
-// restored.
-// Round 35 (0x11d3b0's matched rotate form): k-j-i projection sum plus scalar cross terms 148 (991 bytes,
-// aligned 156 -> 103: the products follow retail, but the frame grows to 0x1c because the cosine gets
-// its own home beside the x87 transfer slot, and the sum still runs i,k,j); scalar cross terms alone
-// 148 (same frame); k-j-i sum alone 149 (1005 bytes); axis by value 177; the rotation written out in
-// the body with named sine/cosine 189; named sine/cosine with the scalar cross terms 189.
-// Coordinator review (r125): the dot product written out by hand in rotate_direction gave 2
-// (fast and full; 0x1ff360 130 at retail's 850 bytes) but copies dot3f's body, so it is not kept
-// without a match; with dot3f kept and the named cross terms 93 (fast; 0x1ff360 134 fast at 854
-// bytes); HEAD's helper with only cross3f in 0x1ecf50 170 (fast). The hand-written dot product
-// is kept only if it reaches a byte match.
-// Round 83: angle-taking helper 120; that boundary with scalar cross/k-j-i projection 148;
-// complement before/after projection on the scalar-cross graph 148/148; vector/axis formal swap
-// there 148; axis component snapshots 120; staged shared cross 120; separate input/output helper
-// with an input copy 313. Original helper and body restored.
-// Round 128 (93 -> 2): the projection's dot as a named part, `real dot = dot3f(vector, axis);` then
-// `dot * (1.0f - cosine)`, gives the written-out form's code with dot3f kept (0x1ff360 stays 134).
-// On it: dot3f(direction, up) 4; direction/up pointer locals for the dot and the axis 4; the axis
-// through cross3f_staged 16; the clamp as if/else 2; dot/angle/axis declared first 2; sine and
-// cosine named before the calls 155 (harness); a length local 106 (harness); acosf 81 (harness).
-// Harness diagnostics: the i term's order ignores the dot's spelling (all eight operand orders of a
-// written-out dot give the same code) and every rotate_direction form; only writing cross3f's body
-// out (89) flips it to retail's, so the axis helper's inline temporaries decide it.
 // @retail 0x1ecf50
 void function_1ecf50(vector3f *forward, vector3f *up, s_direction_rotation_input *input)
 {
@@ -138,7 +100,8 @@ void function_1ecf50(vector3f *forward, vector3f *up, s_direction_rotation_input
 		dot = PIN(dot, -1.0f, 1.0f);
 		if (!(fabs(dot - 1.0f) < 0.0001f))
 		{
-			real angle = (real)acos(PIN(dot, -1.0f, 1.0f));
+			real cosine = PIN(dot, -1.0f, 1.0f);
+			real angle = (real)acos(cosine);
 			if (angle != 0.0f)
 			{
 				vector3f axis;
