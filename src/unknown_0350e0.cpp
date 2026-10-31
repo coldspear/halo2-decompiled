@@ -1159,7 +1159,8 @@ real g_485a30;
 real g_4e69c0[4];
 real g_4c19b0, g_4c19b4;
 
-// score 89 (was 153): the first colour is copied and the second added to it.
+// score 88 (was 89, 153): the first colour is copied and the second added to it, green first (the other five
+// orders of the three `+=` score 88 to 167, the six orders of the copies 89 to 166).
 // What still differs: retail adds each second component straight from memory
 // (`addss xmm0, [eax + 0x38]`); ours loads both into registers first and adds
 // them there. Retail also shares only the `0 > value` exit with case 16,
@@ -1167,7 +1168,10 @@ real g_4c19b0, g_4c19b4;
 // which shifts the code after it. Summing in one expression, via vector or
 // struct fields, through references, with a compiler barrier, if/return or
 // assignment forms of the clamp, an inline clamp and reordered cases score
-// 89 to 271. Also tried: a struct overlay for the two colours with the sums as
+// 89 to 271. Tried 2026-10-31: the sums as three plain locals in any channel order and either operand order,
+// or inside the weighted expression (all 147: the second operand then is a memory operand as in retail, but the
+// loads and the muls are scheduled differently); if/return, nested ?: and `1.0f < value` spellings of the clamps
+// (all 89: still the jump into case 16's compare). Also tried: a struct overlay for the two colours with the sums as
 // one expression, as three reals or as a field-wise copy (146 to 147: the
 // sums come out in the wrong order and the clamp still shares case 16's compare).
 // @retail 0x336f0
@@ -1188,8 +1192,8 @@ real function_336f0(long selector)
             summed.red = values[4];
             summed.green = values[5];
             summed.blue = values[6];
-            summed.red += values[12];
             summed.green += values[13];
+            summed.red += values[12];
             summed.blue += values[14];
             real value = summed.blue * 0.114f + summed.green * 0.587f + summed.red * 0.299f;
             return 0.0f > value ? 0.0f : value > 1.0f ? 1.0f : value;
@@ -1247,7 +1251,15 @@ void function_020b40(long value, long index);
 // the tag and the position differs. Tried without effect on that choice:
 // dropping the volatile result, reading the position through a volatile
 // pointer (108), copying the position into a local first (129), hoisting the
-// deltas to the top (112).
+// deltas to the top (112). Also tried: the plain form with no volatile at all (`bool result`,
+// `alternate` used directly) scores 101 and moves the register arguments (alternate in ecx,
+// position in ebx), which raises the callers 0x41980 (146 -> 194), 0xc3340 (109 -> 132) and
+// 0x179880 (88 -> 343), so the volatile pair stays until the function matches; a second tag test
+// or a second definition lookup changes nothing (101). Retail's registers look like the callee's
+// own allocation: tag (ecx) and direction (edi) are forwarded unchanged in 0x2e230's registers,
+// the position is loaded into ebp from the stack (ebp is never a parameter register),
+// `alternate` is read from memory twice (a branchy ternary) and the result byte is spilled
+// into the position's dead stack slot.
 // @retail 0x2dba0
 bool function_2dba0(long tag, vector3f const *direction, bool alternate, long c, long d, long e, point3f const *position, color3f const *color, real alpha, real amount, real scale)
 {
@@ -1661,6 +1673,10 @@ PRIVATE inline void direction_perpendicular_to_up(vector3f const *direction, vec
 // returns early on each path and reuses the scale slot for the x87 result (frame 0x14).
 // Tried: case 0 and default as break with y and x pre-zeroed (194; the switch then loses its
 // case 0 table entry), y = 0 in those cases (193).
+// Also tried 2026-10-31 (all 193, `result` is promoted to xmm0 every time): an inline helper that writes
+// the angle through a `real *`, `real *angle = &result`, a dead `&result` pointer, the atan2 in a double
+// local, `return` inside the `if` (275); `volatile real result` gives retail's frame and entry store (187) but
+// zeroes xmm6 instead of xmm0 and so is not kept.
 // @retail 0x2f2d0
 real function_2f2d0(vector3f const *direction, point3f const *position, long mode, real scale)
 {
@@ -2112,14 +2128,19 @@ PRIVATE __forceinline double random_unit_fraction(s_random_globals *random)
     return (real)random_next(&random->seed) * (1.0f / 65535.0f);
 }
 
-// score 202 (was 245): the unrounded fraction is now (real)random * (1/65535) (retail uses the float constants,
-// not double ones), and the lower/upper bounds are doubles loaded upper first (retail keeps both on the x87 stack).
-// What still differs: retail pushes ebx/ebp and esi/edi lazily inside the two count guards (we push all four at
-// the top, with a 4-byte larger frame); retail stores motion[2] with a non-popping fst before the length and keeps
-// z on the stack (we spill (real)z to a temp, which also feeds motion[2] *= inverse; storing motion[2] before the
-// length scores 207); and the length is stored with fst (kept for fabs) where we store and reload it.
-// Tried: double length kept for fabs (172 but the 1/length divide goes to x87 and the 0.0001 constant is a double),
-// motion[1] = inverse * motion[1] (same code), chained assignment for z (same code).
+// score 57 (was 202): the random fraction is (real)random * (1/65535) as before; motion[2] is stored
+// first and the length is then built from the stored motion[] values, so the just-stored z stays on the
+// x87 stack unrounded (retail's `fst [edx+8]`) with no temp; the length is a double kept for fabs, with the
+// float copy (`magnitude`) used by the divide and `fabs((real)length)` so the 0.0001 constant stays a float
+// (retail: sqrt result moved into z's slot, `fst` to the float temp); the six -1..1 samples are `real`
+// (sample + sample - 1.0f), which gives retail's dword `fsub`; the entry+0xc fraction is evaluated before its
+// range, as retail does. What still differs: retail pushes ebx/ebp and esi/edi lazily inside the two count
+// guards (we push all four at the top, with a 4-byte larger frame; ours also loads the random globals and the
+// count above the second guard); `motion[1] = inverse * motion[1]` order (same code); the loop test reads the
+// count into edx instead of comparing against [ebx].
+// Tried: explicit `if (count > 0)` guard around the loop (257), count read once before the loop (116),
+// double length without the float copy (172/106), assignment of the length inside the fabs (178),
+// `(real)fabs(length)` (106), samples as doubles with a float constant (does not change the fsub).
 // @retail 0x39a80
 bool function_39a80(byte *state)
 {
@@ -2145,35 +2166,35 @@ bool function_39a80(byte *state)
             motion[6] = (real)(random_unit_fraction(random) * (upper - lower) + lower);
             motion[0] = (real)(random_unit_fraction(random) * *(real *)(state + 0x30));
             motion[1] = (real)(random_unit_fraction(random) * *(real *)(state + 0x34));
-            /* retail squares the unrounded z, not the stored float */
-            double z = random_unit_fraction(random) * *(real *)(state + 0x38);
-            real magnitude = (real)sqrt((double)motion[0] * motion[0] + (double)motion[1] * motion[1] + z * z);
-            motion[2] = (real)z;
-            if (!(fabs(magnitude) < 0.0001f))
+            motion[2] = (real)(random_unit_fraction(random) * *(real *)(state + 0x38));
+            double length = sqrt((double)motion[0] * motion[0] + (double)motion[1] * motion[1] + (double)motion[2] * motion[2]);
+            real magnitude = (real)length;
+            if (!(fabs((real)length) < 0.0001f))
             {
                 real inverse = 1.0f / magnitude;
                 motion[0] *= inverse;
                 motion[1] *= inverse;
                 motion[2] *= inverse;
             }
-            *(real *)(entry + 0xc) = (real)(random_unit_fraction(random) *
+            double fraction = random_unit_fraction(random);
+            *(real *)(entry + 0xc) = (real)(fraction *
                 (*(real *)(state + 0x28) - (double)*(real *)(state + 0x24)) + *(real *)(state + 0x24));
             motion[7] = 0.0f;
             if (0.0001f > *(real *)(state + 8)) *(real *)(state + 8) = 1.0f;
             if (0.0001f > *(real *)(state + 0xc)) *(real *)(state + 0xc) = 1.0f;
             if (0.0001f > *(real *)(state + 0x10)) *(real *)(state + 0x10) = 1.0f;
-            double sample = random_unit_fraction(random);
-            *(real *)entry = (real)((sample + sample - 1.0f) * *(real *)(state + 0x10));
-            sample = random_unit_fraction(random);
-            *(real *)(entry + 4) = (real)((sample + sample - 1.0f) * *(real *)(state + 8));
-            sample = random_unit_fraction(random);
-            *(real *)(entry + 8) = (real)((sample + sample - 1.0f) * *(real *)(state + 0xc));
-            sample = random_unit_fraction(random);
-            motion[3] = (real)(sample + sample - 1.0f);
-            sample = random_unit_fraction(random);
-            motion[4] = (real)(sample + sample - 1.0f);
-            sample = random_unit_fraction(random);
-            motion[5] = (real)(sample + sample - 1.0f);
+            real sample = (real)random_unit_fraction(random);
+            *(real *)entry = (sample + sample - 1.0f) * *(real *)(state + 0x10);
+            sample = (real)random_unit_fraction(random);
+            *(real *)(entry + 4) = (sample + sample - 1.0f) * *(real *)(state + 8);
+            sample = (real)random_unit_fraction(random);
+            *(real *)(entry + 8) = (sample + sample - 1.0f) * *(real *)(state + 0xc);
+            sample = (real)random_unit_fraction(random);
+            motion[3] = sample + sample - 1.0f;
+            sample = (real)random_unit_fraction(random);
+            motion[4] = sample + sample - 1.0f;
+            sample = (real)random_unit_fraction(random);
+            motion[5] = sample + sample - 1.0f;
         }
         state[0x86] = true;
     }
@@ -2189,7 +2210,8 @@ bool function_39a80(byte *state)
 // and the cosine share the slot at +0xc while the temporary at +8 stays separate; here the
 // length shares the slot of a. Tried: plain, reference and macro forms of the length (193-217),
 // first/second vectors in either order and operand order of the scalings (193-214), b before a (279),
-// the dot test last (205), angle and cosine spelled separately (193).
+// the dot test last (205), angle and cosine spelled separately (193), the current length as its own named local before the PIN (217), as an assignment inside the PIN (193).
+// Retail also spills a second temp at +8 for rotated.i and orders sine/cosine slots (+0x10/+0xc) differently; the rotation arithmetic differs from there on.
 // @retail 0x3e5a0
 void function_3e5a0(vector3f *current, vector3f const *target, real step)
 {
@@ -2820,22 +2842,30 @@ PRIVATE __forceinline real object_view_distance(point3f const *position)
     double x = (double)position->x - g_4b9da0.x;
     double y = (double)position->y - g_4b9da0.y;
     double z = (double)position->z - g_4b9da0.z;
-    return (real)(sqrt(z * z + y * y + x * x) * g_4b9dcc);
+    return (real)sqrt(z * z + y * y + x * x) * g_4b9dcc;
 }
 
-// score 194: retail reads the alpha from function_4baf0's second output (the byte pushed
-// first, at [esp+0x30]); the draft used the first output. Also open: retail keeps
-// the object table in ebp and `kind` (spilled to [esp+0x18]) in memory, and has a frame
-// 4 bytes larger with two dead zero stores in the final fade block; ours needs `volatile`
-// on kind to keep it out of ebp. Retail frees the x87 distance temporaries (fstp st(3))
-// before multiplying by g_4b9dcc, ours after (named helper, braces and a double local all
-// compile the same).
+// score 175 (was 194): the alpha is read from function_4baf0's second output (the byte pushed
+// first, at [esp+0x30]). `result` is left unassigned until a branch sets it, so it stays in dl
+// (the early `= false` made it a memory byte); the object is reached through a pointer to the table
+// slot (retail reloads it from the slot after the alpha store); and `(real)sqrt(..) * g_4b9dcc`
+// frees the x87 temporaries before the multiply, as retail does.
+// Still open: retail keeps the object table in ebp and `kind` (spilled to [esp+0x18] after the
+// flag test) in memory, with a frame 4 bytes larger (a float slot at +0x1c and the opacity byte get
+// dead zero stores in the final fade block); ours needs `volatile` on kind to keep it out of ebp,
+// which is why this stays a near miss. Retail loads the flag byte into al and tests it with
+// `shr al,2; test dl,al` (dl == 1 from `result = true`), ours folds it to `test [esi+0x10a],4`
+// whatever the spelling (bool cast, `& result`, byte local, `== 1`: all 175-190). Retail also reads
+// the fade at [ecx+0x2b0] straight from memory at every use of the first clamp (no local); spelled
+// that way (a repeated inline helper or a pointer local) the code matches there but swaps esi/edi
+// (object / table offset) and scores 186-208.
 // @retail 0x3d7f0
 bool __stdcall function_3d7f0(long object_index, real *out_alpha, bool *out_special)
 {
-    bool result = false;
+    bool result;
     s_scalar_object_header *header = &((s_scalar_object_header *)g_4e0300->data)[object_index & 0xffff];
-    byte *object = header->object;
+    byte **object_slot = &header->object;
+    byte *object = *object_slot;
     byte *definition = g_4e3b44[*(long *)object & 0xffff].bytes;
     volatile long kind = *(signed char *)(object + 0xaa); // kept in memory as retail does, see the note above
     real alpha = 0.0f;
@@ -2856,7 +2886,7 @@ bool __stdcall function_3d7f0(long object_index, real *out_alpha, bool *out_spec
             break;
         case 2:
         {
-            point3f position = *(point3f *)(object + 0x30);
+            point3f position = *(point3f *)(*object_slot + 0x30);
             function_4baf0(object_index, object_view_distance(&position), &first_output, &opacity);
             alpha = opacity * 0.003921568859368563f;
             break;
@@ -2881,7 +2911,11 @@ bool __stdcall function_3d7f0(long object_index, real *out_alpha, bool *out_spec
                     alpha *= 1.0f - fade;
             }
         }
+        else
+            result = false;
     }
+    else
+        result = false;
     if (!result && *(long *)(object + 0x14) != NONE)
         result = function_3d7f0(function_baf80(object_index), &alpha, out_special);
     header = &((s_scalar_object_header *)g_4e0300->data)[object_index & 0xffff];
@@ -2912,7 +2946,11 @@ s_cached_input_list g_5246f8[4];
 // image. Tried: only the counter volatile (98 alone, 115 there), only the count
 // volatile (138), an explicit cursor, a loop index declared before the count
 // (140), an if (count > 0) guard, the view declared first (135), flags read
-// before the object.
+// before the object. The plain form with no volatile (what Kirk's review asks for) scores 133
+// alone (130 in the callers' check, 0x335e0 42 -> 38); the same 133 with an explicit cursor, the
+// `if (count > 0)` guard, `view` as if/else or the alpha/special locals hoisted; the list arrays
+// hoisted 149, a pointer-compare limit 145; `view` computed after the loop 124 but the list
+// pointer then moves to ebp.
 // @retail 0x33400
 long function_33400(byte const *list, s_cached_input *output, long mode)
 {
@@ -3692,6 +3730,12 @@ PRIVATE inline short key_list_find_index(byte const *list, long key)
 // never read in the loop, and compares the count against that register (`cmp edx, ecx`) where
 // ours folds to `test`. Tried: the index declared before the loop, an explicit running group
 // index (`++group_index` in the loop header), an extra counter bumped with `rendered` (all 182).
+// Also tried 2026-10-31 (all 182): a second counter `j` bumped with `i` and used in the second call, a dead
+// local assigned in the loop, `if (g_4ba134 > i)` around the loop with `i` declared first, a cached count; the
+// optimizer drops every unused counter, so the slot is not an ordinary dead local. Retail's two other
+// differences are in the inlined last pass (also seen in 0x31170): a dead `mov eax, [g_485898]` before
+// `xor eax, eax; call 0x15680` and a `mov byte [esp+0x13], 1` after that call; five spellings of the
+// `normal_cull && (g_485898 ...)` argument fold them away (182).
 // @retail 0x30ed0
 void function_30ed0()
 {
@@ -3761,12 +3805,16 @@ void function_133720(s_bit_vector_pool *visibility, bool enabled);
 void function_44720();
 void function_31170(long tag, s_view_camera *camera, long resource, s_view_source *source, bool special, real weight);
 
-// score 180 (was 195): retail keeps `parent` in ebx and the walk's `root` in edx through the loop,
-// reads `definition` as a dword (`mov ecx,[ebp]; test cl,0x20`) and spills the light index to a
-// local at [esp+0x34]; ours keeps the loop pointer in ebx and spills `parent`, and the frame is 4
-// bytes smaller than retail's 0x1508. Tried: re-reading the record at each use (190-210), a
-// `dword flags = *(dword *)definition` local for the bit tests (181, frame 0x1500), root assigned
-// in the walk instead of after it (202), parent/root declared in the other order (189).
+// score 186 in the full build (180 in a fast check; was 195): retail keeps `parent` in ebx and the walk's `root` in
+// edx through the loop, reads `definition` as a dword (`mov ecx,[ebp]; test cl,0x20`) and spills the light index to a
+// local at [esp+0x34] (a ninth frame slot: ours is 4 bytes smaller, 0x1504 against 0x1508, and the record cursor takes
+// ebx while `parent` is spilled; retail keeps the cursor and the counter in memory). Tried: `light_index` as a plain
+// copy with the definition flags read once before the walk (171 in a fast check, but 210 in the full build, so not
+// kept; the code is then 724 bytes against 720), re-reading the record at each use (190-210), a
+// `dword flags = *(dword *)definition` local alone (181, frame 0x1500), the flags local after
+// the walk (182), a second flags read after the parent block for the special/bsp/mask tests (190-208), the light
+// index declared after the parent block (182), root assigned in the walk instead of after it (202), parent/root
+// declared in the other order (189), an explicit record pointer with an up- or down-counting loop (180).
 // @retail 0x31c80
 void function_31c80()
 {
