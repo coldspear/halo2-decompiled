@@ -1116,10 +1116,11 @@ static inline bool session_member_get_qos(s_network_observer *observer, c_class_
 	return result;
 }
 
-// score 67 (was 67): the frame is still four bytes smaller than retail's and the
+// score 67 (was 67): Frame 0x74 versus 0x78; output/cursor ownership, extrema homes and member-bound reread remain.
+// Earlier: the frame is still four bytes smaller than retail's and the
 // count, the minimum and the maximum are still set up in another order; this
 // round's trials in this file found no lower form of them
-// score 67 (was 67): the frame is four bytes smaller than retail's and the locals
+// Earlier: the frame is four bytes smaller than retail's and the locals
 // (the count, the minimum and the maximum) are set up in another order.
 // Retail gives latency ebp and spills the member cursor; ours the reverse. The
 // mask update written in both arms gives latency ebp but moves session off ebx
@@ -1156,6 +1157,7 @@ static inline bool session_member_get_qos(s_network_observer *observer, c_class_
 // 86 (latency to ebx, session to the stack); the round 29 form 99 with the counters before the
 // getter 109, with the host and the counters before it 112 (session on the stack); qos at
 // function scope 67.
+// Round 46: Predicate-produced QoS result bool/byte/short/long, native and library copies: all eight 188 (230 bytes, outlined member helper). On that graph, forced observer/member/both/all helper boundaries 188/67/67/67; original helpers and body restored.
 // @retail 0x64480
 void network_session_get_member_latency(s_session_member_latency *latency, c_class_58d20 *session)
 {
@@ -1255,13 +1257,14 @@ static void network_session_interface_update_local_properties(c_class_58d20 *ses
 
 /* the host gives the players their properties: unique names, and teams when
    the game has teams */
-// score 184 (was 184): the frame 0xe4 still agrees; the owner, the name count, the
+// score 184 (was 184): Frame 0xe4 agrees; owner/count/zero allocation and requested-record induction remain.
+// Earlier: the frame 0xe4 still agrees; the owner, the name count, the
 // zero's allocation and the requested cursor are unchanged, and this round's trials
 // in this file found no lower form of them
-// score 184 (was 184): the frame 0xe4 agrees; the owner, the name count and the
+// Earlier: the frame 0xe4 agrees; the owner, the name count and the
 // zero's allocation and the requested cursor remain, and this round's trials in
 // this file found no lower form of them
-// score 184 (was 184): frame 0xe4 agrees; owner/count/zero allocation and requested cursor remain.
+// Earlier: frame 0xe4 agrees; owner/count/zero allocation and requested cursor remain.
 // Round 75: our zero stays in edx from the parameters test (cmp edi, edx) through both loops, so the
 // name count is spilled and the owner leaves edx. Count increment as its own statement 184; long mask
 // 184; inverted parameters test (clear first) 217; count declared after the index 184; `== 0` memcmp
@@ -1375,6 +1378,7 @@ static void network_session_interface_update_local_properties(c_class_58d20 *ses
 // Round 219: Finite membership exhaustion with long/dword/short/word count, right shifts
 // 249/249/240/240 and ordinal-bit removal 262/262/245/245. All restored; owner/count/zero
 // allocation and requested-record induction remain.
+// Round 46: Cache-change result bool/byte/long 184 each; completed-property result 184; both results bool/byte/long 184 each; both plus complete name-selection predicate 184. Original body restored.
 // @retail 0x65cb0
 void network_session_interface_update_player_properties(c_class_58d20 *session)
 {
@@ -1860,13 +1864,24 @@ struct s_summary_player_sort_entry
  byte properties[0x90];
 };
 
-// score 339 (was 339): Frame 0xa9c versus 0xaa8; type/membership/member-index homes and saved registers differ.
+// score 339 (was 339): Frame 0xa9c versus 0xaa8; type/membership/member-index homes and saved registers remain.
+// Earlier: Frame 0xa9c versus 0xaa8; type/membership/member-index homes and saved registers differ.
 // Round 216: complete state-field observations 378; with native membership/player/selected-member
 // references 378/378/377; membership-player/membership-member/player-member 378/377/377;
 // all three 377. Frame remains 0xa9c. Original complete body and external type declarations restored.
 // Round 434: scalar type snapshot 353; with existing variant getter/statistics producer 371/381.
 // Scalar type with member-index capture 393; with existing membership provider 353; provider/index
 // 393; provider/index with statistics/getter 380/369. Frames 0xaa0/0xaa4 still miss 0xaa8; all restored.
+// Round 46: Complete admission predicate returning bool/byte/short/long 505/576/576/576; nested state/type then range-result producers 380/442/442/441. Frames 0xa9c/0xaa0/0xaa4; original body and cursor restored.
+// Round 5 (lane 18): the 12-byte frame gap is three stack values ours lacks: &session->value18 (read
+// back for the type), the membership at +0x4c and the member index read before the flags are cleared;
+// name, identity, counts, mask and players all go through the membership pointer, as an inlined
+// membership query would give (retail's other /O2 callers 0x71480 and 0x83220 call 0x5a680). The id/key
+// copy is null-checked per destination, as network_session_get_key's body is (not yet tried).
+// Membership from 0x5a680 with both outputs 353 (called: this /Ob1 file keeps it out of line); with an
+// inline/forceinline declaration here 353/353 (still called); `inline` on 0x5a680's definition 353 (still
+// called here; 0x83220 and the 0x199ebc family lose); member index and the +0x4c pointer written as
+// 0x66050 does 353 (frame 0xaa0: the pointer folds into the session register). All restored.
 // @retail 0x64d70
 bool __stdcall function_64d70(s_session_browser_summary *output)
 {

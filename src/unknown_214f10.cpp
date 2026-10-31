@@ -193,6 +193,9 @@ PRIVATE __forceinline long function_214f83(char const *arg_0, s_file_handle *arg
 // 41/41/41/40. Two-point best rejected; original initializer, long outcome, success store,
 // existing completion qualifier and both waits restored. Handle ECX and memory success-byte test
 // remain.
+// Round 50: the handle read into a HANDLE local with the element passed to the write 44; success
+// declared before done 42; `INVALID_HANDLE_VALUE != handle` 42; `success = !!opened` 42; the
+// comparison cast to long 42. Original body restored.
 // @retail 0x214f80
 void game_state_cache_files_open(void)
 {

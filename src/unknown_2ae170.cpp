@@ -1150,7 +1150,8 @@ __forceinline void c_sound_effects::add_send(long mixbin, long mode, real gain, 
 	}
 }
 
-// score 137 (was 137): Frame eight agrees; source/bin homes, runtime zero attenuation and dispatch remain.
+// score 137 (was 137): Frame eight agrees; source/bin homes, runtime zero attenuation and dispatch remain
+// (on the decibel-struct interface, retail's four-entry jump table needs a statement in case 0).
 // Earlier: frame eight agrees; source/bin ownership, runtime zero attenuation and mode dispatch remain.
 // Earlier score 213 (was 213): frame 4 versus retail's 8; retail computes the
 // attenuation at run time and dispatches the speaker modes through a jump
@@ -1189,6 +1190,7 @@ __forceinline void c_sound_effects::add_send(long mixbin, long mode, real gain, 
 // Round 421: signed-byte routing/pair/quad truth carriers, all seven nonempty subsets
 // 137 each; all three as signed short 144/404. Original Boolean carriers, real-bin
 // loops, gains and body restored. Source/bin homes and runtime zero remain.
+// Earlier score 137 (was 137): retail is a four-entry jump-table switch on the speaker mode with explicit call
 // Round 92: speaker-mode switch with explicit per-bin sends and a long zero gain passed as
 // `*(real *)&gain` 181 (326 B; attenuation x87, dec chain); with the attenuation through a bits/value union
 // recomputed per bin 101 (365 B, prologue and send tail exact; not kept: value written at each use and a
@@ -1200,7 +1202,7 @@ __forceinline void c_sound_effects::add_send(long mixbin, long mode, real gain, 
 // `long gain = 0` passed as *(real *)&gain and a speaker-mode switch whose mode-0 case holds a dead
 // `remaining = 0;` (needed for retail's four-entry jump table; an empty case 0 drops the table, `gain = 0` 91).
 // Held: the dead store is not kept even with a match, and a new /Op file is a build-flag decision.
-// score 137 (was 137): retail is a four-entry jump-table switch on the speaker mode with explicit call
+// Also at 137: retail is a four-entry jump-table switch on the speaker mode with explicit call
 // pairs (no loops), the zero gain held in EDI and pushed, and each -6.0206 attenuation computed at run
 // time (`mov [slot], 0; movss; subss; movss [slot]; mov ecx, [slot]; push ecx`). Round 17 found the
 // cause: retail passes decibels to 0x21e230 (and g_44f710) as a 4-byte struct by value; a copy of the
@@ -1229,10 +1231,15 @@ __forceinline void c_sound_effects::add_send(long mixbin, long mode, real gain, 
 // returning 0.0f 233 (LTCG inlines and folds it); with the decibel struct: memset zero gain and a
 // statement in case 0 133, aggregate-initialised gain 123 (aligned 71), no case-0 statement 146, the
 // loop body on the struct interface 161, the loop body passing the real gain through casts 176.
+// Round 108: TEST_FIELD_BIT alternate 137; const gain 137; gain declared first 137; endpoints set in an
+// if/else 177 (344 bytes); a switch on the speaker mode with the loops kept 151 (377 bytes). Restored.
 // Round 48 (lane 12): MATCH (full check) as its own /O2 /Op /arch:SSE /Gr file with the zero gain as
 // `long gain = 0` passed as *(real *)&gain and a speaker-mode switch whose mode-0 case holds a dead
 // `remaining = 0;` (needed for retail's four-entry jump table; an empty case 0 drops the table, `gain = 0` 91).
 // Held: the dead store is not kept even with a match, and a new /Op file is a build-flag decision.
+// Lane 17 round 5: quad as four explicit calls 139 (405 bytes); center pair as a 2..3 loop 138; named
+// attenuation on the loops 137; right endpoints as left + 1 148 (374 bytes); remaining before the flag 137.
+// The decibel-struct interface above is blocked only by the case-0 statement.
 // @retail 0x2afb80
 void c_sound_effects::add_source_mixbins(s_sound_mixbin_source *source, bool rear, long mode, s_mixbin_settings *mixbins)
 {

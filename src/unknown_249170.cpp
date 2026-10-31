@@ -69,7 +69,7 @@ PRIVATE __forceinline point2f const *particle_spawn_extents(s_particle_system_da
 	return g_468760;
 }
 
-// score 2 (was 6): what is left is the case 1 fsin/xorps order; the first normalisation product
+// score 2 (was 2): what is left is the case 1 fsin/xorps order; the first normalisation product
 // pair (retail folds i and loads j; ours loaded i and folded j) matches since round 91.
 // Round 42: one function-scope seed
 // pointer assigned in cases 5, 6, 7 and 9 (it then shares one home, the dead system argument's, as
@@ -137,6 +137,10 @@ PRIVATE __forceinline point2f const *particle_spawn_extents(s_particle_system_da
 // nine match losses, restored); native component array with inherited/ordinary reads 6/47;
 // all three tail declarations at entry 6; tail local names 6; reciprocal/squared-speed declaration
 // at entry separately 6/6. Original frame, helper, field accesses and qualified reads restored.
+// Round 29 (lane 11): case 1 with sinf for the sine 6, cosf for the cosine 4, both 8; the cosine store
+// before the sine store 11 (the one-use sine is evaluated at its use, after the fcos); the sine declared
+// before the radius call 2 (same code: it is carried past the call). Our scheduler fills the fld latency
+// before case 1's fsin with the xorps (as retail does in case 6) where retail's case 1 and case 4 do not.
 // @retail 0x249170
 void function_249170(real const *values, s_particle_spawn_state *particle, s_particle_spawn_definition const *definition, s_particle_system_datum const *system)
 {

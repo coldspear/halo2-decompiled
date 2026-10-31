@@ -1363,6 +1363,11 @@ PRIVATE __forceinline real lighting_normalize_ordered(vector3f *v, real square)
 // complete admission mask and final-pointer result subsets 0-7:
 // 568/562/525/563/576/582/576/592. Combined-mask 525 is only four lower, dropped;
 // original forward scan, positive result and complete body/helper contracts restored.
+// Round 209: Captured-normal squared-length helper with entry-base/flag/both/live-count/base-
+// count/flag-count/all/all-readonly forms 554/508/550/544/555/508/554/554. Entry-base combinations
+// recover frame 0x28 and first +8, but argument homes remain. All leave the caller 441/442 versus
+// 364; plain confirms 508/442, a target gain of 21 against caller regression 78. Original scan,
+// input observations, math, helpers, interfaces and complete body restored.
 // @retail 0xd37f0
 bool function_d37f0(s_lighting_parameter_block *block, long type, s_effect_color_query const *query,
 	s_lighting_record *record, color3f const *base, color3f const *lightmap)

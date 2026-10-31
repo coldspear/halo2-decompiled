@@ -285,6 +285,10 @@ short function_239e50(short count, point2f const *points, short *indices);
 // dot helper by reference or forceinline 42, by value 118/124/162 (harness); the dot written out in
 // place of the helper, or the length named in a braced case 0, 56 each (retail's dot shape, `mulss
 // xmm1,[p.x]`, but j still scaled in the reciprocal's register, one instruction short).
+// Round 34 (fast): separate normal/distance locals in place of the plane2f 52; case 0 setting the
+// state before the distance 42; the normalizer reading j into a scalar before the length and
+// scaling that scalar 42 (j still folded as `mulss xmm0,[j]`); an explicit `default: break;` 42;
+// the shared header's union vector2f with that j-scalar normalizer 42.
 // @retail 0x239b80
 short function_239b80(short count, point2f const *points)
 {

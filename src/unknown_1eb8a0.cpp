@@ -81,7 +81,8 @@ struct s_direction_rotation_input
 
 PRIVATE __forceinline void rotate_direction(vector3f *vector, const vector3f *axis, real sine, real cosine)
 {
-	real projected = dot3f(vector, axis) * (1.0f - cosine);
+	real dot = dot3f(vector, axis);
+	real projected = dot * (1.0f - cosine);
 	real cross_i = vector->j * axis->k - vector->k * axis->j;
 	real cross_j = vector->k * axis->i - vector->i * axis->k;
 	real cross_k = vector->i * axis->j - vector->j * axis->i;
@@ -90,7 +91,7 @@ PRIVATE __forceinline void rotate_direction(vector3f *vector, const vector3f *ax
 	vector->k = vector->k * cosine + projected * axis->k - cross_k * sine;
 }
 
-// score 2 (was 120): only the first dot product's i term differs (ours loads direction.i, retail
+// score 2 (was 93): only the first dot product's i term differs (ours loads direction.i, retail
 // up.i). Round 125: the rotation as 0x2551c0's matched helper (written-out projection first, three
 // scalar cross terms), the axis through cross3f and the normalize result tested directly took
 // 120 -> 2 (cross3f with the length local 116). On it (one-link harness, exact here): dot3f or the
@@ -120,6 +121,14 @@ PRIVATE __forceinline void rotate_direction(vector3f *vector, const vector3f *ax
 // complement before/after projection on the scalar-cross graph 148/148; vector/axis formal swap
 // there 148; axis component snapshots 120; staged shared cross 120; separate input/output helper
 // with an input copy 313. Original helper and body restored.
+// Round 128 (93 -> 2): the projection's dot as a named part, `real dot = dot3f(vector, axis);` then
+// `dot * (1.0f - cosine)`, gives the written-out form's code with dot3f kept (0x1ff360 stays 134).
+// On it: dot3f(direction, up) 4; direction/up pointer locals for the dot and the axis 4; the axis
+// through cross3f_staged 16; the clamp as if/else 2; dot/angle/axis declared first 2; sine and
+// cosine named before the calls 155 (harness); a length local 106 (harness); acosf 81 (harness).
+// Harness diagnostics: the i term's order ignores the dot's spelling (all eight operand orders of a
+// written-out dot give the same code) and every rotate_direction form; only writing cross3f's body
+// out (89) flips it to retail's, so the axis helper's inline temporaries decide it.
 // @retail 0x1ecf50
 void function_1ecf50(vector3f *forward, vector3f *up, s_direction_rotation_input *input)
 {

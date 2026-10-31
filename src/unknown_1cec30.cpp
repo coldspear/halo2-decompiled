@@ -942,6 +942,12 @@ void function_1d1540(s_havok_component *component);
 // EBX); without the 0x1d1540 call also all three (stack); without the 0x1d1260 call only ESI and EDI
 // (component an EDI argument); matched 0x1cbf50's first pass uses ESI and EDI and LTCG passes its parameter
 // in the unused EBX. Lead: a body whose first pass needs at most two callee-saved registers.
+// Round 108 (on the 88 body: hkTransform::set copy, body pointer, m_fixed first): control 88 at 230; the
+// fixed arm's refetch assigned back to the body pointer 88; the body pointer declared first, or declared
+// after the copy target and assigned at the fetch, 88/88; the setter declared without `inline` (both arms
+// call it, 182 bytes) 112, the component still loaded from its stack home into EBX, so the body held across
+// the inlined setter's calls is not the cause; the same-file caller's call removed (diagnostic) 86, the
+// component then loaded into ESI, still a stack argument. Original body restored.
 // Lane 15 round 18: 0x1d8e80 moved to its address neighbours' file (src/unknown_1d8dd0.cpp): identical
 // code (81); the 88 body with that move 88 (its /Gd first pass then uses only ESI+EDI, component in
 // EDI, so the two-register rule does not decide it); flag5 first 27 again (component EDI, 0x1d1b60

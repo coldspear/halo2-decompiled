@@ -219,6 +219,13 @@ PRIVATE __forceinline dword function_224551(s_draw_sprite_seed const *arg_0,
 // Round 439: separate genuine RGB evaluation result before RGBA assembly, producer/scoped
 // lifetimes and late/early assembly with scalar/native subrecord copies, 392/540/392/506 twice.
 // No frame recovery; original tint helper and all in-place UV captures restored.
+// Round 4 (lane 18, fast): the seed products written seed_color * tint * 2 385 (retail's load order;
+// six-point gain, not kept); UV/geometry declared ahead of the tint call 391; with the seed order, the
+// in-place loop clamp 418 (the tint, seed and clamp code then equals retail's, but our cache's EBP copy
+// to EBX before each call shifts the alignment by one); that with the cache's address taken 418 (no
+// effect); the tint written in the body (helper removed) with both 460 (frame 0x60, tint and UV slots
+// swapped), the tint renamed either way 460. Retail re-reads the cache parameter from its stack slot
+// into EBX where ours keeps it in EBP. Restored.
 // @retail 0x224550
 void __stdcall function_224550(s_draw_sprite_seed const *seed,s_draw_value_cache *values,
 	point3f *position,point3f *direction,real scale,color4f const *color,s_draw_sprite_context *context)

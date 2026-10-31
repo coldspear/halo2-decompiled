@@ -3128,7 +3128,7 @@ long function_2193d0(s_animation_state *state, s_animation_ref *ref);
 // score 86 (was 86): retail holds the playback base in ecx, builds the pointer with `lea esi,[eax+ecx]` and folds
 // the sound-system time into the compare; ours hoists the time into edx and holds the base in edi. The mode switch
 // still needs a second non-empty case.
-// score 86 (was 86): Frame 8 agrees; playback base, clock scheduling and promoted mode remain.
+// Frame 8 agrees; playback base, clock scheduling and promoted mode remain.
 // Retained clock receiver 163; voice record reference 86; combined receivers 163; role names 86;
 // native update/mode/both flag words 86/86/86; receiver plus native flags 163.
 // playback base/clock scheduling and promoted mode remain; acquisition/free/load
@@ -3156,6 +3156,10 @@ long function_2193d0(s_animation_state *state, s_animation_ref *ref);
 // readonly class with short/long plus callback 105/171. All restored.
 // Round 164: pool global at each use 86 (identical); for loop with `case 1: continue;` 153/167 (gives
 // retail's `movsx eax, ax; sub eax, 0; jne` but swaps the pool/index EBP/EBX); for loop alone 86.
+// Round 209: Initial/successor pool epochs, immutable playback/voice pointers and readonly sound
+// tag 86/86/86; conditional native sound-tag value 204; pool/value and receiver/value 204/204;
+// pool/readonly 86; all 204. Native tag capture expands frame eight to 24 and length 558 to 588;
+// original clock, iterator, mode and call inputs restored.
 // @retail 0x1282d0
 void function_1282d0(void)
 {

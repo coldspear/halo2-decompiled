@@ -1321,15 +1321,19 @@ static __forceinline void item_release_impulse_10b4d0(long object_index)
 	function_10cf80(&velocity, object_index, false);
 }
 
-// score 185 (was 185): the frame 0xac agrees; the release byte's read-modify-write,
+// score 158 (was 185): Frame 0xac agrees; release-byte RMW/tail, event-point homes and location-call setup remain.
+// the frame 0xac agrees; the release byte's read-modify-write,
+// the frame 0xac agrees; the release byte's read-modify-write,
 // Frame 0xac agrees; release-byte RMW/tail, event-point homes and location-call setup remain.
 // the frame 0xac agrees; the release byte's read-modify-write,
+// Frame 0xac agrees; return byte +0xe versus +0xf, release-byte RMW/tail and event/location homes remain.
+// Earlier: the frame 0xac agrees; the release byte's read-modify-write,
 // the tail, the event-point homes and the location-call setup are unchanged, and
 // this round's trials in this file left them where they are
-// score 185 (was 185): the frame 0xac agrees; the release byte's read-modify-write,
+// Earlier: the frame 0xac agrees; the release byte's read-modify-write,
 // the tail, the event-point homes and the location-call setup remain, and this
 // round's trials in this file left them where they are
-// score 185 (was 185): Frame 0xac agrees; release-byte RMW/tail, event-point homes and location-call setup remain.
+// Earlier: Frame 0xac agrees; release-byte RMW/tail, event-point homes and location-call setup remain.
 // Frame 0xac agrees; release-byte RMW/tail, event-point homes and location-call setup remain.
 // Earlier: Frame 0xac agrees; release-byte RMW/tail, event homes and protected location-call setup remain.
 // Earlier 154 (was 154): frame 0xac agrees; release RMW/tail, event homes and location-call setup remain.
@@ -1417,6 +1421,7 @@ static __forceinline void item_release_impulse_10b4d0(long object_index)
 // 185/213/185/213/185/213/185/213. Actual record layout and complete body restored.
 // Round 237: Two-use spinning predicate feeds accumulated result, bool/byte/short/long after damping and before damping: 158/191/191/195/190/239/188/193.
 // Keep the bool spin predicate for damping admission and result accumulation after damping; it is observed once and used twice. All other variants restored; frame 0xac, return-byte home +0xe versus +0xf and release/event/location differences remain.
+// Round 46: Captured-spin logical OR previous-first/spin-first/conditional 185/188/202; byte bitwise/logical accumulation 159/182; long bitwise/logical 178/205; entry bool with logical OR 186. Original body restored.
 // @retail 0x10b4d0
 bool __stdcall function_10b4d0(long object_index)
 {

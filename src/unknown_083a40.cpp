@@ -634,6 +634,11 @@ void simulation_player_collection_swap(s_type_c67652 *collection, long player_in
 // (1088 bytes); declared at the top and assigned in the loop 32 (same code); `occupied` declared before
 // `slot` 32; the swap order above with the top-declared collection 36 (registers masked 8 against 10: the
 // occupied key's association, the preheader cursor store and the last record's reads remain).
+// Round 31 (lane 10), one-file harness (this file + unknown_084a90.cpp, exact): on the swap order
+// above, `collection` declared after `source` 36; the occupied key as `&collection->players[i].key`,
+// `(&collection->players[i])->key` or `(collection->players + i)->key` 36 each; the last record's
+// reads before the update pointer 40, swapped 47, read at their stores 110 (1053 bytes); every
+// combination of those 32 forms 36-110 (real --fast agrees: 36/36/110, 0x84e90 still matches).
 // @retail 0x83610
 void __stdcall function_83610(s_simulation_world_owner *watcher, long *count, s_simulation_player_update *updates)
 {
