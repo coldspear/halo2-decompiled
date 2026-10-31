@@ -391,6 +391,16 @@ void c_turret_entity_definition::v21(s_entity *entity)
 // Round 439: complete native 12-byte header value, native/library copies at lookup/entry
 // storage, 104 each; actual post-attachment Boolean success with those four copies, 82 each.
 // Both result graphs grow a frame; original pointer observations and virtual calls restored.
+// Round 110 (fast): bool result as a success flag set in the unflagged arm, the attach in a following
+// `if (result)` 72 (threaded early, address shared, result in a stack byte); the flagged arm first 52;
+// `result = true` in the attach arm of a long false result 67; the long result cleared with the field
+// in one `result && flagged` test, then `if (result)` 52; a validity bool cleared with the field, then
+// `if (valid)` 73; guard return on the field after the clear 60. Long result false, the field cleared
+// in an `index != NONE && flagged` test, then `if (entity->object_index != NONE)` 45 (180 bytes: retail's
+// whole header region, EBP pushed around the test and the data reloaded for the object, because the
+// object read then has a predecessor without the header address; but the memory re-test is not threaded
+// and the result is long in EBX); the same clearing the local then publishing it 45 (179 bytes); with a
+// bool result first 53. Not kept: a field cleared in a test and re-tested.
 // @retail 0xa5a60
 bool c_object_type_definition::v22(s_entity *entity, long b, s_entity_info *info, long d, long e, long f)
 {
