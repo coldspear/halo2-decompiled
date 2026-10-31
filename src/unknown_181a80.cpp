@@ -105,9 +105,9 @@ void function_181cf0(long model_index, long object_index, long *region_index, lo
 	*permutation_index = NONE;
 	for (region = 0; region < model->region_count; region++)
 	{
-		s_model_region *model_region = &model->regions[region];
+		s_model_region *region_entry = &model->regions[region];
 
-		if (model_region->name == region_name)
+		if (region_entry->name == region_name)
 		{
 			long valid_index;
 
@@ -127,7 +127,7 @@ void function_181cf0(long model_index, long object_index, long *region_index, lo
 			if (valid_index == region && permutations[region] != 0xff)
 			{
 				long permutation = (char)permutations[region];
-				if (model_region->permutations[permutation].name == permutation_name)
+				if (region_entry->permutations[permutation].name == permutation_name)
 				{
 					*permutation_index = permutation;
 				}
