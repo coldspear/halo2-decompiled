@@ -396,6 +396,12 @@ vector3f *function_11d000(vector3f const *v, vector3f *out);
 // products before the i row 57; the projection defined after the cross terms 53; axis j/k read into
 // scalars after the projection, axis first 43 (same code); axis-first j/k products with the i and j
 // stores together 59 (776 bytes); projection term first in every row with `axis.i * local_0` 57.
+// Round 95 (lane 8): which operand of a parallel product keeps its register follows the variables'
+// first-assignment order (the later one is the destination). The projection stored in the earlier
+// `dot` variable makes all three products in place on the axis (retail: i copies the projection,
+// j/k in place) 67 (766 bytes, aligned 46 -> 63); that with the cosine term first in row i 66
+// (aligned 37, left: axis j/k in xmm4/xmm3 for retail's xmm2/xmm1 and row i in place); the dot
+// accumulated 67, both 66; parallel term first in rows j/k 62 (aligned 40).
 // @retail 0x1fddd0
 bool function_1fddd0(long actor_index, point3f const *origin, vector3f *direction,
     long *out_index, real *arg_c9241c, long *out_object)
