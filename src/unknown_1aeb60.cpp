@@ -379,6 +379,10 @@ short *function_e70b0(long unit_index, short *value);
 // second named actor lookup 49. Retail: 8 matched functions load an actor index into EDX with the
 // data base in ECX (0x1a80e0, 0x1b5aa0, 0x258660, ...), 15 into ECX (0x1aeb60, 0x1a93c0, ...); no
 // frame or prologue feature separates the two groups.
+// Round 110 (fast): the final block as a guard return 49; the action query's out value tested in place of
+// the returned pointer 49; `7 != ...` 49; `0 < state->timer` 49 (the same code each time). Diagnostic, not
+// kept: the actor address written offset first (`(index & 0xffff) * size + data`) 49, so the operand order
+// of the address expression does not decide the ECX/EDX tie either.
 // @retail 0x1afb30
 void __stdcall function_1afb30(long actor_index, s_slot *slot)
 {
