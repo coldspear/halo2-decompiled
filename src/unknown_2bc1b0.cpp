@@ -248,6 +248,10 @@ struct s_item_object_2bc1
 /* updates a team's item each tick: how long it has been away from home, its
    return home once it has waited too long, and the points of the player
    holding it */
+// MiniMax G run (not kept, m3 review): 33 with the countdown computed before the timer's test, the tally
+// counted before the timer reset, and the test written `(unsigned char)timer != 0xff` (a byte compare, as
+// retail's cmp al,0xff); the cast is the steering part: without it the same form is 55, under the keep bar.
+// A byte cast that only steers the compare is kept only with a byte match.
 // score 62 (was 97): retail spills the item pointer to the stack before it
 // reads the rate, so the rate and its forty-times multiply land in different
 // registers than ours; the countdown is also still decremented in al, while
