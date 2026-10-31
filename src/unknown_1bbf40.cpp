@@ -527,6 +527,10 @@ point3f *function_b9dd0(long object_index, point3f *result);
 // `type != 6 ? false : byte != 0` 148/19 (862 bytes, same two spots); raw-bool conditional 154/20; false
 // initializer with `if (cond) special = true; else { scan }` 184/45; declared bare with `special = false`
 // at the scan start 180/43.
+// Round 131 (lane 4, aligned counts against 39): seat_object = NONE declared at the outer block's
+// top 47 (aligned 40); allow_exit declared after the actor lookup 52 (44); `!!actor->unknown268`
+// in the bitwise def 47 (same code); the iterator declared at the outer block's top 47 (same code);
+// the seat index in a long 196.
 // @retail 0x1bbf40
 short __stdcall function_1bbf40(long actor_index, s_slot *slot)
 {

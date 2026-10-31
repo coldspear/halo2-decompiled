@@ -213,6 +213,13 @@ __forceinline void function_28e774(point3f const *arg_0, point3f const *arg_1, v
 // for these three spots): the spots follow the function's live-symbol count (extra used locals flip
 // them), not declaration order (24 orders), dot argument order, const or the top copy's spelling; no
 // offset/sum helper combination gives retail's x (offset first) with retail's y (placed first).
+// Round 131 (lane 4) on 8: alignment dot3f(local_14, &field_80) 8 (same code); dot3f(&field_80,
+// &local_12->field_70) 74; dot3f(&local_12->field_70, &field_80) 68; facing dot3f(&direction, facing)
+// 8 (same code: VC orders the facing sum itself); one placed point declared ahead of local_13 at the
+// switch scope for cases four and five 43; permuter (4 tries) best 6 only by a volatile bool for
+// the location result (a steering volatile, not applied).
+// Also on 8: case four's placed point declared before its function_b9a90 call 8 (same code); local_14
+// as `vector3f const *` 8 (same code).
 // @retail 0x28e770
 void __stdcall function_28e770(long arg_0, long arg_1)
 {
