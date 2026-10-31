@@ -283,6 +283,12 @@ PRIVATE __forceinline void vertex_decode_23ac30(short x, short y, short z,
 // NULL)` and braces on the indexed form flip. Real, format 3 indexed with format 4 indexed and its
 // node stored before the decode: 73; with format 2 indexed too 73; with `node != NULL` 73; with
 // `return` for `break` 73; with the default case first 73.
+// Round 177, all with format 4 indexed through a `vertices` local (175: the source moves to the stack, the
+// node to EBX, the switch temp and every case's base to EDI; otherwise exactly retail's code): the node
+// parameter renamed to sort after the array local (vertex_node, a_node) 175/175 (same code); `if (!node)
+// break;` before the format-4 node store 175; a `wants_node` bool for the five node tests 193 (636 bytes);
+// `switch (buffer->format - 1)` with cases 0-3 175; the decode helper `inline` instead of `__forceinline` 521
+// (kept out of line).
 // @retail 0x23ac30
 void function_23ac30(s_vertex_source_23ac30 const *source, long index,
 	s_vertex_bounds_23ac30 const *bounds, point3f *point, long *node)

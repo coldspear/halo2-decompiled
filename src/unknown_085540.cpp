@@ -1040,6 +1040,7 @@ bool function_68670(byte *source, long size, void *block);
 // occupied span 135. Original body restored; reader visibility, cursor reloads and count updates
 // remain.
 // Earlier note (score 97): retail behaves as if the read call could write any memory: it reloads the
+// Earlier: retail behaves as if the read call could write any memory: it reloads the
 // buffer start after each read, updates the used count in memory (`add [ebx+0xc], -8`) and loads
 // the header size only after the start/used stores; ours keeps the start in ESI across the first
 // read and hoists the header size. Retail also subtracts the span from 0x200 into EAX (ours adds
@@ -1074,6 +1075,9 @@ bool function_68670(byte *source, long size, void *block);
 // the start is forwarded); that with case 0 sending a block-local copy of the value 137; payload
 // declared before the header 72 (identical). Retail's frame is exactly header 0xc, value copy 0x14,
 // payload, block, message (0x14454 bytes), so case 0 sends a copy; what escapes its header is open.
+// DL209: Case/function-scope sequence copies by memcpy/memmove 137/137/153/153; complete
+// native/memcpy/memmove/field header copies 147/147/155/142. Separate-copy home returns but reload
+// knowledge is lost; all copies restored.
 // @retail 0x865d0
 void __stdcall function_865d0(c_simulation_view *view)
 {
