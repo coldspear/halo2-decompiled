@@ -378,27 +378,13 @@ PRIVATE inline void transform_plane_163db0(transform4x3f const *matrix, vector3f
 	plane->d = distance;
 }
 
-// The top and bottom planes sum the plane distance in the order retail uses for them.
-PRIVATE inline void transform_plane_163db0_y(transform4x3f const *matrix, vector3f const *normal, s_plane *plane)
-{
-	real x = normal->i;
-	real y = normal->j;
-	real z = normal->k;
-	plane->normal.i = matrix->up.i * z + matrix->left.i * y + matrix->forward.i * x;
-	plane->normal.j = matrix->up.j * z + matrix->left.j * y + matrix->forward.j * x;
-	plane->normal.k = matrix->up.k * z + matrix->left.k * y + matrix->forward.k * x;
-	real scale = matrix->scale;
-	real distance = matrix->position.z * plane->normal.k;
-	distance += matrix->position.y * plane->normal.j;
-	distance += plane->d * scale;
-	distance += plane->normal.i * matrix->position.x;
-	plane->d = distance;
-}
-
 PRIVATE inline real plane_error_163db0(s_plane const *plane, point3f const *point)
 {
 	return (real)fabs(plane->normal.k * point->z + plane->normal.j * point->y + plane->normal.i * point->x - plane->d);
 }
+// score 96 (was 68, review): the top and bottom planes' own transform helper (a copy of
+// transform_plane_163db0 that sums the distance as z, y, d * scale, x) is removed, since a copied
+// helper body is kept only with a match; with that helper the function scored 68.
 // score 68 (was 74): the near corner's z value is computed into a named local before the corner
 // is stored and the corner is then stored as x, y, z, which is the order retail stores it in;
 // the identifier store, the plane-5 normal stores and the distance product operands still differ.
@@ -593,11 +579,11 @@ bool function_163db0(s_camera_163db0 const *camera, box2f const *rectangle, long
 		vector3f_assign(&result->planes[2].normal, 0.0f, -1.0f, 0.0f - result->rectangle.y0);
 		function_30bf0(&result->planes[2].normal);
 		result->planes[2].d = 0.0f;
-		transform_plane_163db0_y(&cam->matrix, &result->planes[2].normal, &result->planes[2]);
+		transform_plane_163db0(&cam->matrix, &result->planes[2].normal, &result->planes[2]);
 		vector3f_assign(&result->planes[3].normal, 0.0f, 1.0f, result->rectangle.y1);
 		function_30bf0(&result->planes[3].normal);
 		result->planes[3].d = 0.0f;
-		transform_plane_163db0_y(&cam->matrix, &result->planes[3].normal, &result->planes[3]);
+		transform_plane_163db0(&cam->matrix, &result->planes[3].normal, &result->planes[3]);
 		if (!(!(cam->has_plane)))
 		{
 			result->planes[4].normal.i = 0.0f - cam->plane.normal.i;
