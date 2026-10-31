@@ -1005,13 +1005,16 @@ struct s_game_engine_globals_connections_view
 };
 
 /* builds a player's row of the scoreboard at a position */
-// score 170 (was 170): this round's reduced-image listing (1227 bytes, frame 0x6d0 against retail's
+// score 73 (was 170): everything before +0x397 matches; in the time and connection columns VC adds the
+// score width before the name width (ours `add cx, word ptr [score]`, retail `add cx, bx` and the
+// score through `lea`), so their scratch registers differ.
+// Earlier (score 170, was 170): this round's reduced-image listing (1227 bytes, frame 0x6d0 against retail's
 // 1254 bytes and frame 0x6d8) shows every stack home shifted by eight bytes, so the fast score of 272
 // is not the full build's 170 and the reduced image is not a usable target for this function.
-// score 170 (was 170): this round the reduced image scores the function 272 (the full build scores
+// Earlier (score 170, was 170): this round the reduced image scores the function 272 (the full build scores
 // 170); the deferred icon tail and the time/connection register homes still differ, and the fast
 // number is the one the reduced image reports.
-// score 170 (was 170): frame 0x6d8 agrees; deferred icon tail and time/connection registers remain;
+// Earlier (score 170, was 170): frame 0x6d8 agrees; deferred icon tail and time/connection registers remain;
 // retail tests the score/time widths as dwords but adds them as words, name width (bx) first.
 // Round 75: short widths (casts dropped) 170 (kept: the column sums add the name width first as
 // retail, the width tests become word compares); parenthesised/(short)-summed time left 184/184;
@@ -1138,14 +1141,23 @@ struct s_game_engine_globals_connections_view
 // with direct connection input 263, plus direct glyph arms 266. Six matched formatter,
 // query and widget controls survive. Original complete body restored; deferred icon
 // tail and time/connection input homes remain.
+// Round 110 (plain): place and icon each in their own `if (!hide_place) ... else valid = false;`
+// block (like the score and time widgets) with the icon arms storing 1 or `dim ? 2 : 0`: 145 (retail's
+// block order: the dim arm and the player-index/alpha tail after the score column); with the old
+// icon_value local the split keeps source order. On it, long widths cast to short in the sums as in
+// 0x1600f0: 73 (kept). Then time/connection sums score-first 73; only the first width of each sum
+// cast 73; name width declared first 73; short score width 162 (1257 bytes: sign-extended,
+// word-compared, though its time column is retail's); quality declared in the connection block 73.
+// Same code as 73 (screened): name width assigned first or from the column flags, int/dword widths,
+// renamed width locals, a cast on the name+score partial sum.
 // @retail 0x1603f0
 void game_engine_player_row_build(short const *position, real alpha, long player_index, word const *name, long place,
 	long score, long seconds, bool hide_connection, bool show_icon, bool hide_place, color3f const *color, bool dim,
 	s_game_engine_player_row *row, s_player_row_columns const *columns)
 {
-	short score_width;
-	short time_width;
-	short name_width;
+	long score_width;
+	long time_width;
+	long name_width;
 	long quality;
 	color4f local_e2f2b4;
 	color4f field_24;
@@ -1183,24 +1195,27 @@ void game_engine_player_row_build(short const *position, real alpha, long player
 		bounds.right = bounds.left + 0x19;
 		bounds.bottom = bounds.top + 0x14;
 		row->place.initialize(&bounds, &local_e2f2b4, &field_24, buffer.text, 6, true);
-
+	}
+	else
+	{
+		row->place.valid = false;
+	}
+	if (!hide_place)
+	{
 		bounds.left = position[0] + 0x19;
 		bounds.top = position[1];
 		bounds.right = bounds.left + 0x14;
 		bounds.bottom = bounds.top + 0x14;
 		row->icon.initialize(&bounds, &local_e2f2b4, &field_24, (const word *)L"", 1, false);
-		word icon_value = 0;
 		if (show_icon && function_15b2f0())
-			icon_value = 1;
-		else if (dim)
-			icon_value = 2;
-		row->icon.text[0] = icon_value;
+			row->icon.text[0] = 1;
+		else
+			row->icon.text[0] = dim ? 2 : 0;
 		*(long *)row->icon.unknown34 = player_index;
 		row->icon.color_b.alpha = alpha;
 	}
 	else
 	{
-		row->place.valid = false;
 		row->icon.valid = false;
 	}
 
@@ -1211,16 +1226,16 @@ void game_engine_player_row_build(short const *position, real alpha, long player
 	unicode_string_copy(name_text, parsed_name, 0x100);
 	bounds.left = position[0] + 0x2d;
 	bounds.top = position[1];
-	bounds.right = bounds.left + name_width;
+	bounds.right = bounds.left + (short)name_width;
 	bounds.bottom = bounds.top + 0x14;
 	row->name.initialize(&bounds, &local_e2f2b4, &field_24, name_text, 0x14, false);
 
 	if (score_width && !hide_place)
 	{
 		text_buffer_format(&buffer, (const word *)L"%d", score);
-		bounds.left = position[0] + name_width + 0x2d;
+		bounds.left = position[0] + (short)name_width + 0x2d;
 		bounds.top = position[1];
-		bounds.right = bounds.left + score_width;
+		bounds.right = bounds.left + (short)score_width;
 		bounds.bottom = bounds.top + 0x14;
 		row->score.initialize(&bounds, &local_e2f2b4, &field_24, buffer.text, 6, true);
 	}
@@ -1232,9 +1247,9 @@ void game_engine_player_row_build(short const *position, real alpha, long player
 	if (time_width && !hide_place)
 	{
 		function_159130(seconds, time_text);
-		bounds.left = position[0] + name_width + score_width + 0x2d;
+		bounds.left = position[0] + (short)name_width + (short)score_width + 0x2d;
 		bounds.top = position[1];
-		bounds.right = bounds.left + time_width;
+		bounds.right = bounds.left + (short)time_width;
 		bounds.bottom = bounds.top + 0x14;
 		row->time.initialize(&bounds, &local_e2f2b4, &field_24, time_text, 6, true);
 	}
@@ -1252,7 +1267,7 @@ void game_engine_player_row_build(short const *position, real alpha, long player
 		quality = 1;
 		if (function_68a90(entry, &quality))
 		{
-			bounds.left = position[0] + time_width + name_width + score_width + 0x2d;
+			bounds.left = position[0] + (short)time_width + (short)name_width + (short)score_width + 0x2d;
 			bounds.top = position[1];
 			bounds.right = bounds.left + 7;
 			bounds.bottom = bounds.top + 0x14;
@@ -1337,7 +1352,9 @@ PRIVATE inline long score_string_list_1608e0()
 	}
 	return result;
 }
-// score 689 (was 689): baseline frame 0x78c versus retail 0x79c; early player/panel roles and coordinate/color homes remain.
+// score 680 (was 689): frame 0x790 versus retail 0x79c; early player/panel roles, the scroll clamp (one
+// limit conversion in retail) and coordinate/color homes remain.
+// Earlier (score 689, was 689): baseline frame 0x78c versus retail 0x79c; early player/panel roles and coordinate/color homes remain.
 // this round's reduced listing shows the frame at 0x790 against retail's 0x79c
 // (2858 bytes against 2879), so every stack home is twelve bytes off and the absolute addresses are
 // compared instead of masked; retail also computes the player index in ebx before the pushes, ours in
@@ -1471,6 +1488,15 @@ PRIVATE inline long score_string_list_1608e0()
 // 699/701/696/689/699/691/699; all with the existing player getter 721. The combined
 // width form revisits the earlier pre-rectangle graph on the current 0x78c frame.
 // Original long widths, native rectangles and body restored.
+// Round 110: header place/name/score/time bounds as one rectangle filled field by field from
+// row_position (0x1600f0's style; retail reuses one rectangle at its lowest slot and reads
+// row_position for every header widget) 680 (kept, aligned 432/441 from 461/468). Score-width test
+// written again inside the name width (retail evaluates `score || alternate` twice) 699 (2906 bytes,
+// aligned 458/458). On the kept form: x/y as a two-short origin copied whole into row_position, title
+// bounds from it (retail's dword copy at 0x10 -> 0x18) 729 (2906 bytes, aligned 420/426); height not
+// volatile 721 (2858 bytes, aligned 411/426); height and fade count not volatile 752 (2826 bytes,
+// aligned 405/428); title bounds field by field from x/y or from row_position 680/680; the origin
+// point with neither volatile 720 (2858 bytes, aligned 391/406: the best structure so far).
 // @retail 0x1608e0
 void __stdcall function_1608e0(long player_index, s_score_panel_1608e0 *panel, real alpha)
 {
@@ -1545,31 +1571,41 @@ void __stdcall function_1608e0(long player_index, s_score_panel_1608e0 *panel, r
 	long name_width = 0xec - score_width - time_width;
 	word text[0x100];
 	text[0] = 0;
-	y = (short)(y + 0x18);
-	row_position[1] = y;
-	s_short_rectangle place_bounds = { y, x, y + 0x14, x + 0x19 };
-	panel->place.initialize(&place_bounds, &background, &foreground, (word const *)L"", 0x14, false);
-	s_short_rectangle name_bounds = { y, x + 0x19, y + 0x14, x + 0x19 + (short)name_width };
+	row_position[1] = y + 0x18;
+	s_short_rectangle bounds;
+	bounds.left = row_position[0];
+	bounds.top = row_position[1];
+	bounds.right = bounds.left + 0x19;
+	bounds.bottom = bounds.top + 0x14;
+	panel->place.initialize(&bounds, &background, &foreground, (word const *)L"", 0x14, false);
+	bounds.left = row_position[0] + 0x19;
+	bounds.top = row_position[1];
+	bounds.right = bounds.left + (short)name_width;
+	bounds.bottom = bounds.top + 0x14;
 	long list = score_string_list_1608e0();
 	if (list != NONE) function_1a0180(list, 0x7000105, text);
-	panel->name.initialize(&name_bounds, &background, &foreground, text, 0x14, false);
+	panel->name.initialize(&bounds, &background, &foreground, text, 0x14, false);
 	if (score_width)
 	{
-		s_short_rectangle score_bounds = { y, x + 0x19 + (short)name_width,
-			y + 0x14, x + 0x19 + (short)name_width + (short)score_width };
+		bounds.left = row_position[0] + (short)name_width + 0x19;
+		bounds.top = row_position[1];
+		bounds.right = bounds.left + (short)score_width;
+		bounds.bottom = bounds.top + 0x14;
 		list = score_string_list_1608e0();
 		if (list != NONE) function_1a0180(list, 0x70000fd, text);
-		panel->score_label.initialize(&score_bounds, &background, &foreground, text, 0x14, true);
+		panel->score_label.initialize(&bounds, &background, &foreground, text, 0x14, true);
 	}
 	else
 		panel->score_label.valid = false;
 	if (time_width)
 	{
-		s_short_rectangle time_label_bounds = { y, x + 0x19 + (short)name_width + (short)score_width,
-			y + 0x14, x + 0x19 + (short)name_width + (short)score_width + (short)time_width };
+		bounds.left = row_position[0] + (short)score_width + (short)name_width + 0x19;
+		bounds.top = row_position[1];
+		bounds.right = bounds.left + (short)time_width;
+		bounds.bottom = bounds.top + 0x14;
 		list = score_string_list_1608e0();
 		if (list != NONE) function_1a0180(list, 0x8000102, text);
-		panel->time_label.initialize(&time_label_bounds, &background, &foreground, text, 0x14, true);
+		panel->time_label.initialize(&bounds, &background, &foreground, text, 0x14, true);
 	}
 	else
 		panel->time_label.valid = false;
@@ -1702,7 +1738,12 @@ PRIVATE __forceinline void score_text_161420(byte const *widget, long valid)
     }
 }
 
-// score 122 (was 122): Team-text induction base and receiver scheduling remain.
+// score 122 (was 122): BLOCKED-BY 0x1fa50. Retail's team-text loop is indexed like the other three;
+// its text calls load the text into ECX before the bounds push, i.e. retail calls the drawer as a free
+// function taking (bounds, text, clip, position, line_gap, scale, color, shadow) with the text in ECX
+// (0x1fa30's own convention, bounds in EAX and text in ECX, agrees). Our member call leaves the
+// receiver until after the pushes, so the bounds take ECX and the scratch registers rotate.
+// Earlier (score 122, was 122): Team-text induction base and receiver scheduling remain.
 // Round 50: indexed team text 148 (retail's 0x2ec base, but 12 bytes long: each widget's rectangle
 // temporary rotates ecx/eax/edx where retail keeps edx and loads the receiver before the push);
 // text helper as plain inline 148/122; receiver named before the color call 148; per-iteration
@@ -1753,6 +1794,17 @@ PRIVATE __forceinline void score_text_161420(byte const *widget, long valid)
 // receiver named before the draw 122; typed template drawer 1411 (not inlined).
 // Round 440: Pointer-only team/player text/icon traversal masks 1/2/3/4/5/6/7 score 217/154/230/488/511/504/524;
 // complete graph with guarded team range 539. Every native traversal and helper restored.
+// Round 110: preamble and draws through the existing 0x13edb0/0x1fa30 by __forceinline
+// redeclarations 593 (1604 bytes, not inlined); indexed team text 148; justification local 122, with
+// indexed team 148; invalid-widget early exit with indexed team 148. Diagnostic, restored at once:
+// 0x1fa50 as that free function at its definition and every call, plus the indexed team loop: MATCH,
+// 0x1fa30/0x1fa50/0x1fb10 and every caller of 0x1fa50 unchanged (plain).
+// Round 129: indexed team text 148 again (1863 B but aligned 104 -> 60: retail's 0x2ec base; what
+// remains is scratch rotation: retail takes AL for every later justification and EDX/ECX for each
+// text call with the receiver before the push, ours rotates CL/DL/AL); the font/style block as a
+// call to the existing 0x13edb0 425, with indexed team 416 (not inlined, 1754/1767 B); indexed team
+// with a short counter 252; player row pointer per iteration 148 (1832 B), with indexed team 140
+// (1851 B, aligned 251).
 // @retail 0x161420
 void function_161420(long player_index, real alpha)
 {

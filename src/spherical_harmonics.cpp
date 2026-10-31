@@ -233,6 +233,13 @@
 // direct coefficient 11 37; direct final chain 39; inline declaration target 37 but sibling 169 fast;
 // band3_35 before zz5 36; band3_21 before zz5 49; only sqrt2 double 30; early zz5/band3_21
 // declarations 30 each. Best 30 plain at 660/660 but sibling 0x146020 scores 11; original body restored.
+// Round 107: that 30 form's sibling loss is 0x146020's frame growing 0x40 -> 0x44 (a double local makes
+// this function want an 8-aligned stack); retail has no double local. Retail keeps sqrt(2) only because
+// sqrt(105) is pushed above it before band3_21 (it can't pop a buried root), so its band3_21 product is
+// `fmul st(2)` where ours absorbs the dying root (`fmulp st(2)`). Fast trials, 0x146020 matched in all: a
+// fresh cubic block (roots real locals or inline, zz5 new or zz scaled in place) in retail's order
+// (15, 11, 13, 9, 10, 12, 14) 141-156, in the current order with result[14] as one expression 69-162
+// (both roots local 69/80, inline 79/89); sqrt(2.0) written in both band products on this body 158.
 // Lane 14 r19: why 0x146020 drops to 11: a named `double` root gives this function an 8-byte stack
 // alignment need that LTCG passes to the caller (its frame grows 0x40 -> 0x44); `sqrt(2.0)` written in
 // both band products gives the same retained x87 root without it. 0x146020 also keeps `order` in EDX
@@ -258,6 +265,13 @@
 // again 33, sqrt21 declared with the other roots 6, zz5 defined before result[11] 188 (700 bytes),
 // zz5 after xx_3yy 6, sqrt5 initialised at its declaration 6. The 6 form still writes sqrt(2.0),
 // `zz5 - 1.0f` and the band3_21 product at each use, so it is only keepable as a full match.
+// Lane 16 r46: that 6 form rebuilt (fast 6, 0x146020 matched); on it: zz5 renamed azz5/zzz5 6/6; a named
+// band3_21 (three names, zz5 renamed too) 8 each, declared before zz5 8, computed before zz5 51; zz*5 at
+// each use 188 (700 B), with a named band3_21 12; result[6] `(zz * 3 - 1) * sqrt5` / `3 * zz` 6/6;
+// result[4] band2 first, result[8] sqrt15 first, result[5] z first, band2 isp-first 6 each; `5.0f * zz`,
+// result[12] zz5 term first, sqrt7 initialised 6 each; zz declared before sqrt15 and assigned after band2
+// or after xx_yy 6/6. Names and declaration order never move zz5's slot, and none of these statement or
+// operand orders moved the quadratic sqrt15 load ahead of the x87 z*z.
 // @retail 0x143360
 void spherical_harmonics_evaluate_direction(vector3f const *direction, dword order, real *result)
 {

@@ -348,6 +348,11 @@ PRIVATE inline bool append_save_entry_2164c0(s_save_list_2164c0 *list, s_save_en
 // reference workspace 32; overlap-safe append copy 52; coordinated matched-name-helper inline
 // contract 32; byte helper return 32. Original append, workspace, copy and all game-call values
 // restored; matching 0x8ac frame and scratch/append register gap remain.
+// Round 109 (lane 5, fast): the append with a named `full` flag, `if (!full)` and `return !full` 32
+// (aligned 26); the test written `4096 != list->count` 32 (same code); the `full` flag with `long
+// index = list->count++` 51 (retail's new-count store before the copy, but `sete`/`jne` and count
+// EAX), with `list->count = index + 1` 51; the `full` flag with a struct assignment 57 (656 bytes).
+// The list is the shared s_saved_game_location_table (include/saved_game_storage.h, same layout).
 // Round 44 (lane 16): retail keeps the count in ESI and copies it to EAX for the index (a temp
 // ours coalesces away); the later scratch pairs are ours rotated by one register in eax, ecx,
 // edx order, as one fewer temp would give. Tried: explicit count and index locals with the new
@@ -355,6 +360,9 @@ PRIVATE inline bool append_save_entry_2164c0(s_save_list_2164c0 *list, s_save_en
 // unknown_216b60.cpp so LTCG inlines it 32 (plain, same code); a count local post-incremented
 // in the copy and stored back after it 33; `entry.type` passed to 0x216e50 32; `entry.type`
 // set inside the type loop before leaving it 32.
+// Round 177 (fast, append helper): the result declared `bool const` 32, as `char` 32, as `!(count ==
+// 4096)` 32 (all same code); the room test `4096 - list->count != 0` 51 (mov/sub before the setne);
+// `if (!result) return result;` before the copy 32 (same code).
 // @retail 0x2164c0
 void function_2164c0(long memory_unit, s_save_list_2164c0 *list)
 {
