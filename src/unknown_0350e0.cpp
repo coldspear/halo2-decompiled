@@ -1938,13 +1938,18 @@ PRIVATE __forceinline vector3f direction_from_angles(real heading, real elevatio
     return result;
 }
 
-// score 220 (was 298): the statements match retail (cos(elevation) is evaluated first, the entry's tag is read again at the
-// call instead of cached, `left` is built from g_4687b0 directly while `up` is a separate copy). What still differs: frame 0x7c
-// against retail's 0xc0 and 822 against 857 bytes. Retail builds `local` and `forward` straight into their slots (0x14, 0x20)
-// and then block-copies local, forward and up into one argument-like area (0x30, 0x3c, 0x54, with a slot for `left` at 0x48 that
-// is never stored); ours returns them by value, which adds a per-component temp, and has no copy of local or forward.
-// Tried: sin/cos without the (real) casts (223), out-pointer helper (284), by-value basis helper with `left` as a vector
-// (261) or as three reals (253), `left` from a returning cross helper (235).
+// score 204 (was 220, 298 originally): the statements match retail (cos(elevation) is evaluated first, the entry's tag is read again
+// at the call instead of cached, `left` is built from g_4687b0 directly while `up` is a separate copy). Writing the result back
+// with `local = direction;` (retail stores the new direction into the slot of `local`, 0x14) took 220 to 204. What still differs:
+// frame 0x7c against retail's 0xc0 and 846 against 857 bytes, and the register roles (retail keeps the loop count in ebx, the entry
+// in ebp, spills `definition` to [esp+4] and the entry offset to [esp+0x2c]; ours keeps `definition` in ebx). Retail builds `local`
+// and `forward` straight into their slots (0x14, 0x20) and then block-copies local, forward and up into one argument-like area
+// (0x30, 0x3c, 0x54, with a slot for `left` at 0x48 that is never stored); `left` stays in xmm registers there.
+// Retail reads the entry's heading and elevation straight from memory for `local` (fld [ebp+0x10] ... fld [ebp+0xc] twice) but
+// loads the definition's heading once for `forward`, so `local` is not a call of the same helper as `forward`.
+// Tried: sin/cos without the (real) casts (223), out-pointer helper for both (284/260), for `local` only (256/228), by-value basis helper with `left` as a vector (261, 357 when
+// passed whole) or as three reals (253), `left` from a returning cross helper (235), `local` written inline from the entry fields
+// (269/247), a by-value world_direction(local, forward, up) helper (203 but 846 bytes of different temps), basis declared before position (no change).
 // @retail 0x3eec0
 void function_3eec0()
 {
@@ -1971,18 +1976,19 @@ void function_3eec0()
             direction.i = local.j * left.i + local.k * up.i + local.i * forward.i;
             direction.j = local.i * forward.j + local.j * left.j + local.k * up.j;
             direction.k = local.i * forward.k + local.j * left.k + local.k * up.k;
+            local = direction;
             if (1.0f > g_4b9f58)
             {
                 g_4670bc = true;
                 function_16b10((s_render_reset_state *)g_485b48);
                 point3f position;
-                position.x = direction.i * 1023.875f + g_4b9da0.x;
-                position.y = direction.j * 1023.875f + g_4b9da0.y;
-                position.z = direction.k * 1023.875f + g_4b9da0.z;
+                position.x = local.i * 1023.875f + g_4b9da0.x;
+                position.y = local.j * 1023.875f + g_4b9da0.y;
+                position.z = local.k * 1023.875f + g_4b9da0.z;
                 vector3f basis[3];
-                basis[0].i = 0.0f - direction.i;
-                basis[0].j = 0.0f - direction.j;
-                basis[0].k = 0.0f - direction.k;
+                basis[0].i = 0.0f - local.i;
+                basis[0].j = 0.0f - local.j;
+                basis[0].k = 0.0f - local.k;
                 function_11d000(&basis[0], &basis[2]);
                 function_30bf0(&basis[2]);
                 function_2dba0(*(long *)(entry + 0x18), basis, false, 3, 0, i, &position, (color3f const *)((byte const *)g_4686cc + 4), 1.0f - g_4b9f58, 1.0f, 1.0f);
@@ -3237,12 +3243,20 @@ bool __stdcall function_38450(byte *state, byte const *definition, real remainin
 bool __stdcall function_37a60(void *state);
 bool __stdcall function_391f0(void *state);
 
-// score 257: retail checks the portal's two sides with a real 2-iteration loop
-// (movsx ebp, word [portal+eax*2]; inc eax; cmp eax, 2), not the unrolled pair of tests written here;
-// the camera x/y/z and 32767.0f stay in xmm3-xmm6 across the portal loop, and retail re-makes zero
-// with xorps inside each block (here one zero is shared from the function start). Tried: the 2-iteration
-// for loop with the volatile counter (299), with a plain counter (273); a plain counter with the
-// unrolled tests (956, the loop is unrolled and grows to 1535 bytes).
+// score 272 (was 257 with a volatile counter): no volatile any more. The portal loop is now `while (remaining-- > 0)` with
+// `*portals++` and the two sides are a real 2-iteration loop (`for (side...) if (sides[side] == cluster) break;`), which compiles
+// to retail's loop (movsx ebp, word [portal+eax*2]; inc eax; cmp eax, 2; jl). A plain `for (; remaining > 0; --remaining)` counter
+// is unrolled four times by the compiler (1535 bytes, 956); retail keeps the count in memory ([esp+0x10], dec; jne) and does not
+// unroll, which the post-decrement form also gives without volatile. What still differs: retail compares the portal
+// side with `je found` straight into the plane code, ours re-tests `side == 2` after the loop (a `do { if (..) goto found; } while
+// (++side < 2); continue; found:` form removes that but scores 274); retail reads the current cluster as a long (movsx ebx, word
+// [0x547f90]; cmp ebx, -1) and reloads the global inside the fog loop, ours compares a cached copy (`long current_cluster`
+// makes the front match retail's order but scores 299 with the later spills); the camera x/y/z and 32767.0f stay in xmm3-xmm6 across
+// the portal loop, and retail re-makes zero with xorps inside each block (here one zero is shared from the function start); the
+// outer loop's index lives in edi in retail (spilled around the portal loop) and in ebx here.
+// Tried: the 2-iteration for loop with the volatile counter (299), with a plain counter (273); a plain counter with the
+// unrolled tests (956, the loop is unrolled and grows to 1535 bytes); `for (k < count) portals[k]` (972, unrolled);
+// a while loop with a side index (295); camera_z read before camera_y (no change).
 // @retail 0x36b50
 void function_36b50()
 {
@@ -3285,12 +3299,16 @@ void function_36b50()
         {
             real minimum = 32767.0f;
             short *portals = *(short **)(current + 0x90);
-            volatile long remaining = *(long *)(current + 0x8c);
-            for (; remaining > 0; --remaining, ++portals)
+            long remaining = *(long *)(current + 0x8c);
+            while (remaining-- > 0)
             {
-                if (*portals == NONE) continue;
-                byte *portal = *(byte **)(structure + 0x60) + *portals * 0x24;
-                if (*(short *)portal != cluster && *(short *)(portal + 2) != cluster) continue;
+                short portal_index = *portals++;
+                if (portal_index == NONE) continue;
+                byte *portal = *(byte **)(structure + 0x60) + portal_index * 0x24;
+                long side;
+                for (side = 0; side < 2; ++side)
+                    if (((short *)portal)[side] == cluster) break;
+                if (side == 2) continue;
                 real *plane = (real *)(*(byte **)(*(byte **)(structure + 0x18) + 0xc) + *(long *)(portal + 4) * 16);
                 real value = 0.0f - (camera_y * plane[1] + camera_z * plane[2] + camera_x * plane[0] - plane[3]);
                 if (0.0f > value) value = 0.0f - value;
