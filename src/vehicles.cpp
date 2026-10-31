@@ -770,7 +770,7 @@ __forceinline long vehicle_round(real value)
 
 /* flips a vehicle back over: a spin about its forward (or its side) for up
    to two seconds while it's upside down */
-// score 8 (was 12): retail's length and tail now; four products load the other operand (ours loads up.j
+// score 8 (was 8): retail's length and tail now; four products load the other operand (ours loads up.j
 // for the first cross's k term and the side cross's i term, up.i for the side cross's j term, and the
 // velocity for the dot's i term; retail loads forward each time). Kept: one `bool result` exit, the
 // failure arm first (`if (!(...)) { clears } else { ...; result = true; }`) and word_flags_set for the
@@ -810,6 +810,17 @@ __forceinline long vehicle_round(real value)
 // Round 48: shared up at both crosses 141; shared forward 204; both 209; forward-default axis 169;
 // angular copy/in-place scale 266/91; full forward snapshot 226; up snapshot with rate 146;
 // branch-scoped up at the first/side cross 150/109. Original body restored.
+// Round 132: the product choice follows the order VC first meets each field in dominating code (an
+// earlier read of one operand makes it the memory operand), so it moves with the condition and the
+// rounding (with the rounding out of line 3 flips, with a cast in its place 5). Five real trials,
+// all on the kept form: linear/angular/axis declared before strength with the side cross through
+// cross3f_staged 6; that with `result = true` before the increment 6; axis/angular/linear before
+// strength, staged side cross and De Morgan tests 9; linear/axis/angular before strength, staged side
+// cross, De Morgan tests and the axis if/else inverted 9; angular/linear/axis after strength,
+// `result = true` first and the staged side cross 6. A compile-only screen of 1500 random combinations
+// (declaration orders, flag helper, result placement, staged crosses, side scale+add, De Morgan,
+// inverted axis branch, side and rate declared early, named dot) found none under three flips; the
+// condition's spellings (casts, operand sides, `!= 0`) and local names give identical code.
 // @retail 0xef870
 bool function_ef870(long vehicle_index)
 {

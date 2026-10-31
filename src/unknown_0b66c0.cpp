@@ -204,6 +204,11 @@ static __forceinline char *upload_copy_ab(char *destination, char const *source,
 // condition (`bool result = start >= 0 && ...; if (result)`) 44 (0xb5f10 41); a non-volatile local
 // copy of the string for the scan and the add 60 (83 bytes, 0xb5f10 80); a `byte` result 41
 // (0xb5f10 41); `result = true` before the copy 40 (same code).
+// Round 132 (an LTCG env link of this file reproduces it and 0xb5f10 exactly): `string + start` gives
+// retail's body except that start lives in EDX and the walk in EDI (retail: walk EDX, start EDI), so
+// LTCG passes start in EDX. With it, the length loop as `while (length < 0x1ff && *string++)` 28, a
+// walk local in the length helper 28, the source named before the clamp 32 (0xb5f10 6 each); the
+// while-loop helper alone 40 (same code).
 // @retail 0xb6220
 bool function_b6220(char const *volatile string, long start, long count, char *destination)
 {
@@ -489,6 +494,17 @@ bool function_7af40(s_type_99af70 const *address);
 // 0xb40b0 61): with the reads, state stored first 111; the increment through a pointer to the
 // field 111; plain member accesses without the `connection` alias 111; the copy's source as a
 // volatile read of the own path parameter 111. Without the reads, counter/copy/state order 36.
+// Round 132 (an LTCG env link with 0x7af40's object reproduces the full listing): with retail's
+// endpoint reads, the in-place `inc` survives when `connection` is used after the copy call (a
+// diagnostic store there gives retail's code plus that store); a destination pointer kept across the
+// call with no later use of `connection` splits it into EBX and moves the address to EAX. On the
+// reads: the copy helper with a dword or unsigned size, plain inline, returning void, keeping
+// strncpy's result, writing the terminator through `destination + size - 1` or a pointer computed
+// first, a destination local, or that local declared before the endpoint stores 111 each; a template
+// overload on the array 31 (kept out of line: in-place `inc`, destination ESI); one result carried
+// through the open call 94; the open test inverted with the close and return first 101; the counter
+// after the copy 37; the counter, state and copy in an inline member with the flag alone re-read 30
+// (env); the terminator through `connection` with a destination local 17 (as the written-out copy).
 // @retail 0xb5d40
 bool s_http_connection_ab::connect(long address, word port, char const *path, bool flag)
 {
