@@ -93,6 +93,9 @@ inline void dialogue_name_override(long volatile *name, long value)
 #define TAG_GET_291EA0(type, index) ((type *)g_4e3b44[(index) & 0xffff].bytes)
 
 /* plays the actor's variant of a vocalization; returns whether it found one */
+// score 9 (was 9): the elements pointer and the object pool still land in EDX where retail
+// keeps them in EAX, and the scaled object index goes to EAX where retail uses EDX; naming the
+// elements, the pool or both does not move the allocation.
 // score 9 (was 9): the default-element and object-pool temporaries use EDX where retail uses EAX,
 // and the scaled object index uses EAX where retail uses EDX; the loop padding byte differs too.
 // and the scaled object index uses EAX where retail uses EDX; padding follows. Round 47: typed default

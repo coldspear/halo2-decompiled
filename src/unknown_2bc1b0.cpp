@@ -248,6 +248,11 @@ struct s_item_object_2bc1
 /* updates a team's item each tick: how long it has been away from home, its
    return home once it has waited too long, and the points of the player
    holding it */
+// score 33 (was 62): the countdown is now computed before the timer's test and
+// the timer's test compares its byte with 0xff, so the countdown keeps the low
+// byte of a register as retail does, and the tally now counts before the timer
+// is reset. What is left is the rate's register (esi here, ecx in retail) and
+// the order of the object's spill and the rate's load.
 // score 62 (was 97): retail spills the item pointer to the stack before it
 // reads the rate, so the rate and its forty-times multiply land in different
 // registers than ours; the countdown is also still decremented in al, while
@@ -341,18 +346,18 @@ void __stdcall function_2bc990(long team)
 		if (entry->player_index != NONE)
 		{
 			char timer = state->point_timers[team];
+			char countdown = (char)(timer - 1);
 
-			if (timer != NONE)
+			if ((unsigned char)timer != 0xff)
 			{
-				char countdown = (char)(timer - 1);
 				state->point_timers[team] = countdown;
 				if ((unsigned char)countdown == 0 || countdown < 0)
 				{
 					function_1972a0(entry->player_index, 3, entry->value04);
 					function_2bce70(entry->player_index);
 					state = (s_state_2bc1 *)g_51ecc4;
-					state->point_timers[team] = (char)g_510c54->field_2_3;
 					state->point_tallies[team]++;
+					state->point_timers[team] = (char)g_510c54->field_2_3;
 					function_15b930(entry->player_index, function_15eaf0(), 0x17, 1);
 					if (state->point_tallies[team] % 5 == 0)
 					{
