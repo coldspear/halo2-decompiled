@@ -3,6 +3,7 @@
 #include "globals.h"
 #include "object_markers.h"
 #include "normalize3d.h"
+#include "vector_products.h"
 
 struct s_28e770
 {
@@ -101,10 +102,12 @@ __forceinline void function_28e774(point3f const *arg_0, point3f const *arg_1, v
 	arg_2->k = arg_0->z - arg_1->z;
 }
 
-// score 68 (was 110): 2416 bytes as retail; left are the alignment dot's i product (retail
-// local_14.i * local_29.i), the case-four y sum (retail placed_point.y first) and case six's i add
-// (retail loads local_29->i and stores it at once; ours folds `addss xmm1, [edi]` and stores late,
-// which shifts the rest of case six).
+// score 8 (was 68): 2416 bytes as retail; left are the alignment dot's i product (retail
+// local_14->i * field_80.i), the case-four y sum (retail placed_point.y first) and case five's facing
+// dot (retail sums j, i, k; ours j, k, i once case six adds through vector3f_add). At 68 case six's i
+// add also differed (retail loads field_80.i and stores it at once; ours folded `addss xmm1, [edi]`
+// and stored late, which shifted the rest of case six): retail reads and stores the vector through
+// two pointers the compiler cannot prove equal, so no store sinks.
 // Lane 15 r19: case five with early breaks so both clears reach one NONE store 110 -> 80 (kept);
 // case zero's own block-local vector plus a facing pointer used for the dot and the k test 80 -> 68
 // (kept; the facing dot and case six's preloads become retail's); the else branch's negation through
@@ -188,6 +191,21 @@ __forceinline void function_28e774(point3f const *arg_0, point3f const *arg_1, v
 // combined 362; source/facing ownership 435, with sums 435; source/direct admission 362,
 // with sums 362, all forms 435. All source/member substitutions were exact-match-only;
 // all trial bodies restored. Original vectors, cases, call tuples and expression trees retained.
+// Round 93 (lane 8): the field written directly everywhere (no local_29) with case six's add as
+// vector3f_add(&field_80, &contribution, &field_80) 68 -> 8 (kept: case six becomes retail's, the facing
+// dot's sum order flips); with contribution at the switch scope or declared before the direction test
+// 8/8; the helper's first two arguments swapped 8; case five's facing pointer removed 10. On 68: case
+// six reading through a second pointer to the field and storing through local_29 4 (all of case six
+// retail's; not kept: a second pointer that renames local_29); reads through the field and stores
+// through local_29 (scalar) 32 (j, k read as [ebp + 0x84]); stores through the field, reads through
+// local_29 64; vector3f_add(local_29, &contribution, local_29) 70; vector3f_add(local_29, &contribution,
+// &field_80) 70; vector3f_add(&field_80 or &contribution first, ..., local_29) 6/6 (facing dot flips);
+// case four's offset through function_28e774 then k = 0 70 (the x sum flips too); case four's sum through
+// vector3f_add 72. On the 4 form: case four's offset through vector2d_from_points2d 6 (x flips); its j
+// statement first 10; its k store first 12, between i and j 9; its sum's y statement first 8; all sums
+// written placed-first or offset-first 4/4; the alignment dot's arguments swapped 4; the dot through
+// &local_12->field_70 6 (j and k flip, i becomes retail's); the dot through &field_80 4; through
+// &local_13 394; case one/two's copy as a direct field store 8 (the facing dot flips).
 // @retail 0x28e770
 void __stdcall function_28e770(long arg_0, long arg_1)
 {
@@ -223,8 +241,7 @@ void __stdcall function_28e770(long arg_0, long arg_1)
 			bool local_11 = swarm_target_get_location(local_7, local_6, &local_10, &local_8, &target_velocity);
 			s_28e772 *local_12 = (s_28e772 *)local_1;
 			vector3f *local_14 = &local_12->field_70;
-			vector3f *local_29 = &local_3->field_80;
-			*local_29 = *local_14;
+			local_3->field_80 = *local_14;
 			local_3->field_8c = local_12->field_7c;
 			local_3->field_98 = *g_4687a4;
 			if (local_5 != local_3->field_24)
@@ -256,7 +273,7 @@ void __stdcall function_28e770(long arg_0, long arg_1)
 						function_28e774(&local_4->field_24, &local_3->field_14, &goal_direction);
 						if (function_30bf0(&goal_direction) > 0.0f)
 						{
-							*local_29 = goal_direction;
+							local_3->field_80 = goal_direction;
 							local_3->field_98 = *g_4687a8;
 						}
 						local_3->field_56 = true;
@@ -274,9 +291,9 @@ void __stdcall function_28e770(long arg_0, long arg_1)
 					{
 						if (local_3->field_4c > 0)
 							goto local_21;
-						*local_29 = local_13;
+						local_3->field_80 = local_13;
 						local_3->field_98 = *g_4687a8;
-						if (dot3f(local_29, local_14) > 0.95f)
+						if (dot3f(&local_3->field_80, local_14) > 0.95f)
 						{
 							if (function_2900b0(arg_1, (point3f const *)&target_velocity, 0.9f, 2.7f, (vector3f *)&local_3->field_58))
 							{
@@ -296,7 +313,7 @@ void __stdcall function_28e770(long arg_0, long arg_1)
 					real local_22 = function_30bf0(&local_13);
 					if (local_22 > 0.0f)
 					{
-						*local_29 = local_13;
+						local_3->field_80 = local_13;
 						if (local_22 > local_2->field_10)
 						{
 							local_3->field_98 = *g_4687a8;
@@ -351,7 +368,7 @@ void __stdcall function_28e770(long arg_0, long arg_1)
 						real local_24 = function_30bf0(&direction);
 						if (!(local_24 > 0.0f))
 							break;
-						*local_29 = direction;
+						local_3->field_80 = direction;
 						local_3->field_98 = *g_4687a8;
 						if (local_24 < 0.2f)
 						{
@@ -377,7 +394,7 @@ void __stdcall function_28e770(long arg_0, long arg_1)
 					{
 						if (local_26 < local_2->field_4)
 						{
-							*local_29 = local_13;
+							local_3->field_80 = local_13;
 							local_3->field_98 = *g_4687a8;
 							function_28e774(&local_3->field_14, &local_4->field_8, &direction);
 							if (function_30bf0(&direction) > 0.0f)
@@ -386,23 +403,21 @@ void __stdcall function_28e770(long arg_0, long arg_1)
 								local_27 = local_27 < 0.0f ? 0.0f : local_27 > 5.0f ? 5.0f : local_27;
 								vector3f contribution;
 								vector3f_scale(&direction, (1.0f - local_27 * (1.0f / 3.0f)) * 2.0f, &contribution);
-								local_29->i += contribution.i;
-								local_29->j += contribution.j;
-								local_29->k += contribution.k;
-								if (function_30bf0(local_29) == 0.0f)
-									*local_29 = local_13;
+								vector3f_add(&local_3->field_80, &contribution, &local_3->field_80);
+								if (function_30bf0(&local_3->field_80) == 0.0f)
+									local_3->field_80 = local_13;
 							}
 						}
 						else
 						{
-							vector3f_scale(&local_13, -1.0f, local_29);
+							vector3f_scale(&local_13, -1.0f, &local_3->field_80);
 							local_3->field_98 = *g_4687a4;
 						}
 					}
 				}
 				break;
 			case 7:
-				function_28f290(arg_1, local_29, &local_3->field_98);
+				function_28f290(arg_1, &local_3->field_80, &local_3->field_98);
 				break;
 			}
 			local_3->field_24 = local_5;

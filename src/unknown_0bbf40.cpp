@@ -335,6 +335,11 @@ s_object_gc_entry_ab g_440570[6] =
 // Round 315: Early gather commitment with direct terminal state/query-produced critical/reused action
 // ownership masks 0..7: 115/125/138/125/113/134/132/136. Direct-state forms recover the frame but
 // shorten to 374 and regress. Original state, query, callbacks, buffers and loop restored at 110.
+// Round r4 (lane 17): index walk + advance flag with one final clear (break on the query) 176 (333 bytes); with early
+// returns for NONE and the query, global at each use 119 (379, aligned 35: our while is inverted and its first action
+// test peeled at the constant first entry, and the NONE exit falls through where retail branches to it); the same
+// with the exit test inside for (;;) 119 (same code); NONE as an enclosing if with one final clear and the query
+// returning 153 (361); the query in the while condition 176 (333).
 // @retail 0xbf380
 void function_bf380()
 {

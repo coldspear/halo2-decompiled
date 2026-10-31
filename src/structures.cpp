@@ -241,6 +241,15 @@ static __forceinline bool structure_bsp_collision_available()
 // Round 44: existing availability producer result-first/guard returns/nested outcomes/
 // structure once/settings once/both/both guarded/both with BSP receiver 61/98/98/61/78/78/98/61.
 // Original helper/body restored; exclusion BL and source-slot join remain.
+// Round 11 (lane 2): ours threads the second flag test across the 0xbf9a0 call (the false edge knows
+// the flag is clear); retail threads only the first. Real: the scenery test in a forceinline
+// single-exit bool helper 112 (302 bytes: 0x10a0b0 inlined, flag threaded); the && flag tested
+// twice (`!excluded && 0xbf9a0`, then `if (excluded) return result;`) 62; on it, `collision` reloaded
+// from the source just before the second test 62 (dropped before threading; diagnostic); on it, a
+// bool result 65; a function-scope flag cleared at entry, set in the scenery arm, 0xbf9a0 in an else-if,
+// the requery under `if (!excluded)` with `found = false` otherwise 77 (263 bytes). The one-file LTCG
+// harness passes the surface in EAX (the real build in ESI) even with 0xd2bb0's file and the other
+// callers of 0x14ac60/0x14a8e0 linked, so it cannot screen this function.
 // @retail 0x14b120
 bool function_14b120(s_surface_query_source source, void *surface)
 {

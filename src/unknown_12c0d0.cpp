@@ -679,30 +679,8 @@ short bitmap_get_mipmap_count(short width, short height, short depth, short form
 long log2_floor(dword value);
 
 /* builds a bitmap's hardware texture header over its description, pointing
-   into the shared pixel data */
-// score 12 (was 12): the frame and the prefix through +0xe7 agree; in the two
-// later logarithm loops retail copies the value into the branch (cmp ebx, 1 /
-// mov edx, ebx / je) and counts the depth in EAX, while ours copies before
-// the test and counts the depth in EDX.
-// Kept: the hardware format a plain local (no volatile) and the
-// the last two log2 loops differ: retail copies the height and the
-// depth after the `cmp 1` test and counts the depth in EAX; ours copies before the `jbe` and
-// counts the depth in EDX. Kept: the hardware format a plain local (no volatile) and the
-// 32-bit sizes taken right after the mip count call in width, height, depth order (12); the
-// same in long, unsigned long or one declaration 12; levels declared at the call 12; chained
-// zero stores 14; in height/width/depth 14, height/depth/width 15, depth/width/height 15,
-// width/depth/height 58. Sizes after the format store: depth/height/width 25,
-// height/depth/width 26, the others 59-60; sizes before the call 104, after the type test 109,
-// none (sizes passed to log2_floor) 103; chained zero stores 25; levels declared at the call
-// 25. With the volatile: height/depth/width 35, the others 56-64. Earlier: the default
-// format in a plain local 109 (when the sizes followed the format store); the if/else 86; the
-// sizes read from the fields at each use 124; the sizes declared before the format 106;
-// `g_4e646c + hardware_data` 109; the format read before the data 110; the dword sizes taken
-// before the call 88; the sizes passed straight to log2_floor 92; a `local_0` for the
-// dimension bits 77; short levels 63; the dword sizes after the type test 76; the ternary as
-// `type == 1 ? 3 : 2` and every operand order of the format expression 60.
-// Early width/height/depth/width-height/width-depth/height-depth promotions 80/90/78/91/109/109; late height and late height-depth 111/107.
-// Logarithm inline/force-inline declarations 12/12; immutable dimensions 12; immediate short/long results 12/12; shifted masks 12; explicit Format assignments 12; long results with immutable dimensions 12.
+   into the shared pixel data; the logarithms come from log2_floor, which
+   copies its argument into a local before the loop */
 // @retail 0x12c820
 void texture_cache_bitmap_build_texture(s_bitmap_data *bitmap)
 {

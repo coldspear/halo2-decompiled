@@ -1753,6 +1753,12 @@ PRIVATE __forceinline void score_text_161420(byte const *widget, long valid)
 // receiver named before the draw 122; typed template drawer 1411 (not inlined).
 // Round 440: Pointer-only team/player text/icon traversal masks 1/2/3/4/5/6/7 score 217/154/230/488/511/504/524;
 // complete graph with guarded team range 539. Every native traversal and helper restored.
+// Round 129: indexed team text 148 again (1863 B but aligned 104 -> 60: retail's 0x2ec base; what
+// remains is scratch rotation: retail takes AL for every later justification and EDX/ECX for each
+// text call with the receiver before the push, ours rotates CL/DL/AL); the font/style block as a
+// call to the existing 0x13edb0 425, with indexed team 416 (not inlined, 1754/1767 B); indexed team
+// with a short counter 252; player row pointer per iteration 148 (1832 B), with indexed team 140
+// (1851 B, aligned 251).
 // @retail 0x161420
 void function_161420(long player_index, real alpha)
 {
