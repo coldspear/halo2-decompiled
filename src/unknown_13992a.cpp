@@ -84,6 +84,12 @@ long function_14de70(long arg_1);
 // declared before the test, the 0x22bfc0 result through a local: the parent stays in a register each
 // time; the seat flag stored before the parent lookup reloads both fields (fast 521); a bool helper for
 // the two tests (fast 418).
+// Round 130 (plain): the parent read into a named local inside the block for the lookup and the later
+// 0xcbd50 call 94; with the seat index in a named local too 495 (1833 B); the seat index local alone
+// 75 (1825 B); the parent local for the first lookup only 48; nested tests with it 48. A compile-only
+// screen shows a field-typed read of the parent still merges with the pointer-arithmetic one. The same
+// split (compare in memory, re-read into the unit's register after the seat test) is in 0xd1080, while
+// matched 0xd0c10 keeps the parent in a register: retail gives the parent the register local_3 frees.
 // Earlier (113): the first branch span and mask/player register roles. Word lookup index 580; byte slot counter 314;
 // short suppression 173; cached seat selector 152; missing-player return 134 (plain).
 // caller depth 1/2/0 134/134/651; global optimization off 1911; const lookup 134;
