@@ -3960,7 +3960,7 @@ extern real g_47f05c;
 /* lands or is knocked to the ground: a crouching biped standing up into a
    ceiling is lifted clear, the hit is remembered (+0x44c..), and a flag
    plays the knocked-down animation */
-// score 104 (was 104): frame 0xc and length 422 agree; only the point/handle input registers remain (retail takes
+// score 104 (was 124): frame 0xc and length 422 agree; only the point/handle input registers remain (retail takes
 // the point in EAX and the handle in ECX). Earlier: point/index input registers, upward-sum scheduling and cap loading.
 // Native word flags, entry point/velocity workspaces, explicit lift arms, separate contact
 // admissions, contact-index name, state scope, library point copy and immutable receiver
@@ -3977,10 +3977,6 @@ extern real g_47f05c;
 // time) 104 at 422 bytes, kept; the upward sum k-first (retail's j*j then k*k then i) 104, kept with it; on that,
 // the handle-first order (handle, point, contact, knocked, both declarations and both calls) MATCHES fast and
 // plain: still HELD for #858, restored. Named cap local 104; clamp as an if 104.
-// Round 96: the held handle-first order still MATCHES (fast; callers 0xcaa60/0x9c610 unchanged at 324/13);
-// #858 still open, restored. Body-only forms: point copied into a local at entry 104 (same code); an entry
-// `remember = point && object_index != NONE` flag 134 (442 bytes); `if (!point) object_index = NONE;` 116;
-// one read of point through its address 105 (point on the stack; caller 0x9c610 13 -> 28).
 // @retail 0xe4a20
 void __stdcall function_e4a20(point3f const *point, long arg_159e6d, long object_index, bool knocked)
 {

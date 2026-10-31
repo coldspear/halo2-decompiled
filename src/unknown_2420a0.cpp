@@ -1166,6 +1166,12 @@ void c_game_engine_markers::v21(long object_index)
 // 119 (428 bytes); the engine-type arms swapped (`== 9` first) 48; a const player pointer 40 (same code). The
 // matched v30 (0x240ee0) keeps the players' data load unfolded with the team per arm; here that form folds it
 // into `add eax, [ecx+0x44]`, which leaves EDX free for the options pointer from entry.
+// Round 97 (lane 8, fast with 0x2411b0/0x240ee0): the team at each call re-measured 119 (430 bytes: the
+// player pointer is then built before the flag test and the flag test takes the memory operand, as
+// retail, but the data load folds and the options pointer stays in EDX from entry); the player getter
+// at each call, no player local, 100; the player pointer from a re-read `unit->player_index` with the
+// team at each call 119 (CSE'd back); the team at each call with the unit fetched again for the event
+// block's player index 117 (446 bytes; options still in EDX), with v30's per-arm team and a const player 117.
 // @retail 0x240ff0
 void c_game_engine_markers::v23(long object_index, long unit_index)
 {
