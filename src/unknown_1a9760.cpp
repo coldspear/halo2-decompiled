@@ -9,13 +9,13 @@ bool function_1f5110(long arg_0, point2f const *arg_1, real arg_2,
     real arg_3, bool *arg_4, s_path_trace_result *arg_5);
 
 #pragma inline_depth(0)
-// score 104 (was 104): the frame 0x3c still agrees; the half and offset XMM allocation
-// and the x87/SSE projection scheduling are unchanged, and this round's trials in
-// this file found no lower form of them
-// score 104 (was 104): the frame 0x3c agrees; the half and offset XMM allocation and
-// the x87/SSE projection scheduling remain, and this round's trials in this file
-// found no lower form of them
 // score 104 (was 104): frame 0x3c agrees; half/offset XMM allocation and x87/SSE projection scheduling remain.
+// Earlier (104, was 104): the frame 0x3c still agrees; the half and offset XMM allocation
+// and the x87/SSE projection scheduling are unchanged, and that round's trials in
+// this file found no lower form of them
+// Earlier (104): the frame 0x3c agrees; the half and offset XMM allocation and
+// the x87/SSE projection scheduling remain, and that round's trials in this file
+// found no lower form of them
 // Earlier: frame 0x3c agrees; half/offset XMM allocation and x87/SSE projection scheduling differ;
 // tried position base 105; origin base 105; displacement base 105; geometry bases 105; unsigned component 104;
 // degenerate normal first 104; squared magnitude value 104; rejected direction loop 104.
@@ -44,6 +44,16 @@ bool function_1f5110(long arg_0, point2f const *arg_1, real arg_2,
 // both): 383 (1119 bytes); and with the header normalize3d for the first normalization 424 (1152), with
 // dot3f for the final test 424, with `-x` for `0.0f - x` 424; normalize3d with the pragma kept (then
 // called, not inlined) 273 (927 bytes).
+// Round 46 (lane 9): local_6 and the final test's dot are each one term rotated against retail ((y, x, z)
+// and (k, i, j) where retail sums (z, y, x) and (j, k, i)), the function-wide reassociation order; retail also
+// keeps one SSE zero (xmm7) for `0 - j`, both compares and the k store, loads -1.0 at each use, and reads
+// unknown290 only after the unknown424 copy. Tried: local_5 computed directly with `0 - j` written twice 104
+// (identical); a named negated component used twice with local_5 direct 177 (989 bytes; one xorps zero as
+// retail), with the terms k, j, i 177; the reciprocal written at each use 105; fabs on the float 219 (1020
+// bytes); the unknown456 store after the offset loop 108; a short component counter 247. Under
+// inline_depth(0) even a __forceinline helper is called, so no header helper can take part.
+// Diagnostic lead (not kept): `/Ob1` in place of the pragma pair still inlines 0x25d700 and 0x1e4290, 383
+// (1119 bytes), with normalize3d and dot3f 424 (1152).
 // @retail 0x1a9760
 void __stdcall function_1a9760(long arg_0, s_slot *arg_1)
 {

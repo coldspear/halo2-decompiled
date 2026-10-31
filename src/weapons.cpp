@@ -1982,6 +1982,12 @@ bool __stdcall function_100130(long weapon_index, bool immediate)
 // no longer unrolled, 348 bytes); count's address taken 124; count read through its address in the
 // loop 124 (same code); taken starting at the count with an if clamp 182; long first-magazine
 // rounds 123 (586 bytes). Original body restored.
+// Round 94 (LTCG test link that gives the full image's listing): no definition-index local with taken in the
+// success block 183 plain (574 bytes; the reduced image's 165 shape needs 0x159dd0's callee left unresolved);
+// with other-weapon pointer and continue, `count > taken`, result first or MIN-macro take: same shape; short slot
+// index leaves the loop rolled (352 bytes). Original body with other-weapon pointer or unit pointer declared
+// first: same code; definition index read in the success block 580 bytes. Retail's pool-in-EBP slots appear
+// only when the pool global is treated as escaped, which changes 732 other functions.
 // @retail 0x100b80
 bool function_100b80(long magazine_index, long weapon_index, long count)
 {
@@ -2868,6 +2874,13 @@ PRIVATE __forceinline real weapon_activity_value(long weapon_index, s_weapon *we
 // form retail tests) 409, a long selector 417, helper-owned definition lookup 409, both activity
 // cases last 409. Compile-only: fallthrough first or last, or the flag case in an `if` before the
 // switch, all keep the `jg` root.
+// Round 94: progress tests ordered 0x0f0006e5/0x0e0006e6/0x0d0006e7 with no trailing else plus
+// `*active = result > 0.0f;` 420 (result in XMM2, tail as retail); plus guard/stale-time ternaries 422;
+// plus the fallthrough switch 429; plus barrel maximum and trigger scale read at each use in the activity
+// helper 407 (1642 bytes; activity body as retail except EBP holds the trigger count, not the weapon, and
+// XMM2 is re-zeroed); that with the fallthrough switch 405. Retail recomputes the definition only on the
+// 0x1d0007ba path. A 27-value LTCG test switch keeps the `jg` root with loop, fallthrough, goto and return
+// cases.
 // @retail 0xff5f0
 bool __stdcall function_ff5f0(long weapon_index, long name, real *value, bool *active)
 {
@@ -3185,6 +3198,11 @@ struct s_ammo_conversion_entry
 // Round 43: positive byte acquisition 202; ordinal conversion scan on it 215; direct destination,
 // both-element and definition-only observations 207/235/228; unsigned conversion quantity 204,
 // with conditional minimum 196, plus direct destination 205. Original body and field type restored.
+// Round 94: positive returned acquisition, found-flag conversion search and the type byte at each test,
+// together 198 (731 bytes; `other` in EBP and spilled, the conversion count in a register where retail
+// spills the count and keeps `other` in EBX); plus the entry pointer taken before the test 219; that with the
+// count read in the loop condition 211; with the unloaded term read through the other weapon 230; the
+// first form with the acquisition declared first 198.
 // Round 319: Capacity-failure continue with cached count, conversion-first arm and
 // twice-used offered quantity subsets 210/207/196/207/210/207/196/207. All
 // restored; frame 0x20 agrees but destination/tag and conversion homes remain.
@@ -3299,7 +3317,11 @@ PRIVATE __forceinline long unit_player_index_102fb0(long unit_index)
     return unit ? unit->player_index : NONE;
 }
 
-// score 606 plain per round 87 (was 565; fast 637 -> 640): the three behaviour fixes below are applied by the
+// score 604 (was 604): round 87 measured 606 plain (was 565; fast 637 -> 640); the three behaviour fixes
+// below are applied by the coordinator (round 87 review) and kept although the count rises. Frame 0x1c64 versus
+// 0x1c60; weapon/barrel and scalar homes remain.
+// frame 0x1c64 versus 0x1c60; weapon/barrel and scalar homes remain.
+// Earlier: the three behaviour fixes below are applied by the
 // coordinator (round 87 review) and kept although the count rises. Frame 0x1c64 versus 0x1c60; weapon/barrel and
 // scalar homes remain.
 // Plain single-store unit 637; later effect locals 659; long marker count 607;
@@ -3352,6 +3374,13 @@ PRIVATE __forceinline long unit_player_index_102fb0(long unit_index)
 // fixes). A plain (non-volatile) unit index set to NONE then overwritten gives retail's 0x1c60 frame and aligned
 // count 229 (219 with the scale order, 227 with all fixes) but 2503-2509 bytes, positional 645-649: the next lead.
 // The two parameter-address references were code-identical no-ops and are removed.
+// Round 94 (plain): plain unit index 651 (2503 bytes, frame 0x1c60, aligned 348 -> 276); with the definition
+// declared after the barrel pointers 651; second barrel-side argument as `barrel_index ? 2 : 1` 605 (retail
+// recomputes the test there); barrel pointer declared before the definition 610 (retail's prologue order; the
+// definition keeps EDI where retail spills it); that with the plain unit index 655.
+// Round 239: complementary shot/failure/both results 570/570/571 fast; ordinary
+// holder counterparts 660 each; both byte results 571, ordinary holder 660. Fast
+// control 640; four promising forms all 604 plain. Original body restored.
 // @retail 0x102fb0
 void __stdcall function_102fb0(long weapon_index, short barrel_index)
 {

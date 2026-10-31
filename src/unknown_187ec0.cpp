@@ -253,6 +253,12 @@ struct s_seat_animations
 // Round 44: native entry-index equality, reversed receiver, compared-entry result, count-first
 // unguarded result, per-arm entry, true entry cursor and promoted traversal with/without inner
 // result guard 55/55/61/71/78/64/80/66. Native type restored; result/animation allocation remains.
+// Round 93 (lane 8): without the inner guard, the entry as `&(first ? first_entries : second_entries)[i]`
+// 63 at 172 bytes: the body is retail's instruction for instruction but for the register permutation,
+// and LTCG then passes animation in EAX and type in ECX (ret 4; matched 0x188130 12). Without the guard
+// and the per-arm entry pointer 78 (0x188130 17); that with `!result &&` in the while test instead of
+// the break 78 (17); with the count read inside the outer loop 84 (0x188130 1); with `type == 0` at each
+// use 88 (0x188130 18). Retail's EBP for animation is what keeps it a stack argument.
 // @retail 0x187fe0
 s_seat_animation_entry *function_187fe0(long type, s_seat_animation const *animation, c_type_47f957 element_index)
 {
@@ -387,6 +393,8 @@ s_seat_animation_entry *function_188130(long tag_index, long index, long type, s
 // Round 15: walking index as the material class built through the parameter's address 21 (word load only);
 // the class walk local built from the parameter 33; result declared first 22; tag field read at each use 22;
 // parent step before the lookup 35; the entry index as a class local at the top 22.
+// Round 108: both material parameters as the material class, read directly (no parameter reference), 14;
+// 0x1883e0 stays 118 (its own parameters keep short/long). Not kept (unmatched index wrappers).
 // @retail 0x1882d0
 s_seat_animation_entry *function_1882d0(long type, short element_index, long index, short entry_element_index)
 {
@@ -509,6 +517,7 @@ bool function_172750(long mode, point3f const *point, real radius);
 // Round 104: second value index as `index == 13 ? 4 : 3` 161; NULL entries set in an else of the tag test 162;
 // element looked up after the first index 165; `index == 13 || index == 14` 121; unbraced fallback lookups 118.
 // The material-class parameters stay BLOCKED-BY the declarations in src/impacts.cpp and src/projectiles.cpp.
+// Round 108: 0x1882d0's two material parameters as the material class (no parameter reference) 118 here.
 // @retail 0x1883e0
 void function_1883e0(long tag_index, bool ignore_distance, point3f const *point, short element_index, long entry_element_index, long index, long variant,
 	long *first_value04, long *second_value04, long *first_value, long *second_value, long *first_value0c, long *second_value0c)

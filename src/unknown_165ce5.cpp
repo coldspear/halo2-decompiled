@@ -1858,125 +1858,22 @@ static __forceinline void first_person_orientations_from_model_16760c(s_16760c_r
 }
 
 
-static __forceinline void first_person_channel_sample_sway_16760c(c_animation_channel *channel, real const *value,
-	real positive_frame, real negative_frame, real weight, s_first_person_weapon const *weapon, byte *orientations)
-{
-	if (*value > 0.0f)
-	{
-		channel->set_frame_position(positive_frame);
-		channel->sample(*value * weight, NULL, weapon->orientation_count, (real_quaternion_transform *)orientations);
+/* samples the channel at the positive or the negative frame by a sway value
+   (an lvalue, read again after the frame is set), scaled by the weight */
+#define FIRST_PERSON_CHANNEL_SAMPLE_SWAY(channel, value, positive_frame, negative_frame, weight, node_count, orientations) \
+	if ((value) > 0.0f) \
+	{ \
+		(channel).set_frame_position(positive_frame); \
+		(channel).sample((value) * (weight), NULL, (node_count), (real_quaternion_transform *)(orientations)); \
+	} \
+	else if (0.0f > (value)) \
+	{ \
+		(channel).set_frame_position(negative_frame); \
+		(channel).sample(0.0f - (value) * (weight), NULL, (node_count), (real_quaternion_transform *)(orientations)); \
 	}
-	else if (0.0f > *value)
-	{
-		channel->set_frame_position(negative_frame);
-		channel->sample(0.0f - *value * weight, NULL, weapon->orientation_count, (real_quaternion_transform *)orientations);
-	}
-}
 
 /* samples a weapon's animation, its overlays and its sway into the user's
    orientations, then builds the weapon's node matrices */
-// score 6 (was 15) plain: the rounds test is spelled with the negative case first, the branch
-// polarity retail's code shows, so the frame block is retail's layout; the three float products
-// still load their two operands in the other order.
-// score 160 reduced (was 148), coordinator review: the magazine definition pointer read once before the call is
-// not kept (a one-use field pointer, no match; 164 without it), and the sway helper reads the node count through
-// the weapon after set_frame_position instead of taking the count by pointer (160; 164 with the count pointer).
-// score 15 (was 60) plain, 148 (was 157) reduced: the adjusted flag is set in the adjustment branch
-// and cleared in the other one, so the tail is retail's instruction for instruction; the sway
-// products still load the value first and the rounds test still lays its blocks out the other way.
-// score 157 (was 169): the magazine definition pointer is read before the call and the excess over the
-// minimum load is kept in its own local, so the rounds update matches retail's shape; the weapon and
-// the definition still swap their stack homes and the sway products still multiply the value first.
-// score 169 (was 358): the sway helper takes the node count by pointer, so the count is re-read from
-// the weapon after each set_frame_position call as retail does; the two stack homes for the weapon
-// and model are still swapped and the ammo block still keeps rounds in a register.
-// score 358 (was 411): the blend flag now lives in a stack slot and is copied into the blend call's
-// flag register, so the early blend byte agrees; the user and weapon pointers still swap ESI and EDI.
-// score 410 (was 410): Frame 0x78 and initial copies agree; early blend byte and user/weapon/sway homes differ.
-// Earlier frame 0x58 versus 0x78; root/channel overlap and later sway homes remained.
-// Earlier root/channel homes overlapped in frame 0x58 vs 0x78; kept the nonnegative ammo arm and common index-derived adjustment bit.
-// Frame 0x78 and root/channel homes agree; early blend byte and later receiver/sway homes differ.
-// Earlier frame 0x58 overlapped root/channel homes; kept the nonnegative ammo arm and common index-derived adjustment bit.
-// Frame 0x78 and initial copies/probe agree; early eligibility byte and later sway homes remain; new trial counts are fast, control 411/2166.
-// Earlier: frame 0x58 versus 0x78; root/channel overlap and later sway homes remain.
-// frame 0x58 versus 0x78; root/channel overlap and later sway homes remain.
-// root/channel homes still overlap in frame 0x58 vs 0x78; kept the nonnegative ammo arm and common index-derived adjustment bit.
-// blend time true arm 506; ammo nonnegative path first 463; adjustment flag from index 460; arms model read
-// first 469; channel before lookups 531; channel before state view 475; ammo adjustment flag 455; ammo arms
-// read first 478; ammo channel before lookups 526; ammo channel before state view 470
-// Frame 0x58 versus 0x78; root/channel overlap and copy/sway allocation remain. Model count snapshot 556; vector adjustment helper 471; negative sway first 465; ammo-count boundary 459; early magazine maximum 462 (plain).
-// Frame 0x58 versus 0x78 and copy/sway homes remain. Zero-initialized root 602 (frame 0x78); direct blend time 455; conditional weight 497; adjustment index 464; native orientation copy 455 (plain).
-// root/channel overlap leaves frame 0x58 versus 0x78; channel after initial
-// sample 525; root before state bit 455; transform memcpy 455; node count before root 455;
-// conditional ammo cap 455 (plain).
-// Root after initial animated fill 597; orientation count retained 560; final
-// component subtraction loop 488; model component memcpy 456; promoted map result 474
-// (fast; unchanged preview 456/2166 versus full baseline 455/2154).
-// Indexed orientation field outputs 412f/411p; model fields 523f, both receivers 514f;
-// sway weapon input 439f, external scalar reference 456f, both 439f; readonly definition
-// 456f; root-fill inline/noinline 456f; indexed outputs plus weapon input 395f/437p rejected.
-// f: reduced control 456/2166; p: ordinary baseline 455/2154.
-// Complete identity value 550f (frame 0x78); native model-node base 555f; both 601f;
-// translation/rotation/scale 422f; scale/rotation/translation 438f; translation/scale/rotation
-// 436f; identity plus translation first 549f; node base plus translation first 555f.
-// Reduced control 412/2166; ordinary baseline 411/2154. All restored.
-// Fill/blend-update/blend-query/ammo-query inline or noinline declarations all 412 fast,
-// equal to the reduced control; all declarations restored. Frame remains 0x58.
-// Blend result initialized before sample/channel/identity/entry/definition/first model/
-// validity/second model: 359/548/450/527/541/435/367/405 fast (control 412/2166);
-// conditional-flag forms rejected without a match. Direct logical/compound eligibility
-// before sample or channel: 423/446 each; frame 0x58 and root/channel overlap remain.
-// Sway count/weight/output first 410/410/413; value-first products 411; products with
-// count/weight/output first 410/410/413; frame inputs first 415 (fast control 411/2166, full
-// 410/2154).
-// Complementary partial-blend predicate at bool/byte/word/long width 446/446/446/447;
-// raw animation flag at byte/word/dword/long width 443/440/442/442
-// against fast control 411; all initial sampling and game-call tuples retained.
-// bool-logical-query-eligibility 422; bool-compound-query-eligibility 430.
-// byte-logical-query-eligibility 422; byte-compound-query-eligibility 430.
-// word-logical-query-eligibility 448; word-compound-query-eligibility 448.
-// long-logical-query-eligibility 451; long-compound-query-eligibility 446.
-// Round 373: native quaternion-transform sway output, forced last/first 411/410;
-// ordinary inline last/first 769/768. Native orientation output gives the same
-// four scores. Reduced control 411/2166; full baseline 410/2154. All restored.
-// Native packed animation flags, logical result at bool/byte/word/long width 411/411/443/443; conditional result 446/446/442/443 (fast control 411/2166; full 410/2154). Frame 0x78 agrees; early blend byte and later receiver/sway homes remain.
-// Round 158: Early aiming default at two boundaries with bool/byte/short/long storage, then a complete
-// query-produced result at four widths and early bool/byte defaults (fast control 411; plain baseline 410).
-// Scores [393, 393, 426, 428, 411, 411, 434, 435, 441, 441, 471, 470, 441, 441]. Original executable body
-// restored.
-// Signed-char blend consumer 411; uninitialized blend result at entry 411; full user/weapon/both
-// receivers at each use 599/603/796; with signed-char consumer 599/603/796 (fast control 411/2166).
-// All eight forms restored; ordinary baseline remains 410/2154.
-// Blend-producer scope, paired Boolean role names, duration/query names and their combinations
-// 411 each; reversed declarations with all scope/names 411 (fast control 411; full 410).
-// Round 243: Owner-mediated state, handle at every use, both, buffer root at every use,
-// state/buffer, handle/buffer, all three and state with immutable buffer snapshot:
-// 497/529/494/743/742/775/767/497 (fast control 411/2166). Complete original body restored.
-// Round 161: Coordinated definition/header inline query/setter/sampler/query-setter/query-
-// sampler/setter-sampler/all-three/aiming sampler: 411 each (unchanged reduced control 411; full
-// 410). Every specification restored.
-// Round 258: Complete final offset aggregate/const/assignment/library snapshots, each with
-// scalar/shared adjustment subtraction, 571/575/571/575/571/575/571/575 against reduced 411.
-// Original field observations, helpers and body restored; full score remains 410.
-// Round 386: real/double ammunition-frame storage 439/462; named last-frame
-// conditional with long/real/double result 411/417/438; complete result arms
-// 411/423/442 (fast control 411, full 410). Original integer frame and body restored.
-// Round 392: existing sway producer weight-before-frames/count-weight-before-frames
-// 411/411; count-output-before-value 413; weight-before-value 410; value-first 411;
-// value-weight-before-channel 411; count-first 410; frames-before-value 415
-// (fast control 411; full 410). Original helper contract and all calls restored.
-// Round 249: direct aiming-completion result bool/byte/short/long 441/441/471/470;
-// complete complementary result 441/441/470/469. Original default and success
-// assignment, every sample, native frame and all helper inputs restored.
-// Round 280: Delayed count pointer/reference with original/value-first products 391 each fast, pointer
-// plain 436; with early conditional blend defaults 169 each fast (exact-only, rejected). Fast control 411,
-// full baseline 410. Original helper and result producers restored.
-// Round 212: native user animated-test/store and adjusted-store bits, seven dword subsets
-// 415/411/415/414/426/414/426; complete byte view 410 (fast control 411). One-point byte gain rejected;
-// original user record and all consumers restored; early blend and receiver homes remain.
-// Round 428: complete eligibility/duration classifier arms, full bool/byte/short/long
-// 422/422/443/443; complementary bool/byte/short/long 446/446/446/447
-// (fast control 411; full 410). Early blend byte and user/weapon/sway homes remain; restored.
 // @retail 0x16760c
 void __stdcall function_16760c(long user_index, long field_x11c898)
 {
@@ -2056,16 +1953,12 @@ void __stdcall function_16760c(long user_index, long field_x11c898)
 					{
 						if (channel.function_1c6440()->frame_count >= 9)
 						{
-							first_person_channel_sample_sway_16760c(&channel, (real const *)&user->unknown2030[0x0], 0.0f, 1.0f, weight,
-								weapon, orientations);
-							first_person_channel_sample_sway_16760c(&channel, (real const *)&user->unknown2030[0x4], 3.0f, 2.0f, weight,
-								weapon, orientations);
+							FIRST_PERSON_CHANNEL_SAMPLE_SWAY(channel, *(real const *)&user->unknown2030[0x0], 0.0f, 1.0f, weight, weapon->orientation_count, orientations);
+							FIRST_PERSON_CHANNEL_SAMPLE_SWAY(channel, *(real const *)&user->unknown2030[0x4], 3.0f, 2.0f, weight, weapon->orientation_count, orientations);
 							if (!aimed)
 							{
-								first_person_channel_sample_sway_16760c(&channel, (real const *)&user->unknown2030[0x10], 4.0f, 5.0f, weight,
-									weapon, orientations);
-								first_person_channel_sample_sway_16760c(&channel, (real const *)&user->unknown2030[0x14], 7.0f, 6.0f, weight,
-									weapon, orientations);
+								FIRST_PERSON_CHANNEL_SAMPLE_SWAY(channel, *(real const *)&user->unknown2030[0x10], 4.0f, 5.0f, weight, weapon->orientation_count, orientations);
+								FIRST_PERSON_CHANNEL_SAMPLE_SWAY(channel, *(real const *)&user->unknown2030[0x14], 7.0f, 6.0f, weight, weapon->orientation_count, orientations);
 							}
 							if (weapon->indices.unknownc > 0.0f)
 							{
@@ -2098,6 +1991,7 @@ void __stdcall function_16760c(long user_index, long field_x11c898)
 					{
 						real excess = (real)(loaded - 0x2c);
 						real fraction = excess * 0.2f;
+						s_16760c_magazine_definition *magazine = definition->magazines;
 						short maximum;
 						short total;
 
@@ -2106,7 +2000,7 @@ void __stdcall function_16760c(long user_index, long field_x11c898)
 							fraction = 1.0f;
 						}
 						total = (short)function_100b40(0, weapon_index, false);
-						maximum = definition->magazines->rounds_maximum;
+						maximum = magazine->rounds_maximum;
 						if (total > maximum)
 						{
 							total = maximum;

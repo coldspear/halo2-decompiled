@@ -22,6 +22,8 @@
 // thirteen bytes longer; retail keeps the primary shape in the stack slot at [esp+0x14]
 // and the secondary shape in EDI, ours keeps the inverse at [esp+0x14] and the
 // secondary shape at [esp+0x10].
+// Behaviour difference kept for score: `long tmp2 = scale * d.k` truncates the sixth input
+// product through an integer; retail (0x49f19) is a plain mulss. Coordinator decision.
 // Round 134: retail reads the wave's sine arguments from the global point: that form 701 (frame 0x60,
 // s1 sinks to its use), s1 before the first cross 701, s0's only 602; both shape pointers
 // NULL-initialized then set by an if/else (retail's entry, retail length 2622) 599, with s0's
@@ -140,6 +142,15 @@
 // Round 317: Existing shared scalar clamp for six parallel rows in mode-family masks 1-7,
 // then all with force-inline declaration, 702/702/702/581/702/702/702/702. Scaled
 // families grow frame to 0x64; original declarations, inputs and body restored.
+// Round 93: truncation removed 648; plus both shape pointers set at entry 620; plus the sine
+// arguments from the camera point 600; plus the first wave through vector3f_add_scaled 575
+// (2622 bytes, frame 0x60; not kept: the sines read the global while the waves use its local
+// copy). On that 575 form: first sine before the cross product 575; second wave through the
+// helper 642; second cross product right after the first 679; first sine first with the
+// helper 642; `w` declared before v3 or at the top 575/575; renamed locals 575 (identical:
+// names and declaration order do not move these slots). Left: slot order (shape0 0x18, v2
+// 0x28, v4 0x4c, a wave-shift home at 0x64 against retail's 0x14/0x40/0x64 and no home), the
+// x87 sine order (retail rounds both sines to float before the SSE scaling).
 // @retail 0x497a0
 void function_0497a0(
 	s_view_source *source,
@@ -469,6 +480,7 @@ PRIVATE __forceinline dword ribbon_pixel(color4f const *color)
 // flags on the stack); retail keeps the vertex cursor in EDI and ours leaves it in its argument
 // slot, and retail reaches the endpoint handling by a forward branch from the loop.
 // score 615 (was 615): the frame 0xac and the body length 2596 agree; retail stages
+// earlier: the frame 0xac and the body length 2596 agree; retail stages
 // the definition in EBX and the output vertices in EDI, ours stages the definition
 // in EDI, and retail places the endpoint handling after the loop where ours places
 // it before.
@@ -530,9 +542,32 @@ PRIVATE __forceinline dword ribbon_pixel(color4f const *color)
 // Round 433: Independent transition endpoints/shared camera displacement/both 615 each;
 // definition observed at every use alone/with either/with both 626 each, all plus source
 // observations 634. All restored; native phase receivers do not recover the early carriers.
+// Round 93 (kept, 579): the callback's buffer cast to a local vertex cursor, a pointer to the
+// second vertex, per-component position stores, the next state's colour staged in its own
+// array with the transition read once, the edge points built in each case from the point and
+// case 0's normal set in its arms give retail's layout (endpoint block after the loop, second
+// cursor at +0x28, definition in EBX). Left: frame 0x9c against 0xac (retail keeps a home for
+// the first edge point and a width temporary), EDI holds the point pool where retail keeps the
+// second cursor there and reloads the pool, the state-index clamp registers and the zero colour.
+// Tried: buffer cursor alone 664; second-vertex pointer alone 666, with component stores 617;
+// buffer + pointer + component stores 606, with u/v in vertex order 606, with flipped colour
+// chains 610, with per-case points 634, with case-0 normal fields 606/632, definition first
+// 606, cursor declared late 609, scale `1.0f` then if 605, transition local 629, staged colour
+// 640; then per-case points 595 (frame 0xa4); with the case-0 normal arms 579 (kept); on that,
+// scale if 593, object index local 596, flag bitfields 594, both 582, clamp if/else 579 (same
+// code) and zero-default 592, zero stores in order 579, renamed locals 579 (no slot change).
+// The buffer is untyped at the interface: 0x43740 queues this callback through 0x1e5e0 as
+// the fill function 0x35b00 passes to 0x4b220, typed `void (__stdcall *)(void *, long, void *)`
+// in unknown_01cf50.cpp.
 // Round 443: Existing alpha/tint/pixel ordinary-inline producer boundaries, seven subsets and
 // all with definition before source, 615 each. All original declarations, pixel qualifier and
 // body restored; output/definition carriers, endpoint layout and color/vector homes remain.
+// Lane 7 round 93's 579 form was not kept (coordinator review, round 94): it typed the first
+// parameter `void *buffer` with a typed cursor local, a signature form with no call evidence
+// (0x42cf0 is only passed as a (long) callback). With `s_ribbon_vertex *vertices` restored, the
+// rest of that round's body (transition read once, next colour in its own array then blended,
+// edge points set per case, field-wise stores through the second-vertex pointer) scored 622
+// against 615 for this body (both --fast), so the body is back to its earlier form.
 // @retail 0x42cf0
 bool __stdcall function_42cf0(s_ribbon_vertex *vertices, long unknown, s_ribbon_input *input)
 {

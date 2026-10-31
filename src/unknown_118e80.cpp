@@ -1017,6 +1017,9 @@ void __stdcall function_b93b0(long arg_0, long arg_1, short arg_2);
 // signed full-width third bitfield, alone/with those source words, 156/156/156/156;
 // all three signed full-width short bitfields 156. Original source record and body restored;
 // owner-query argument setup now agrees; query/sweep, selected homes and merged word reads remain.
+// Round 240: speed-failure exit/complementary response/shared double scale and their pairs/all
+// 316/227/307/319/308/305/307; all with native query count 307. Original body restored;
+// frame 0x124 agrees, quotient/query and selected workspace homes remain.
 // @retail 0x119c10
 long function_119c10(long arg_0)
 {

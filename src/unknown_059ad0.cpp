@@ -4458,6 +4458,10 @@ bool session_peer_map_set_connected(s_session_peer_map *map, const s_session_mem
 // Round 301: Complementary acceptance/preference/equality result storage, seven nonempty
 // combinations 429/305/429/305/429/305/429; all three with complementary identity 429.
 // Original truth carriers and complete body restored; Boolean homes and acknowledgement placement remain.
+// Round 209: Positive policy interval before/inside state-nine admission 375/369; with immutable
+// repeated identity 375/369; with one completion-result exit 365/358; with both 365/358.
+// Completion exits recover length 1264 but regress; opening policy graph, acknowledgement paths,
+// result lifetime and held timeout interface restored.
 // @retail 0x5e7f0
 bool __stdcall function_05e7f0(c_class_58d20 *session, const s_type_99af70 *address, const void *message,
  long *reason, bool *has_identity, s_session_member_identity *identity)

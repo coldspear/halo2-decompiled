@@ -3455,7 +3455,7 @@ void function_c6990(long unit_index)
 
 /* the entry animation (of five) whose end point on the vehicle's seat is
    nearest the unit's center; the seat marker's position and that point */
-// score 49 (was 49): Frame and spatial arithmetic agree; constant, seat flag and call scheduling differ.
+// score 31 (was 49): Frame and spatial arithmetic agree; constant, seat flag and call scheduling differ.
 // Boolean bit conversion 49; complete bool/byte/short seat-bit polarity 103/103/119;
 // entry result 44, distance 49, both 45; shared point difference 62.
 // Pointer table walk 50, plus seat polarity 103, shared difference 63, both entry constants 46.
@@ -3469,13 +3469,21 @@ void function_c6990(long unit_index)
 // Round 228: winning table ordinal long/short 91/101; entry long/short 90/100;
 // missing-result-first comparison with the same four lifetimes 109/117/108/116.
 // Original result value, complete spatial arithmetic and body restored.
+// Round 50: the seat looked up before the unit 31 (kept: the seat bit is then stored before
+// the marker name is read and everything from the call on matches); seat, seat bit, unit 32;
+// seat, unit, distance, seat bit 31; unit, seat, distance, seat bit 49; a named marker-name
+// field at seat +8 49, with the seat first 31; result and distance first, then seat, unit, bit
+// 29 (only `or ebp` and the distance store move; below the margin); the bit read through the
+// whole seat expression with the seat pointer after it 162 (453 bytes). Only the prologue differs
+// now: retail looks the unit up first (and spills it) and the vehicle second, yet still reads
+// the marker name after the bit store.
 // @retail 0xc7160
 long __stdcall function_c7160(long unit_index, short seat_index, long a, long vehicle_index, long b)
 {
 	point3f *marker_position = (point3f *)a;
 	point3f *position = (point3f *)b;
-	s_unit *unit = UNIT_GET(unit_index);
 	s_unit_seat_definition *seat = &UNIT_SEATS(UNIT_DEFINITION_GET(UNIT_GET(vehicle_index)))[seat_index];
+	s_unit *unit = UNIT_GET(unit_index);
 	bool blocks = !((*(dword *)&seat->flags >> 5) & 1);
 	real best_distance = 3.4028235e38f;
 	long result = NONE;
@@ -4074,22 +4082,10 @@ bool function_c5eb0(long unit_index)
 }
 
 /* turns a vector into the frame of a player's seat (seats without bit 4):
-   built from the vehicle's up and the world's axes */
-// score 28 (was 28): frame 0x4c and vector stack argument agree; input j/k load order
-// and the forward-contribution carriers remain. Scalar j/k/i declarations 28; uniform
-// forward products 28; both shared crosses 91; crosses plus uniform products 91;
-// native input vector 63, with uniform products 63, with crosses 101, all three 101;
-// existing scale-aware transform alone/with shared crosses 173/173. Original body retained.
-// Existing plain vector transform helper 33; left terms first 28; k/j/i or i/k/j declarations 32;
-// i/j/k declared then assigned k, j, i 32 (j loads first but takes XMM2) or j, k, i 28.
-// Round 222: complete row/products/outputs/both carrier ownership 39/40/32/40; the same four
-// with input scale names 39/40/32/40. Original body restored; input load order and forward-
-// product carriers remain.
-// Round 43: plain component traversal with scalar/reversed-scalar/native-vector inputs
-// 32/32/65; uniform partial rows with scalar/native inputs 28/65; successive rows 28/65;
-// existing in-place axis transform 169. Actual local axes scaled through the existing helper
-// up-left-forward/forward-left-up 36/51; with two existing vector adds 36/51. All restored;
-// input j/k scheduling and final forward-product carriers remain.
+   built from the vehicle's up and the world's axes. The forward axis's j and
+   k are written through axis: written as matrix fields, the transform at the
+   end loads the input's k before j and multiplies its forward terms the other
+   way round */
 // @retail 0xcb810
 bool function_cb810(long unit_index, vector3f *vector)
 {
@@ -4109,19 +4105,20 @@ bool function_cb810(long unit_index, vector3f *vector)
 				vector3f forward;
 				vector3f up;
 				transform4x3f matrix;
+				vector3f *axis = &matrix.forward;
 
 				function_b9fc0(parent_index, &forward, &up);
 				matrix.forward.i = g_4687b8->k * up.j - g_4687b8->j * up.k;
-				matrix.forward.j = g_4687b8->i * up.k - g_4687b8->k * up.i;
-				matrix.forward.k = g_4687b8->j * up.i - g_4687b8->i * up.j;
-				if (function_30bf0(&matrix.forward) == 0.0f)
+				axis->j = g_4687b8->i * up.k - g_4687b8->k * up.i;
+				axis->k = g_4687b8->j * up.i - g_4687b8->i * up.j;
+				if (function_30bf0(axis) == 0.0f)
 				{
 					matrix.forward.i = g_4687bc->k * up.j - g_4687bc->j * up.k;
-					matrix.forward.j = g_4687bc->i * up.k - g_4687bc->k * up.i;
-					matrix.forward.k = g_4687bc->j * up.i - g_4687bc->i * up.j;
-					function_30bf0(&matrix.forward);
+					axis->j = g_4687bc->i * up.k - g_4687bc->k * up.i;
+					axis->k = g_4687bc->j * up.i - g_4687bc->i * up.j;
+					function_30bf0(axis);
 				}
-				matrix4x3_from_forward_and_up(&matrix, &matrix.forward, &up);
+				matrix4x3_from_forward_and_up(&matrix, axis, &up);
 				real i = vector->i;
 				real j = vector->j;
 				real k = vector->k;

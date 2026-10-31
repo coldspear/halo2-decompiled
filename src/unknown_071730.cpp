@@ -211,8 +211,8 @@ bool __stdcall function_71730(c_session_state_matchmaking *arg_0)
 			*(long *)(local_9 + 0x184) == network_session_get_maximum_players(local_2))
 			goto local_28;
 		if (*(long *)(local_11 + 8) == 0 &&
-			(local_10 > g_network_configuration.value1e4 * 1000 ||
-			 *(long *)(local_11 + 0x10) > g_network_configuration.value1e0))
+			(local_10 > g_network_configuration.value1c0[9] * 1000 ||
+			 *(long *)(local_11 + 0x10) > g_network_configuration.value1c0[8]))
 			*(long *)(local_11 + 8) = 2;
 		if (!network_session_players_match(local_1, local_2) || local_16.field_360 ||
 			local_2->player_count != *(long *)(local_9 + 0x184))

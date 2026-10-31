@@ -3007,6 +3007,11 @@ void __stdcall function_17a380(s_effect_datum *effect)
 // parameters swapped 93 (cached, identical)/120 (per call); per call with the index read through its
 // address 127; definition before the next index 114; system looked up first 119; shared colour helper
 // (system, A, B) 92.
+// Round 46 (lane 9), on the spawn-cursor form (89 here): colour B read first 90; next index read after the
+// definition call 96, with colour B first 96; both colours declared inside the type-query block 90 (aligned 27:
+// the loop is then retail's except the cached mode push; left are the system in EDI, colour A in EBX, colour B
+// spilled and the type object in ESI, retail ESI/spilled/EDI/EBX), that with the mode read per call 109 (register
+// effect index, 0x176f60 25), with the mode declared after the colour call 117, with a signed mode 90.
 // @retail 0x177040
 long __stdcall function_177040(long particle_system_index, long effect_index)
 {

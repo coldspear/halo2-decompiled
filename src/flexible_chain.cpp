@@ -307,6 +307,9 @@ void __stdcall function_1160c0(real dt)
 // before axis 179; inverse time step before the loop 189; segment pointer before node 276; vertical
 // before the loop 301; existing normalize3d for the axis 179 (identical code, not kept: round 62
 // found it costs 0x73360 in the full build).
+// Round 208: Prediction rows xzy/yxz/yzx/zxy/zyx: 217/217/187/187/218; reverse prediction with
+// velocity rows jik/jki/kji: 218/217/217. Original row order restored; two forms keep 0xa4 but
+// regress, the others enlarge the frame. Segment/previous/axis homes and rotation schedule remain.
 // @retail 0x1161f0
 void __stdcall function_1161f0(s_chain_record *record, s_chain_definition *definition, real dt)
 {

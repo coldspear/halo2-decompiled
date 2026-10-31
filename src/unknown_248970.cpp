@@ -219,6 +219,8 @@ public:
 // Round 319: Existing salt-first link on the byte-offset graph, live/early/late count,
 // distinct or shared allocation/link receiver 285/286/286/285/286/286; separate
 // allocation result with live/early count 282/283. All restored; frame and x87 homes remain.
+// Round 321: Whole-scan maximum on the retained child byte-offset graph; short viewer/closed coordinate phase/child-count snapshot subsets: 251/250/251/250/241/246/241/246.
+// Round 321: Frames stay 0x0c or 0x10 versus 0x14; original influence publication, live count, distance tree and body restored.
 // @retail 0x248970
 void function_248970(s_particle_location_datum *arg_0, bool arg_5, real arg_1, s_particle_system_datum *arg_2,
 	real *arg_3, transform4x3f const *arg_4)
