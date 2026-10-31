@@ -658,7 +658,7 @@ PRIVATE __forceinline void show_friend_detail(c_text_widget_45a5e0 *widget, word
     widget->function_22f52e()->set_text(text);
 }
 
-// score 557 (was 573): retail biases EBP by 0x70 (lea ebp,[esp-0x70]) and keeps the friend flags in
+// score 557 (was 557): retail biases EBP by 0x70 (lea ebp,[esp-0x70]) and keeps the friend flags in
 // ESI and the timestamp in EDI; ours uses a plain frame, spills the flags to a slot and packs the six
 // small locals differently.
 // Frame 0x85c agrees; EBP bias 0x70, flags/time/state homes and status-helper transport remain.
@@ -736,6 +736,9 @@ PRIVATE __forceinline void show_friend_detail(c_text_widget_45a5e0 *widget, word
 // Round 441: Signed-short dynamic search/competitor/list subsets 565/569/568/566/557/562/561;
 // all dynamic plus fixed-team short 556 (two extra edits gain one against selected 557).
 // Search/list short kept at 557 plain, 1964/2041 bytes; frame 0x864, unbiased EBP and flags/time homes remain.
+// Round 447: Raw zero/0x80 saved bit in dword/word/byte/long at the original extraction point, then at the API result
+// 613/581/618/613/648/645/648/648. Current frame 0x864 versus 0x85c; EBP bias and flag/time homes remain.
+// Original executable source and all trial helper/interface changes restored.
 // @retail 0x2b65b8
 void c_y_menu_player_selected_screen::update_friend_details(XONLINE_FRIEND const *friend_, s_friend_session_2b642e *session)
 {

@@ -1413,6 +1413,9 @@ int __cdecl matchmaking_compare_value(void const *a, void const *b)
 // Round 303: branch-owned first/second/both working collection counts 153/153/158;
 // both with definite selected result 158, indexed tails 159, shared query 164,
 // indexed tails/shared query 162, all three 162. Original counts and complete body restored.
+// Round 447: Native query output-pointer contracts, seven parameter subsets; all with shared mode-one output storage
+// 116/116/116/116/116/116/116/123. Extra query frame dword, count homes and scalar tail fills remain.
+// Original executable source and all trial helper/interface changes restored.
 // @retail 0x2514fd
 void c_matchmaking_list::v3()
 {
