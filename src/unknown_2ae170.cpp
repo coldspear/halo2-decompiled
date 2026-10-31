@@ -1240,6 +1240,10 @@ __forceinline void c_sound_effects::add_send(long mixbin, long mode, real gain, 
 // Lane 17 round 5: quad as four explicit calls 139 (405 bytes); center pair as a 2..3 loop 138; named
 // attenuation on the loops 137; right endpoints as left + 1 148 (374 bytes); remaining before the flag 137.
 // The decibel-struct interface above is blocked only by the case-0 statement.
+// Lane 14 r22: the switch with explicit pairs and long endpoints 233 (276 B; retail's setne/sbb/lea
+// endpoints exactly, but a dec chain, the gain folded to `push 0` and a constant attenuation); with an
+// empty case 0 233 (still a dec chain); with the quad arm as a loop 231; with byte front endpoints 223;
+// the capacity bools renamed to flip their name order 137.
 // @retail 0x2afb80
 void c_sound_effects::add_source_mixbins(s_sound_mixbin_source *source, bool rear, long mode, s_mixbin_settings *mixbins)
 {
