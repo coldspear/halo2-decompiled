@@ -1158,6 +1158,9 @@ static inline bool session_member_get_qos(s_network_observer *observer, c_class_
 // getter 109, with the host and the counters before it 112 (session on the stack); qos at
 // function scope 67.
 // Round 46: Predicate-produced QoS result bool/byte/short/long, native and library copies: all eight 188 (230 bytes, outlined member helper). On that graph, forced observer/member/both/all helper boundaries 188/67/67/67; original helpers and body restored.
+// Round 13 (fast): the clamp as one conditional expression reading the field 67, as two ifs 67, the count stored
+// then incremented 67 (same code each); the observer selected after the memset 65 (0x658c0 140 and 0x65770 19 lose
+// their match); the host read after the counter set-up, before the observer 66.
 // @retail 0x64480
 void network_session_get_member_latency(s_session_member_latency *latency, c_class_58d20 *session)
 {
