@@ -418,6 +418,10 @@ PRIVATE inline __int64 bink_read_tsc(void)
 // Together aligned 109 -> 74 but 322 at 1061 bytes: frame 0x44 (retail packs start with the first clock temporary
 // and the second clock temporary with the memory status, ours the other way), two zero stores to the status slot
 // at entry unexplained, D3DDevice_IsBusy out of line in every unrotated loop form, the size constant 10 in ebp.
+// Round 109 (lane 6, fast; the body re-checked against retail field by field, no value difference): the size as
+// `(flags & 0x100) ? ...` with the movie flags still from `large` 275; both through the mask, no `large` 269; the
+// retry counter declared after the block pointer 260, before it 260; `!(seconds < 0.1f)` 244 (same code). The x87
+// `fcomp qword`/fnstsw compare and the 1.0f stores stay non-SSE while the file has no /arch:SSE.
 // @retail 0x156090
 void function_156090(char const *name, dword flags)
 {

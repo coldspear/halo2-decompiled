@@ -1039,6 +1039,7 @@ bool function_68670(byte *source, long size, void *block);
 // Round 222: connection-ready bool/byte/short/long on original entry, each 97; each with named
 // occupied span 135. Original body restored; reader visibility, cursor reloads and count updates
 // remain.
+// Earlier note (score 97): retail behaves as if the read call could write any memory: it reloads the
 // Earlier: retail behaves as if the read call could write any memory: it reloads the
 // buffer start after each read, updates the used count in memory (`add [ebx+0xc], -8`) and loads
 // the header size only after the start/used stores; ours keeps the start in ESI across the first
@@ -1067,6 +1068,13 @@ bool function_68670(byte *source, long size, void *block);
 // On the 72 form: short size local 72 (identical); size declared at function scope 72 (identical);
 // header and payload declared in the loop 118; without the view address line 168; message size
 // assigned before its offset 73.
+// Round 33 (lane 10), on the 72 form: the payload read using header.size at each use (no size
+// local) 116 (554 bytes); case 1's offset and size each cleared by its own memset just before its
+// value store 97; the header declared inside the loop 118 at retail's 553 bytes (the header size
+// then takes DX as in retail, but view/size swap ESI/EDI, used is updated through a register and
+// the start is forwarded); that with case 0 sending a block-local copy of the value 137; payload
+// declared before the header 72 (identical). Retail's frame is exactly header 0xc, value copy 0x14,
+// payload, block, message (0x14454 bytes), so case 0 sends a copy; what escapes its header is open.
 // DL209: Case/function-scope sequence copies by memcpy/memmove 137/137/153/153; complete
 // native/memcpy/memmove/field header copies 147/147/155/142. Separate-copy home returns but reload
 // knowledge is lost; all copies restored.

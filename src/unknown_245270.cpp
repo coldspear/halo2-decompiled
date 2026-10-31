@@ -279,6 +279,9 @@ void function_245400(s_source_245400 const *source, long index,
 	function_244ca0(height, radius, list, field_00, field_04, surface->field_08,
 		material->field_04, material->field_05, point, material->field_06);
 }
+// score 203 (was 203): the frame is 0x24 against retail's 0x2c and the source receiver's home
+// differs; retail declares 0x245540 with its matrix and source the other way round, and that
+// declaration and its call live in src/unknown_245850.cpp.
 // score 203 (was 203): frame 0x24 versus 0x2c; source receiver and side-byte homes remain.
 // Earlier: the transform block is the only place left where retail's arithmetic
 // differs from the shared helpers: retail's point transform sums (forward.*x + up.*z) + left.*y

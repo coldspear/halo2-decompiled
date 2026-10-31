@@ -1478,16 +1478,6 @@ bool __stdcall function_db110(long object_index, bool players_only, bool walk_si
 	return result;
 }
 
-/* the globals' material table (+0x150 count, +0x154 elements of 0xb4 bytes) */
-PRIVATE inline byte *global_material_get(short index)
-{
-	byte *result = 0;
-
-	if (index != NONE && index >= 0 && index < *(long *)((byte *)g_4e034c + 0x150))
-		result = *(byte **)((byte *)g_4e034c + 0x154) + index * 0xb4;
-	return result;
-}
-
 /* the damage multiplier of a resistance against a source on a material: the
    resistance's scale (+0x1c), times the armor table's entry for the source's
    damage groups and the struck material's armor types */
