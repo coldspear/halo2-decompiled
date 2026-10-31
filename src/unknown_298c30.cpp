@@ -160,6 +160,14 @@ __forceinline void function_2992ba(short arg_0, bool arg_1, real arg_2, point2f 
 // library copy, direct selection 474/455/474/455; meaningful shared input receiver
 // 445/466/445/466. All actual inputs, candidate order, helpers, source fields and
 // inherited formal storage restored; entry/XY homes and 0x18/0x1c cleanup remain.
+// Round 31 (lane 11): retail keeps the nullable point on the stack because its 16-bit counters
+// (loop in bx, index in bp) take EBX/EBP and ESI holds the endpoint pointer; our byte counters
+// free ESI, so the point comes in EAX (ret 0x18). Retail also takes the loop's point distance on
+// x87 from the centre point's stack home; ours keeps the centre in XMM3/XMM4 (SSE difference,
+// two extra homes). Short counters 471 (point back on the stack, facing pointer moves to EBX,
+// 1680 bytes, frame 0x68); per-file two-point distance helper with dx/dy locals 411; both 450;
+// separate rotated point in the angle loop 430, with short counters 473; the unused first
+// parameter's address read removed 409 (and the caller 0x29a190 445 -> 699: LTCG drops the argument).
 // @retail 0x298d90
 void function_298d90(long arg_0, long arg_1, s_298c30 const *arg_2, point2f const *arg_3,
 	point2f const *arg_4, point2f const *arg_5, real arg_6, point2f const *arg_7, point2f const *arg_8)
@@ -409,6 +417,15 @@ __forceinline void function_2994a1(point2f const *arg_0, real arg_1,
 // Round 239: one actual reused trace context, crossed with independent transform
 // output, ordinary result and shared sine: 854/854/826/826/850/850/814/814. Frames
 // 0x120/0x124/0x128 versus 0x114; original context reads and complete body restored.
+// Round 31 (lane 11): the three extra frame dwords are the sweep sine and the shared cosine (retail
+// packs them with the trace distances at +0x28/+0x38) and the obstacle offset difference (retail
+// writes it into the direction vector's dead home at +0x18/+0x1c). Sine/cosine in a block with
+// a separate obstacle cosine 742 (frame 0x11c); obstacle difference written into local_6 763
+// (3372 bytes, frame 0x118); both 772, separate cosines without the block plus that 772 (3351
+// bytes, frame 0x114, homes then ordered by reference counts); blocked flags declared before
+// the result 733; trace-origin names swapped 733 (no home moves); getter as one ternary 734;
+// result-first getter 773 (retail's getter code at all five traces); frame-0x114 form plus the
+// result-first getter 799. Entry still hoists the step into XMM5 and the NONE exit is inline.
 // @retail 0x299460
 bool function_299460(long arg_0, s_298c46 *arg_1, s_298c30 const *arg_2,
 	point3f const *arg_3, vector3f const *arg_4, vector3f const *arg_5,
@@ -632,7 +649,7 @@ __forceinline void function_29a20e(vector3f *arg_0)
 	}
 }
 
-// score 445 (was 493): the callee's pointer-to-parameter trick is gone, so the call site and the entry
+// score 445 (was 445): the callee's pointer-to-parameter trick is gone, so the call site and the entry
 // schedule agree with retail; the frame homes still differ (our s_298c30 pointer at esp+0x14 and our
 // float at esp+0x10 against retail's esp+0x10 and esp+0x18), and retail keeps the flattened forward
 // vector's length on the x87 stack with fst/fabs/fcompi where ours stores and reloads it.
@@ -651,6 +668,15 @@ __forceinline void function_29a20e(vector3f *arg_0)
 // field by field 550; the angle arms as explicit `a = a - d` / `a = d + a` 550; the dead success test
 // as break-first 550; the failure statements written at each of the three gotos 583 (2622 bytes, not
 // merged).
+// Round 31 (lane 11): the baseline's two early errors cancel (the fstp/fld normalizer is one
+// instruction long, the inlined 0x11cc90 dot one short), so fixing one shifts every later line.
+// Flatten then the existing normalize3d, as sibling 0x29cbb0 does, 577 (normalizer exact, dot
+// still commuted and folded); the inline normalize copy instead 615; plus a pointer local to the
+// global axis 575 (first dot product takes retail's order, the second still folds); that pointer
+// declared first 617; settings lookup after the angle 640 (diagnostic); settings/angle names
+// swapped 445; angle declared first 445 or beside the flags 445; the two flags declared the other
+// way 446; final clamp as if/else 504 (no tail duplication, 2467 bytes); the flatten through a
+// two-statement inline helper 577; the axis global declared as the 2-D vector it is defined as 577.
 // @retail 0x29a190
 void function_29a190(long arg_0, long arg_1, vector3f const *arg_2, vector3f *arg_3,
 	short *arg_4, real *arg_5, bool *arg_6, bool *arg_7, short arg_8)
