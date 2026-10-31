@@ -481,7 +481,7 @@ struct s_request_profile
 	byte field_148[0x1e0 - 0x148];
 };
 
-// score 61 (was 108): aligned frame 0x1e8 agrees; the pointer induction variable and the registers it rotates differ.
+// score 61 (was 61): aligned frame 0x1e8 agrees; the pointer induction variable and the registers it rotates differ.
 // Default profile 164; early memset 150; unsigned version 143; aligned byte prefix 180;
 // unsigned local index 143; aligned dword prefix 180; common bits 370; separate tick reset 335.
 // All use ordinary player data and native loops; original profile and body retained.
@@ -521,6 +521,14 @@ struct s_request_profile
 // retail's esi = 2 counter, aligned 89 -> 43, but the pointer still starts at element 1's ticks, +6, and the
 // local index stays in EBX); i-3..i state first 132; `i < 35` 96; i-4..i-1 63 (aligned 58); i-2..i+1 with
 // `i < 34` 96; per-element pointer blocks with the i-2/i-3/i-4 spellings 135/133/133.
+// Round 12 (m3 lane 2; one-link harness with 0x137e40's file, 56 positional against the real 61): the
+// natural i..i+3 elements with element i+1 state-first 79 (542 bytes; first difference moves +0xf -> +0x3b:
+// retail's registers and IV, but element i+1's ticks store goes late and element i+3 loads the high word
+// first); natural elements all state-first 134; one 32-entry loop storing a local transition record
+// (fields set, or an initialiser) 196/196 (565 bytes: VC unrolls it, counter rebased to 2 as in retail,
+// but the record goes through the stack); ticks/state interleaving t,s,s,t,s,t,t,s 100. Harness only: all
+// 70 ticks/state interleavings (best aligned 6, positional 74); the t,s,s,t,t,s,t,s order with seven loop
+// spellings 37-101; a one-store body (state only) unrolls with counter 2 and pointer at element 0.
 // @retail 0x1e73b0
 void function_1e73b0()
 {

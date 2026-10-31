@@ -1363,7 +1363,7 @@ struct s_rating_summary
 };
 
 #pragma inline_depth(0)
-// score 92 (was 177): frame 0xfc and length (1212) agree. Left: level and the group-compare cursor take
+// score 92 (was 92): frame 0xfc and length (1212) agree. Left: level and the group-compare cursor take
 // each other's slots (ours 0x18/0x14, retail 0x14/0x18); retail loads the key before the collection
 // fields and calls the identity formatter before pushing strncpy's count; in the team loop retail keeps
 // the counters cursor in a stack slot and the collection, then level, in EBX (ours: cursor in EBX,
@@ -1441,6 +1441,16 @@ struct s_rating_summary
 // name budget word/short/byte/dword 174/181/230/170; word/short/byte budget with word character
 // 170/174/211. Seven-point leads rejected; original types, loops and complete body restored.
 // DL190: Native status alone/statistics/both with aggregate zero 177/170/365; status with aggregate zero 365; status with word character 183, with statistics 176, with statistics/aggregate 369; statistics/aggregate without status 365. Native full-width unsigned-long/int/unsigned-int count results on status/statistics 170 each. Seven-point best rejected; original types, loops and body restored.
+// Round 12 (m3 lane 2; kept: the team statistics pointer formed in the inner block instead of a loop-top
+// pointer copied into it, byte-identical 92): the formatted identity in a local before the strncpy 89
+// (retail's call-before-count order); with it identity renamed player_identity or level renamed
+// adjusted_level/rating_level 89 (names never move the level/compare-cursor slots); with it the summary's
+// key stored before the two collection fields 83 (fixes that block except the identity slot), the two
+// fields swapped 87, key between them 89; the key first alone 88; with the inner statistics pointer 88;
+// the statistics read through collection->team_counters[i] at the call 212; level declared per loop 108,
+// all four shared values per loop 108, each with the formatted local and key first 100. Left after 83:
+// level and the compare cursor/identity slot swapped (ours 0x18/0x14), and in the team loop retail keeps
+// the collection then level in EBX and the counters cursor in a stack slot (ours the reverse).
 // @retail 0x741f0
 void __stdcall function_741f0(s_match_player_rating_collection *collection, s_query_batch *batch)
 {
@@ -1528,7 +1538,6 @@ void __stdcall function_741f0(s_match_player_rating_collection *collection, s_qu
     {
         for (long i = 0; ; ++i)
         {
-            const s_rating_counters_team *local_3 = &collection->team_counters[i];
             long count = NONE;
             switch (variant->type)
             {
@@ -1551,7 +1560,7 @@ void __stdcall function_741f0(s_match_player_rating_collection *collection, s_qu
                     value += change;
                     level = function_74970(value, skill);
                     lower = value >= 0 ? function_74970(value, 0) : 0;
-                    const s_rating_counters_team *stats = local_3;
+                    const s_rating_counters_team *stats = &collection->team_counters[i];
                     function_73e00(lower, batch, (const XUID *)collection->teams[i].unknown0c, change,
                         stats->first, stats->second, stats->third, level, 3, players);
                 }
