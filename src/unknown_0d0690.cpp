@@ -51,7 +51,20 @@ PRIVATE __forceinline real pinned_real(real const &value, real minimum, real max
 	return value;
 }
 
-// score 52 (was 52): the frame, the sky/count homes, the trig temporaries, the x87 direction adds,
+// score 30 (was 30): the frame, the sky/count homes, the trig temporaries, the x87 direction adds,
+// the blend registers, the color0 store, the in-place strength add and the sete collision test match.
+// Left: the i == 0 block loads the strength before the colour copy, so the copy advances ebp (retail
+// copies through `lea eax, [ebp + 4]` first), and 0x131c20's `&color` is formed in edi and copied to ecx
+// (retail: ecx, then edi). Round 36 (lane 1, fast; aligned = difflib count over the listing): colour copy
+// first 121 (828 bytes, aligned 5: only the load-first strength add and the edi/ecx pair differ); colour
+// first with the copy field by field 163, `0.0f < power` test 121, add re-read as `((real *)entry)[4]` 121,
+// typed colour entry { color4f color; real strength; } 121, typed light record (yaw/pitch/count/colours)
+// 121, `strength` declared inside the lights branch 139 or at the top of the function 162, without the
+// `index` local / `hit` local / both 121/121/121, `strength` renamed to sort first or last 121/121;
+// `if (i != 0) { if (power > 0) ... } else { copy; strength }` 38 (821 bytes: in-place add and retail's
+// lea copy, but the i == 0 block lands after the blend block); a 600 s permuter run on the colour-first
+// form, best 51 (it moved the strength back first).
+// Earlier (52): the frame, the sky/count homes, the trig temporaries, the x87 direction adds,
 // the blend registers and the color0 store match. Left: the strength add loads the entry's strength,
 // adds and copies back where retail adds it to xmm7 in place (its operands flip only when the strength
 // load comes before the color copy in the i == 0 block, which then changes that block), 0x131c20's
@@ -1295,6 +1308,22 @@ PRIVATE __forceinline real lighting_normalize_ordered(vector3f *v, real square)
 }
 
 // score 529 (was 529): Frame 0x2c versus 0x28, selection-result spill and block/query homes remain.
+// Round 36 (lane 1, fast, with matched 0x3db00; aligned/shape = difflib counts over the listing, base 527/271):
+// `record` stays a stack argument only while our allocator gives it EBP; when it gets ESI this function
+// returns `ret 8`, 0xd4080's convention moves and 0x3db00 is lost. Loop without the outer count test 581
+// (526/267); plus `bool result = false ... = true` 589 (record in esi, 0x3db00 lost); plus early
+// `return false` 564 (frame 0x28); plus `if (parameters) { ... return true; } return false;` 580 (505/262,
+// frame 0x28) = base B; B + struct-copy normal after the length 564 (lost); B + lightmap copied into
+// `adjusted` with the bias added in place 572 (lost); B + lightmap clamp before base clamp 567 (489/218);
+// B + direction0 as `0 - normal` 608; B + both length scales before either is applied 542 (412/257,
+// 2189 bytes); B + fade named before the last luminance 586 (440/244); B + clamps + scales + fade 552
+// (351/195, 2189 bytes, frame 0x28) = C; C + struct-copy normal / lightmap copy / both 565/592/593 (lost;
+// block in eax and query in edx as retail, but record in esi); both + direction0 `0 - normal` 558
+// (442/174, frame 0x2c) = D; D + `real bias = parameters->bias` read once (retail loads it once into
+// xmm2) 552 (439/156); that + the direction0.k clamp through `pinned_real` 562 (lost); that with
+// (block, query, type) declared order 552 (identical); with `dword mask` named before the loop 559
+// (mask in eax as retail); with the result variable 554 (lost: block/query take edi/ebx and
+// parameters/record ebp/esi, retail's allocation exactly permuted).
 // Selected ordinal 587; combined admission mask 570; unsigned scan 529; shared bias local 559
 // (caller lost); common blend weight 533.
 // frame 0x2c versus 0x28, stored result and block/query registers differ.
@@ -1445,6 +1474,13 @@ real g_467494 = 5.0f;
 real function_30bf0(vector3f *vector);
 
 // score 364 (was 364): Frame 0x4c versus 0x40; normal-copy and limited/rotation/color homes remain.
+// Round 36 (lane 1, fast, 0x3db00 kept; aligned/shape base 320/203): in-place direction2 rotation 435
+// (292/143, frame 0x40, 1870 bytes, first +0x57); with the square right after the direction1 negate 462
+// (288/125); in-place with the (k, i, j) squared length 429 (284/143, first +0x74); plus the colour2
+// positive checks as stored selects `x > 0 ? x : 0` (retail stores each one) 441 (271/123); plus the early
+// square 446 (254/117); plus the shared rotation reading the axis through `g_4687b0` 429 (0xd37f0's
+// record becomes a register argument, 0x3db00 lost); (k, i, j) + selects without the in-place
+// rotation 434 (314/170), with the early square 448 (282/178).
 // The 0xd37f0 call is set up for its current convention (block in EDX, query in EAX; retail block EAX,
 // query EDX): BLOCKED-BY 0xd37f0's body, swapping its two parameters moves only the setup order.
 // Round 90: normal's squared length spelled k, i, j 358 (x87 runs i, k, j as retail; not kept: gain under 8); turned
@@ -1871,7 +1907,27 @@ PRIVATE __forceinline void surface_sample_unpack(short const *source, s_sample_p
     point->weight[3] = dequantize16(source[4]);
 }
 
-// score 761 (was 761): Frame 0x98 versus 0x90; status +0x40 versus +0x24, mesh
+// score 595 (was 761): frame 0x90 agrees and the first arm matches retail instruction for instruction
+// except its stack homes (lightmap +0x20 versus +0x34, mesh +0x2c versus +0x20, result/part, normal,
+// u/v/bsp/material slots: retail packs them jointly with the second arm's colours and normals); the
+// direct sample pointers are pushed as built (retail builds a, b, c in order, sharing vertices[0] * 5
+// with the unpack arm), the zero constant is not held in ebx for the result/valid stores, and one of
+// the two 0x24590 lengths is inlined. per_vertex is assigned in each arm because retail stores its
+// false (`mov byte [esp+0x13], 0`) after the two entry reads and threads the second index test; the
+// single bool expression stored the false first and re-tested the index (without it the rest scores 788).
+// Round 36 (lane 1; aligned/shape = difflib counts over the listing, base 1007/355): triangle u/v/index
+// read at each call, as retail and 0xd16d0, 782 (986/289, frame 0x90); plus material lookup before the
+// default copies 782 (951/270); plus `if (section_index != NONE) {...}` for the early return 786
+// (944/261); plus 0x241c0 called in each sample-format arm 788 (953/205); plus per_vertex assigned in
+// both arms of the index/word test (threads retail's second index test) 623; plus palette read before
+// bitmap 617 (kept); plus the colours stored before the -1.0 614; plus the zeroed outputs declared
+// before bsp 616, both 613, declared base_v, base_u, v, u 612 (kept); plus `if (dynamic_valid) result = 0;
+// else result = 1;` 595 (kept). On the 612/595 forms: the direct sample pointers as one-use locals 626
+// (aligned 489; not kept); bsp renamed, u/v names swapped: identical; final rescale through
+// vector3f_scale 619 (3142 bytes), all three scalings 648 (3081 bytes, a pin block tail-merges); with
+// the result branch 614/624; lightmap declared first, second-arm base/normal declared with the dynamic
+// outputs 595/595 (identical); `result = 1` before the block lookup, cleared on success 601.
+// Earlier (761): Frame 0x98 versus 0x90; status +0x40 versus +0x24, mesh
 // +0x24 versus +0x20, sample homes and material/magnitude expansion remain.
 // Earlier: Frame 0x90 agrees; result +0x3c versus +0x24, mesh +0x2c versus +0x20, and helper expansion
 // remain. Existing scalar clamp output pointer 811; weight loop 819; native sample table 819;
@@ -1974,38 +2030,37 @@ long __stdcall function_d1e10(void const *surface, s_effect_color_query *query, 
                 {
                     query->unknown00 = 0.0f;
                     query->unknown04 = 0.0f;
-                    query->unknown08 = -1.0f;
                     query->color_a = 0xff404040;
                     query->color_b = 0xff404040;
+                    query->unknown08 = -1.0f;
                 }
                 return 0;
             }
+            real base_v = 0.0f, base_u = 0.0f;
+            real v = 0.0f, u = 0.0f;
             byte *bsp = (byte *)g_4e0344->locations;
             long index = triangle->instance_index;
-            real u = 0.0f, v = 0.0f;
-            real base_u = 0.0f, base_v = 0.0f;
             long bitmap_index = NONE;
             long palette_index = NONE;
-            bool per_vertex = index != NONE &&
-                *(word *)(*(byte **)((byte *)g_4e0348 + 0x144) + index * 0x58 + 0x56) != 0;
-            if (!per_vertex)
+            bool per_vertex;
+            if (index != NONE && *(word *)(*(byte **)((byte *)g_4e0348 + 0x144) + index * 0x58 + 0x56) != 0)
+                per_vertex = true;
+            else
             {
                 byte *entry = index != NONE ? *(byte **)(bsp + 0x4c) + index * 4 :
                     *(byte **)(bsp + 0x2c) + triangle->cluster_index * 4;
-                bitmap_index = *(short *)entry;
                 palette_index = (signed char)entry[2];
+                bitmap_index = *(short *)entry;
+                per_vertex = false;
             }
+            long material = function_13da30((s_13da30_owner const *)(
+                *(byte **)((byte *)g_4e0348 + 0xa8) + *(short *)(part + 4) * 0x20));
             vector3f normal = *g_4687b0;
             color3f base = *g_468734;
             color3f lightmap = *g_46872c;
-            long material = function_13da30((s_13da30_owner const *)(
-                *(byte **)((byte *)g_4e0348 + 0xa8) + *(short *)(part + 4) * 0x20));
-            real barycentric_u = triangle->u;
-            real barycentric_v = triangle->v;
-            long triangle_index = triangle->lightmap_part_index;
             if (!per_vertex)
             {
-                function_d2bf0(mesh, triangle_index, barycentric_u, barycentric_v, &u, &v);
+                function_d2bf0(mesh, triangle->lightmap_part_index, triangle->u, triangle->v, &u, &v);
                 result = function_d2f90(flags, bitmap_index, palette_index, u, v, &lightmap);
             }
             else
@@ -2013,16 +2068,16 @@ long __stdcall function_d1e10(void const *surface, s_effect_color_query *query, 
                 s_vertex_block *block = function_d35a0(index, (s_surface_colour_group *)bsp, true, NONE);
                 if (block)
                 {
-                    function_d3630(block, triangle_index, mesh, barycentric_u, barycentric_v, &lightmap);
+                    function_d3630(block, triangle->lightmap_part_index, mesh, triangle->u, triangle->v, &lightmap);
                     result = 0;
                 }
                 else
                     result = 1;
             }
-            function_d2dc0(mesh, triangle_index, barycentric_u, barycentric_v, &base_u, &base_v);
+            function_d2dc0(mesh, triangle->lightmap_part_index, triangle->u, triangle->v, &base_u, &base_v);
             if (!function_d30d0(material, flags, base_u, base_v, &base))
                 base.red = base.green = base.blue = 0.5f;
-            function_d31c0(mesh, barycentric_u, barycentric_v, triangle_index, &normal);
+            function_d31c0(mesh, triangle->u, triangle->v, triangle->lightmap_part_index, &normal);
             surface_pin_color(&base);
             surface_pin_color(&lightmap);
             query->color_a = pack_color3f(&base);
@@ -2034,129 +2089,129 @@ long __stdcall function_d1e10(void const *surface, s_effect_color_query *query, 
     {
         byte const *record = (byte const *)surface;
         long section_index = *(long const *)(record + 0x14);
-        if (section_index == NONE)
-            return result;
-        byte *definition = g_4e3b44[*(long const *)(record + 0xc) & 0xffff].bytes;
-        s_mesh *mesh = *(s_mesh **)(*(byte **)(definition + 0x28) + section_index * 0x5c + 0x34);
-        word const *vertices = (word const *)((byte *)mesh->triangles + triangle->part_offset * 2);
-        real barycentric_u = triangle->u;
-        real barycentric_v = triangle->v;
-        long triangle_index = triangle->lightmap_part_index;
-        bool dynamic_valid = false;
-        color3f dynamic_color;
-        vector3f dynamic_normal;
-        if (*(long *)(definition + 0x74) > 0)
+        if (section_index != NONE)
         {
-            byte *block = (byte *)function_24490(*(long const *)(record + 8),
-                *(s_24490_definition **)(definition + 0x78), section_index);
-            if (block)
+            byte *definition = g_4e3b44[*(long const *)(record + 0xc) & 0xffff].bytes;
+            s_mesh *mesh = *(s_mesh **)(*(byte **)(definition + 0x28) + section_index * 0x5c + 0x34);
+            word const *vertices = (word const *)((byte *)mesh->triangles + triangle->part_offset * 2);
+            bool dynamic_valid = false;
+            color3f dynamic_color;
+            vector3f dynamic_normal;
+            if (*(long *)(definition + 0x74) > 0)
             {
-                s_sample_point point_a;
-                s_sample_point point_b;
-                s_sample_point point_c;
-                byte *data = *(byte **)(block + 0xc) + *(long *)(block + 4);
-                s_sample_point const *a, *b, *c;
-                if (block[0] != 0x39)
+                byte *block = (byte *)function_24490(*(long const *)(record + 8),
+                    *(s_24490_definition **)(definition + 0x78), section_index);
+                if (block)
                 {
-                    a = (s_sample_point *)(data + vertices[0] * 20);
-                    b = (s_sample_point *)(data + vertices[1] * 20);
-                    c = (s_sample_point *)(data + vertices[2] * 20);
+                    byte *data = *(byte **)(block + 0xc) + *(long *)(block + 4);
+                    if (block[0] != 0x39)
+                    {
+                        dynamic_valid = function_0241c0(*(long const *)(record + 8), *(long const *)triangle->unknown2c,
+                            &dynamic_normal, *(long const *)(record + 0x1c), (s_sample_point *)(data + vertices[0] * 20),
+                            (s_sample_point *)(data + vertices[1] * 20), (s_sample_point *)(data + vertices[2] * 20),
+                            triangle->u, triangle->v, (vector3f *)&dynamic_color);
+                    }
+                    else
+                    {
+                        s_sample_point point_a;
+                        s_sample_point point_b;
+                        s_sample_point point_c;
+                        surface_sample_unpack((short *)(data + vertices[0] * 10), &point_a);
+                        surface_sample_unpack((short *)(data + vertices[1] * 10), &point_b);
+                        surface_sample_unpack((short *)(data + vertices[2] * 10), &point_c);
+                        dynamic_valid = function_0241c0(*(long const *)(record + 8), *(long const *)triangle->unknown2c,
+                            &dynamic_normal, *(long const *)(record + 0x1c), &point_a, &point_b, &point_c,
+                            triangle->u, triangle->v, (vector3f *)&dynamic_color);
+                    }
+                }
+                if (dynamic_valid)
+                    result = 0;
+                else
+                    result = 1;
+            }
+            color3f base;
+            vector3f normal;
+            bool base_valid = function_d33a0(mesh, triangle->lightmap_part_index, triangle->u, triangle->v, &base)
+                && function_d31c0(mesh, triangle->u, triangle->v, triangle->lightmap_part_index, &normal);
+            if (dynamic_valid && base_valid)
+            {
+                real dynamic_weight = dynamic_color.blue * 0.11f + dynamic_color.green * 0.59f + dynamic_color.red * 0.3f;
+                real base_weight = base.blue * 0.11f + base.green * 0.59f + base.red * 0.3f;
+                if (dynamic_weight > 0.0001f && base_weight > 0.0001f)
+                {
+                    color3f combined;
+                    combined.red = base.red + dynamic_color.red;
+                    combined.green = base.green + dynamic_color.green;
+                    combined.blue = base.blue + dynamic_color.blue;
+                    surface_pin_color(&combined);
+                    query->color_b = pack_color3f(&combined);
+                    real base_length = magnitude3d(&normal);
+                    if (base_length > 0.0001f)
+                    {
+                        real scale = 1.0f / base_length;
+                        for (long component = 0; component < 3; ++component)
+                            normal.n[component] *= scale;
+                    }
+                    real dynamic_length = magnitude3d(&dynamic_normal);
+                    if (dynamic_length > 0.0001f)
+                    {
+                        real scale = 1.0f / dynamic_length;
+                        for (long component = 0; component < 3; ++component)
+                            dynamic_normal.n[component] *= scale;
+                    }
+                    vector3f *out = (vector3f *)query;
+                    out->i = dynamic_normal.i * dynamic_weight + normal.i * base_weight;
+                    out->j = dynamic_normal.j * dynamic_weight + normal.j * base_weight;
+                    out->k = dynamic_normal.k * dynamic_weight + normal.k * base_weight;
+                    function_30bf0(out);
+                    real length = dynamic_length > base_length ? dynamic_length : base_length;
+                    for (short component = 0; component < 3; ++component)
+                        out->n[component] *= length;
+                }
+                else if (dynamic_weight > 0.0001f)
+                {
+                    surface_pin_color(&dynamic_color);
+                    query->color_b = pack_color3f(&dynamic_color);
+                    *(vector3f *)query = dynamic_normal;
                 }
                 else
                 {
-                    surface_sample_unpack((short *)(data + vertices[0] * 10), &point_a);
-                    surface_sample_unpack((short *)(data + vertices[1] * 10), &point_b);
-                    surface_sample_unpack((short *)(data + vertices[2] * 10), &point_c);
-                    a = &point_a; b = &point_b; c = &point_c;
+                    surface_pin_color(&base);
+                    query->color_b = pack_color3f(&base);
+                    *(vector3f *)query = normal;
                 }
-                dynamic_valid = function_0241c0(*(long const *)(record + 8), *(long const *)triangle->unknown2c,
-                    &dynamic_normal, *(long const *)(record + 0x1c), a, b, c, barycentric_u, barycentric_v,
-                    (vector3f *)&dynamic_color);
             }
-            result = dynamic_valid ? 0 : 1;
-        }
-        color3f base;
-        vector3f normal;
-        bool base_valid = function_d33a0(mesh, triangle_index, barycentric_u, barycentric_v, &base)
-            && function_d31c0(mesh, barycentric_u, barycentric_v, triangle_index, &normal);
-        if (dynamic_valid && base_valid)
-        {
-            real dynamic_weight = dynamic_color.blue * 0.11f + dynamic_color.green * 0.59f + dynamic_color.red * 0.3f;
-            real base_weight = base.blue * 0.11f + base.green * 0.59f + base.red * 0.3f;
-            if (dynamic_weight > 0.0001f && base_weight > 0.0001f)
-            {
-                color3f combined;
-                combined.red = base.red + dynamic_color.red;
-                combined.green = base.green + dynamic_color.green;
-                combined.blue = base.blue + dynamic_color.blue;
-                surface_pin_color(&combined);
-                query->color_b = pack_color3f(&combined);
-                real base_length = magnitude3d(&normal);
-                if (base_length > 0.0001f)
-                {
-                    real scale = 1.0f / base_length;
-                    for (long component = 0; component < 3; ++component)
-                        normal.n[component] *= scale;
-                }
-                real dynamic_length = magnitude3d(&dynamic_normal);
-                if (dynamic_length > 0.0001f)
-                {
-                    real scale = 1.0f / dynamic_length;
-                    for (long component = 0; component < 3; ++component)
-                        dynamic_normal.n[component] *= scale;
-                }
-                vector3f *out = (vector3f *)query;
-                out->i = dynamic_normal.i * dynamic_weight + normal.i * base_weight;
-                out->j = dynamic_normal.j * dynamic_weight + normal.j * base_weight;
-                out->k = dynamic_normal.k * dynamic_weight + normal.k * base_weight;
-                function_30bf0(out);
-                real length = dynamic_length > base_length ? dynamic_length : base_length;
-                for (short component = 0; component < 3; ++component)
-                    out->n[component] *= length;
-            }
-            else if (dynamic_weight > 0.0001f)
+            else if (dynamic_valid)
             {
                 surface_pin_color(&dynamic_color);
                 query->color_b = pack_color3f(&dynamic_color);
                 *(vector3f *)query = dynamic_normal;
             }
-            else
+            else if (base_valid)
             {
                 surface_pin_color(&base);
                 query->color_b = pack_color3f(&base);
                 *(vector3f *)query = normal;
             }
+            else
+            {
+                query->color_a = query->color_b = 0;
+                *(vector3f *)query = *g_4687b0;
+            }
+            real u, v;
+            function_d2dc0(mesh, triangle->lightmap_part_index, triangle->u, triangle->v, &u, &v);
+            byte *part = *(byte **)((byte *)mesh + 4) + triangle->part_index * 0x48;
+            long material = function_13da30((s_13da30_owner const *)(
+                *(byte **)(definition + 0x64) + *(short *)(part + 4) * 0x20));
+            color3f sampled;
+            if (function_d30d0(material, 0, u, v, &sampled))
+            {
+                surface_pin_color(&sampled);
+                query->color_a = pack_color3f(&sampled);
+            }
+            else
+                query->color_a = 0xffc0c0d0;
         }
-        else if (dynamic_valid)
-        {
-            surface_pin_color(&dynamic_color);
-            query->color_b = pack_color3f(&dynamic_color);
-            *(vector3f *)query = dynamic_normal;
-        }
-        else if (base_valid)
-        {
-            surface_pin_color(&base);
-            query->color_b = pack_color3f(&base);
-            *(vector3f *)query = normal;
-        }
-        else
-        {
-            query->color_a = query->color_b = 0;
-            *(vector3f *)query = *g_4687b0;
-        }
-        real u, v;
-        function_d2dc0(mesh, triangle_index, barycentric_u, barycentric_v, &u, &v);
-        byte *part = *(byte **)((byte *)mesh + 4) + triangle->part_index * 0x48;
-        long material = function_13da30((s_13da30_owner const *)(
-            *(byte **)(definition + 0x64) + *(short *)(part + 4) * 0x20));
-        color3f sampled;
-        if (function_d30d0(material, 0, u, v, &sampled))
-        {
-            surface_pin_color(&sampled);
-            query->color_a = pack_color3f(&sampled);
-        }
-        else
-            query->color_a = 0xffc0c0d0;
     }
     return result;
 }
