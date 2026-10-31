@@ -1104,11 +1104,13 @@ PRIVATE __forceinline void biped_eye_raise(long arg_159e6d, s_biped *self, byte 
 	vector3f forward;
 	vector3f up;
 	vector3f direction;
+	s_biped_collision collision;
 
 	eye->z += ((1.0f - crouch) * *(real *)(self_definition + 0x218) + *(real *)(self_definition + 0x21c) * crouch) *
 		self->scale;
 	head = *eye;
 	forward = self->unknown168;
+	collision.unknown24 = NONE;
 	function_11d090(&forward, &up);
 	function_df380(arg_159e6d, &head, &forward, &up);
 	direction.i = head.x - eye->x;
@@ -1116,11 +1118,9 @@ PRIVATE __forceinline void biped_eye_raise(long arg_159e6d, s_biped *self, byte 
 	direction.k = head.z - eye->z;
 	if (function_30bf0(&direction) > 0.0f)
 	{
-		s_biped_collision collision;
 		vector3f back;
 		point3f start;
 
-		collision.unknown24 = NONE;
 		back.i = direction.i * -0.25f;
 		back.j = direction.j * -0.25f;
 		back.k = direction.k * -0.25f;
@@ -1163,7 +1163,7 @@ PRIVATE __forceinline void biped_grab_eye(long arg_159e6d, point3f *eye)
 
 /* fills the biped's character physics input for its physics mode: walking
    (1), flying (2), dead (3), animation driven (4, 5) or grabbing (6) */
-// score 636 (was 1497): biped_eye_raise is forced inline (below); the frame, flag homes and argument scheduling still differ.
+// score 635 (was 1497; 636 before the collision's NONE moved up in biped_eye_raise, 2026-10-31): biped_eye_raise is forced inline (below); the frame, flag homes and argument scheduling still differ.
 // Outer-only inline control 1566; native case order 1562; full vector setter 1555;
 // use-site animation flags 1578; consistent ground observations 1502; default boost 1563;
 // conditional material 1566; workspace names 1566; case/setter/boost/names 1552.
@@ -1500,8 +1500,31 @@ apply:
 /* whether the biped can see a biped it would grab: a ray from its eye to
    the target's center (or to three points up the target's height) gets
    through */
-// score 336 (was 931): Frame 0x8c versus retail 0xac; biped_eye_raise is now forced inline (retail expands it here), 931 before.
-// Outer-only inline 952; entry result 1038; scan result 1020; shared displacement 1031;
+// score 339 (was 336, 931 before biped_eye_raise was forced inline): the body agrees with retail.
+// Logic walk (2026-10-31, retail 0xde9d0-0xdee5d): every block, call argument order and constant agrees: the state
+// byte test (0xde9f9-0xdea07, early true at 0xdee54), the radius-1 shortcut (0xdea25-0xdea56: center from +0x30,
+// count 1, height 0), the else arm (0xdf5f0 with height and radius on the stack, height + radius, center.z - radius
+// * 0.5 (0x45dbbc), count 3), the eye height (e0dc0 ? 0 : crouch; (1-crouch)*+0x218 + +0x21c*crouch, times scale,
+// 0xdeae6-0xdeb28), head/forward/up and 0xdf380 (0xdeb6b-0xdeb7f), the 0x30bf0 > 0 test (0x45dbd8), the -0.25 back
+// vector and 0xdec1e's flags 0x4808c2d with NONE, NONE, 0.9 (0x45dc84) or the hit point (0xdec27-0xdec8d), the
+// second ray and the 0.05 (0x45dc1c) comparison and stores (0xdecb4-0xded89), then the loop (0x84000d, eye,
+// center - eye, self, target, collision; center.z += height / (count - 1) only for count > 1; hit-free ray true).
+// No behaviour difference found. Applied: the collision's unknown24 = NONE moved up to just before 0x11d090 and the
+// collision declared with the helper's other locals (retail stores it at 0xdeb5f, def60 at its equivalent; it is
+// dead on the len <= 0 path): 0xde9d0 336 -> 339, 0xdc5c0 636 -> 635, 0xdef60 279 -> 273, 0xcb500 110 -> 108.
+// Tried: `bool result = true` at the top, set false before the loop (retail keeps true in AL for the early exit,
+// `mov al, 1` at 0xdea03, which is also the operand of the state test): 339 -> 328, frame 0xac as retail, not kept
+// (a flag set inside a test).
+// Left: the build INLINES function_e0dc0 (62 bytes, unknown_0cafc0.cpp) where retail calls it (0xdeada); the
+// inlined test moves the biped into EAX instead of EDI, the table into EDI instead of EBX, and shifts every
+// register after it. With a throwaway noinline declaration beside e0dc0's definition (forbidden, removed again)
+// this function is 276 and 0xdc5c0 680. The inlining follows the call's position: e0dc0 in 0xdd8e0 stays a call
+// after `function_e4050 ||` or after a float test, and is inlined as the first test or first of an ||; no
+// source form for the helper here made it a call. Also left: stack slot order (retail eye 0x10, head 0x1c,
+// forward/back 0x28, height 0x34, count and the 0xdf5f0 radius 0x38 in one slot, up/start 0x3c, direction 0x48,
+// center 0x54, collision 0x60; ours puts forward, height, head, up, count in another order); declaration order
+// of the helper's locals (24 permutations) and of collision changes nothing; `span` at function scope 339.
+// Earlier: outer-only inline 952; entry result 1038; scan result 1020; shared displacement 1031;
 // scan collision workspace 1031; role names 1031; native while scan 1031; combined entry result 1038.
 // Outer-only inline with scan/entry result 932/950; shared workspaces 952; all scan forms 932.
 // Retain outer-only inline and scan result, plain 932; the inner helper remains ordinary.
@@ -1656,7 +1679,7 @@ void function_dfd70(long arg_159e6d)
 /* a point on a biped: its eye (mode 0 at its origin, 1 standing, 2
    crouching, raised to its head marker unless something is in the way), or
    an offset from a point along a forward vector (mode 3) */
-// score 279 (was 995): the helper is forced inline; 0xdef60 still compiles with another convention than retail, whose
+// score 273 (was 995; 279 before the collision's NONE moved up in biped_eye_raise, 2026-10-31): the helper is forced inline; 0xdef60 still compiles with another convention than retail, whose
 // own bytes take only `point` in EAX and the other five arguments on the stack (0xcb500's call at 0xcb56c-0xcb571,
 // the mode read from [esp+0xa4] at 0xdef9e) with the biped in EDI, its definition in EBX and the index in EBP. Ours
 // takes the mode in EBX, the forward vector in EDX and the offsets in ECX (ret 0xc); their registers force a scratch
@@ -2071,6 +2094,15 @@ void __stdcall function_1c3770(long object_index, dword flags);
 // to the stack); re-read without the getter 82; short getter result with re-read 80; rate named first
 // 97/105/95; clears through word_flags_set 130, as two masks 91, as a byte clear of +0x349 132/137;
 // component re-fetched at the call 90; shared final clear through one goto 92; member-function getter 92.
+// Round b6B (retail walk, no logic difference: same callee order 1d5120(component, body, 9, def+0x290+0x20, rate,
+// &settled, count in EAX); body test byte >= 0 and < size then movsx ax; rate = [0x510c54]+4 * 0x4407b8 (= 0.15f);
+// result stored as a byte; bits 13-14 cleared as `and byte [+0x349], 0x9f` before and after 0x1c3770, and on the
+// failed path after the flags_134 |= 0x800000). Structure screen: byte test of the field, count read at the call
+// from the same biped 99 (count cached in BL, input on the stack, ret 4; body and flag code as retail), from a second
+// lookup 91 (re-read as retail, EBP = early Havok data load; 0x9fff in EDI); that with byte clears on the three
+// sites 132, on one/two sites 93-123; char body with short selection 71 (only the failed-path clear is the byte
+// form: a single clear narrows by itself, two on a path get the constant hoisted); main-rigid-body getter with a
+// short if/else 80. Restored. Hypothesis (untested): retail had no spare callee-saved register, so no hoist and no EBP.
 // @retail 0xe0c70
 void function_e0c70(long arg_159e6d)
 {
