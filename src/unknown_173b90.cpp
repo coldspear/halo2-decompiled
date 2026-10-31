@@ -536,6 +536,11 @@ typedef void (__stdcall *particle_callback_175610)(s_particle_175610 *, s_partic
 // swapped translation adds, the motion rotation first, swapped particle copies, scale first, colour or
 // result pointers first, the masks inline, the next index read after the callback and an emitter-first
 // body all leave row i at j,k,i; indexed definitions (long/short) 33/46.
+// Round 95 (lane 8): the zero store after the list test is the mark of an index that VC
+// strength-reduces into the offset (retail keeps only the offset IV), so retail likely indexed the
+// definitions; the indexed form `&(*(T **)(definition + 0x34))[index]` 115 (1136 bytes, aligned 38 ->
+// 91: every rotation row's sum order changes); with scale first 113; with the definition computed
+// before the emitter lookup 126, both 124; the index as a for-loop counter 115 (same code).
 // @retail 0x175610
 void function_175610(s_particle_value_cache *cache, s_particle_system_datum *system, s_particle_location_datum *location, particle_callback_175610 callback, void *context)
 {

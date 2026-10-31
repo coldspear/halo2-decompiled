@@ -578,6 +578,11 @@ static inline void input_counter_set_inlined(long c, long a, long b, long value)
 // `team_bit` for both updates 45 (the bit is shared where retail shifts twice); the mask pointer
 // and copy declared before the old playing mask 34; word mask with present not volatile 63
 // (present takes EDI); both accumulators declared before the old masks 42.
+// Lane 14 r22 (fast): the change test as a named `bool changed` 32 (identical); a word copy read
+// straight from the field with direct stores 129 (the copy folds into field re-reads, frame 0xc);
+// the word copy through the mask pointer with the named test 77 (compare from memory, update
+// reloads); the word copy from the field with the store through the pointer 129; the word copy
+// through the pointer with direct stores 77 (the engine-index load then moves up past one store).
 // @retail 0x158140
 void function_158140(void)
 {
@@ -2109,6 +2114,11 @@ void function_159460(long player_index, bool *leading, bool *tied)
 
 #include "object_iterator.h"
 
+// score 8 (was 8): Round 30 (lane C): the inlined lookup still loads the table base before masking
+// and scaling the object index; retail scales the index first, so the scaled index gets its own
+// register and the base lands in EAX, which in turn moves the tail reload and the iterator LEA.
+// The lookup written as a subscript gives identical code (8); the shared helper still swaps the
+// mode global's register (9). A permuter run was killed before it reported a result.
 // score 8 (was 8): the inlined equipment lookup keeps the object table base and the index in
 // swapped registers.
 // @retail 0x15adb0
@@ -4389,6 +4399,11 @@ void function_15fe20(long team_index, color3f *color);
 // tail forms (default before/inside/after the slot read, named index, getter helpers, NONE-checking
 // getters, short/long/char slot, if/ternary) never compares against the -1 register; simpler bodies do,
 // until the compared index feeds the masked lookup.
+// Lane 14 r22: `1 << (iterator.index & 0xffff)` in the zone presence loop alone 87; both team colours
+// through a new by-value inline helper (color3f, short team; with that shift) 61 (the copies are
+// retail's, but the own-team argument is pushed before the buffer address); with a long team
+// parameter 64; on the 61 form the weapon NONE default before the unit test 92 (2688 B, `or esi, -1`
+// placed as retail, both compares immediate), with the unit through engine_object_get 92.
 // @retail 0x15f3a0
 bool function_15f3a0(long local_index, s_player_score_display *display)
 {
@@ -5498,6 +5513,11 @@ void __stdcall function_d6bc0(long object_index);
 // entry pointer at the loop top 174; volatile reads at the three uses after the schedule 163
 // (the timer is rematerialised from the stack argument); the volatile read into a named base
 // local for the timer and the index test 133 (the base takes EDI and the timer folds again).
+// Lane 14 r22 (fast): an entry pointer after the reset block for the timer and index reads 144
+// (folded, identical); the timer as a reference 144; a long schedule 148; the timer pointer declared
+// before the reset block but not used there 209 (882 B: frame 0x18 and the timer survives as a
+// variable, but it is formed before the reset block where retail forms it at the zero test);
+// that pointer declared ahead of the index read 209.
 // @retail 0x15ae70
 void __stdcall function_15ae70(s_netgame_entry_state *entries)
 {

@@ -745,6 +745,14 @@ union s_60403
 // 336/343/351/357. Original lifetimes and union restored.
 // Round 311: shared current active-player mask with full-count/value-index/bool subsets
 // 394/390/376/273/400/390/381/276; original observations and discriminator restored.
+// Round 95 (lane 8): retail reads old_to_new[old_player->member] inside the retained test after
+// the memcmp and again in the else-if (ours names it first). Written at each use 285 (1513 bytes;
+// the retained loop body becomes retail's, aligned 103 -> 103); with the retained mask declared
+// after the member loop 368, the late mask alone 336; at each use with a plain bool discriminator
+// 278 (1513 bytes, aligned 84: the best aligned form so far; left: the retained update as
+// load/or/store instead of `or [esp + 0x18], eax`, the third loop's head padding, and the
+// previous/current EBX/EBP swap), that with the late mask 362 (aligned 84, the mask then shares
+// the map pointer's slot as in retail).
 // @retail 0x60400
 void __stdcall function_60400(c_class_58d20 *session, const byte *current, const byte *previous, byte *update)
 {

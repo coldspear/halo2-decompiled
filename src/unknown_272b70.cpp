@@ -1395,6 +1395,9 @@ PRIVATE __forceinline bool function_274a51(long arg_0, s_object_seat const *arg_
 // real decision polarity/lifetime does not recover the request registers or seat loads.
 // Round 234: Actual request outcome byte/short/long/dword 41/70/68/68; complementary failure carriers
 // 73/73/72/72. Original outcome and body restored; iterator scaling and request/seat scheduling remain.
+// Round 450: scalar candidate transfer/final-publication increment/both 41/41/41;
+// direct priority result alone/with transfer/with increment/both 42/42/42/42;
+// shared seat-definition input 48. Scalar address copies exact-only; all original code restored.
 // @retail 0x274a50
 void function_274a50(long ai_index, long vehicle_index, long filter_range, bool load)
 {

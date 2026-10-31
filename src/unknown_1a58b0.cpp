@@ -904,6 +904,12 @@ void function_25aba0(long actor_index);
 // the state-one pop fuses (best 43 [10], kind-2 store order then stamp/level/state for retail's
 // stamp/state/level); one shared `level--` after the state-one/kind-2 chain 29 (same code);
 // `level = level - 1` and `level = (short)(level - 1)` in the kind-2 arm 29/29.
+// Round 52 (harness exact once 0x1a7ad0 has several callers): the kind-2 failure `level--` fuses in all six
+// statement orders with either choice-failure order (aligned 3-10); real: stamp, state, pop with retail's
+// stamp-first choice arm 119 (only the kind-2 pop differs, 2 bytes short); pop, stamp, state 46; the
+// kind-2 test inverted with the failure statements inside it 29 (identical); success leaving by `break`
+// 29 (identical); the check result in a `started` bool 29 (identical). `level = level - 1` there and a
+// `continue` after the failure statements: identical / 42 positional.
 // @retail 0x1a7cc0
 void __stdcall function_1a7cc0(long actor_index)
 {
