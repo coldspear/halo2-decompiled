@@ -1310,6 +1310,17 @@ bool network_message_read_header(s_bitstream *stream, long *type, c_type_659ceb 
 // Round 44: bool result with an early `if (!result) return result;` after the scan 224 (781 bytes); that with
 // a `return false` failure 224; that with the count test as a scope 212 (789 bytes); long result with the early
 // return and `return false` failure 161; bool result, count scope, `return false` failure 232. Original body kept.
+// Round 51: the 14 missing bytes are retail's own epilogue for the scan-not-entered exit (before
+// `push edi`, `mov al, cl`): retail returns a merged result from CL at both early exits, ours folds it
+// to `xor al, al` and joins a shared full epilogue. `bool last; bool result = last = false;` 250; the
+// copy/decode block under `if (result)` with literal returns 123; one final `return result;` reached
+// by a goto from the decode success, failure `return false` 116; the same with the failure as
+// `result = false` 108 (779 bytes: result made in a register at entry and stored, oldest in EDX and
+// the failure epilogue as retail; but the result takes AL, coalesced with the return, where retail
+// has CL with the count in EAX, so the early exits share the final epilogue's pops). On that form:
+// result declared before `self`, declared then assigned, the count in a local 108 each; forceinline
+// count helper 108; count `> 0` 116; a `window` pointer local 291; the count written out (diagnostic)
+// 248, as `!=` 252 (count then in EAX, result in DL).
 // @retail 0x95840
 bool __stdcall function_095840(s_network_stream_header *header, long *message_type, long *message_size, void *message_data)
 {

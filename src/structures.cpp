@@ -241,6 +241,14 @@ static __forceinline bool structure_bsp_collision_available()
 // Round 44: existing availability producer result-first/guard returns/nested outcomes/
 // structure once/settings once/both/both guarded/both with BSP receiver 61/98/98/61/78/78/98/61.
 // Original helper/body restored; exclusion BL and source-slot join remain.
+// Round 32 (lane 10, fast counts): `bool excluded = scenery && policy != 2;` with
+// `if (!excluded && 0xbf9a0) { result = 0x14a8e0(...); return result; } else if (!excluded) requery; else
+// return result;` 56 (286 bytes, threaded: no flag), with a bool result 71 (269 bytes); the requery as
+// `if (!excluded) ... else found = false;` 72 (268 bytes), with a bool result 82 (258 bytes); the flag set
+// in the scenery arm with the model query as its else-if and the collision re-read from the source at the
+// join before `if (excluded) return result;` 55 (286 bytes, still threaded; a flag set in a test, not kept),
+// with `if (!excluded) requery else found = false` 72; an inline exclusion test returning true/false
+// (diagnostic) 95 (269 bytes).
 // Round 11 (lane 2): ours threads the second flag test across the 0xbf9a0 call (the false edge knows
 // the flag is clear); retail threads only the first. Real: the scenery test in a forceinline
 // single-exit bool helper 112 (302 bytes: 0x10a0b0 inlined, flag threaded); the && flag tested
