@@ -687,6 +687,10 @@ static inline bool session_set_machine_limit(c_class_58d20 *session, long value)
 // setters and getters inline) reproduces ESI and the known flip (no 0x49c8 read: EBX/ESI/EDI); the member
 // count or the 0x4f20 tests through force-inline helpers stay ESI (parameter copies are propagated), as do a
 // named has-data test, the variant cast, unsigned/short-cast indices and the output as `players + i`.
+// Round 21 (lane 14, fast with the inlined callees): the call's last argument through the existing
+// get_value_49c8() 142 (503 bytes: the live test comes back); the copy countdown declared before its
+// index 55 (same code); the result initialised from the state test 169 (507); the copy loop counting
+// member_count itself down 118; the machine-address pointer written at both uses 55 (same code).
 // @retail 0x6e720
 bool function_06e720(c_class_58d20 *session)
 {
