@@ -2112,14 +2112,19 @@ PRIVATE __forceinline double random_unit_fraction(s_random_globals *random)
     return (real)random_next(&random->seed) * (1.0f / 65535.0f);
 }
 
-// score 202 (was 245): the unrounded fraction is now (real)random * (1/65535) (retail uses the float constants,
-// not double ones), and the lower/upper bounds are doubles loaded upper first (retail keeps both on the x87 stack).
-// What still differs: retail pushes ebx/ebp and esi/edi lazily inside the two count guards (we push all four at
-// the top, with a 4-byte larger frame); retail stores motion[2] with a non-popping fst before the length and keeps
-// z on the stack (we spill (real)z to a temp, which also feeds motion[2] *= inverse; storing motion[2] before the
-// length scores 207); and the length is stored with fst (kept for fabs) where we store and reload it.
-// Tried: double length kept for fabs (172 but the 1/length divide goes to x87 and the 0.0001 constant is a double),
-// motion[1] = inverse * motion[1] (same code), chained assignment for z (same code).
+// score 57 (was 202): the random fraction is (real)random * (1/65535) as before; motion[2] is stored
+// first and the length is then built from the stored motion[] values, so the just-stored z stays on the
+// x87 stack unrounded (retail's `fst [edx+8]`) with no temp; the length is a double kept for fabs, with the
+// float copy (`magnitude`) used by the divide and `fabs((real)length)` so the 0.0001 constant stays a float
+// (retail: sqrt result moved into z's slot, `fst` to the float temp); the six -1..1 samples are `real`
+// (sample + sample - 1.0f), which gives retail's dword `fsub`; the entry+0xc fraction is evaluated before its
+// range, as retail does. What still differs: retail pushes ebx/ebp and esi/edi lazily inside the two count
+// guards (we push all four at the top, with a 4-byte larger frame; ours also loads the random globals and the
+// count above the second guard); `motion[1] = inverse * motion[1]` order (same code); the loop test reads the
+// count into edx instead of comparing against [ebx].
+// Tried: explicit `if (count > 0)` guard around the loop (257), count read once before the loop (116),
+// double length without the float copy (172/106), assignment of the length inside the fabs (178),
+// `(real)fabs(length)` (106), samples as doubles with a float constant (does not change the fsub).
 // @retail 0x39a80
 bool function_39a80(byte *state)
 {
@@ -2145,35 +2150,35 @@ bool function_39a80(byte *state)
             motion[6] = (real)(random_unit_fraction(random) * (upper - lower) + lower);
             motion[0] = (real)(random_unit_fraction(random) * *(real *)(state + 0x30));
             motion[1] = (real)(random_unit_fraction(random) * *(real *)(state + 0x34));
-            /* retail squares the unrounded z, not the stored float */
-            double z = random_unit_fraction(random) * *(real *)(state + 0x38);
-            real magnitude = (real)sqrt((double)motion[0] * motion[0] + (double)motion[1] * motion[1] + z * z);
-            motion[2] = (real)z;
-            if (!(fabs(magnitude) < 0.0001f))
+            motion[2] = (real)(random_unit_fraction(random) * *(real *)(state + 0x38));
+            double length = sqrt((double)motion[0] * motion[0] + (double)motion[1] * motion[1] + (double)motion[2] * motion[2]);
+            real magnitude = (real)length;
+            if (!(fabs((real)length) < 0.0001f))
             {
                 real inverse = 1.0f / magnitude;
                 motion[0] *= inverse;
                 motion[1] *= inverse;
                 motion[2] *= inverse;
             }
-            *(real *)(entry + 0xc) = (real)(random_unit_fraction(random) *
+            double fraction = random_unit_fraction(random);
+            *(real *)(entry + 0xc) = (real)(fraction *
                 (*(real *)(state + 0x28) - (double)*(real *)(state + 0x24)) + *(real *)(state + 0x24));
             motion[7] = 0.0f;
             if (0.0001f > *(real *)(state + 8)) *(real *)(state + 8) = 1.0f;
             if (0.0001f > *(real *)(state + 0xc)) *(real *)(state + 0xc) = 1.0f;
             if (0.0001f > *(real *)(state + 0x10)) *(real *)(state + 0x10) = 1.0f;
-            double sample = random_unit_fraction(random);
-            *(real *)entry = (real)((sample + sample - 1.0f) * *(real *)(state + 0x10));
-            sample = random_unit_fraction(random);
-            *(real *)(entry + 4) = (real)((sample + sample - 1.0f) * *(real *)(state + 8));
-            sample = random_unit_fraction(random);
-            *(real *)(entry + 8) = (real)((sample + sample - 1.0f) * *(real *)(state + 0xc));
-            sample = random_unit_fraction(random);
-            motion[3] = (real)(sample + sample - 1.0f);
-            sample = random_unit_fraction(random);
-            motion[4] = (real)(sample + sample - 1.0f);
-            sample = random_unit_fraction(random);
-            motion[5] = (real)(sample + sample - 1.0f);
+            real sample = (real)random_unit_fraction(random);
+            *(real *)entry = (sample + sample - 1.0f) * *(real *)(state + 0x10);
+            sample = (real)random_unit_fraction(random);
+            *(real *)(entry + 4) = (sample + sample - 1.0f) * *(real *)(state + 8);
+            sample = (real)random_unit_fraction(random);
+            *(real *)(entry + 8) = (sample + sample - 1.0f) * *(real *)(state + 0xc);
+            sample = (real)random_unit_fraction(random);
+            motion[3] = sample + sample - 1.0f;
+            sample = (real)random_unit_fraction(random);
+            motion[4] = sample + sample - 1.0f;
+            sample = (real)random_unit_fraction(random);
+            motion[5] = sample + sample - 1.0f;
         }
         state[0x86] = true;
     }
@@ -2189,7 +2194,8 @@ bool function_39a80(byte *state)
 // and the cosine share the slot at +0xc while the temporary at +8 stays separate; here the
 // length shares the slot of a. Tried: plain, reference and macro forms of the length (193-217),
 // first/second vectors in either order and operand order of the scalings (193-214), b before a (279),
-// the dot test last (205), angle and cosine spelled separately (193).
+// the dot test last (205), angle and cosine spelled separately (193), the current length as its own named local before the PIN (217), as an assignment inside the PIN (193).
+// Retail also spills a second temp at +8 for rotated.i and orders sine/cosine slots (+0x10/+0xc) differently; the rotation arithmetic differs from there on.
 // @retail 0x3e5a0
 void function_3e5a0(vector3f *current, vector3f const *target, real step)
 {
@@ -2820,22 +2826,30 @@ PRIVATE __forceinline real object_view_distance(point3f const *position)
     double x = (double)position->x - g_4b9da0.x;
     double y = (double)position->y - g_4b9da0.y;
     double z = (double)position->z - g_4b9da0.z;
-    return (real)(sqrt(z * z + y * y + x * x) * g_4b9dcc);
+    return (real)sqrt(z * z + y * y + x * x) * g_4b9dcc;
 }
 
-// score 194: retail reads the alpha from function_4baf0's second output (the byte pushed
-// first, at [esp+0x30]); the draft used the first output. Also open: retail keeps
-// the object table in ebp and `kind` (spilled to [esp+0x18]) in memory, and has a frame
-// 4 bytes larger with two dead zero stores in the final fade block; ours needs `volatile`
-// on kind to keep it out of ebp. Retail frees the x87 distance temporaries (fstp st(3))
-// before multiplying by g_4b9dcc, ours after (named helper, braces and a double local all
-// compile the same).
+// score 175 (was 194): the alpha is read from function_4baf0's second output (the byte pushed
+// first, at [esp+0x30]). `result` is left unassigned until a branch sets it, so it stays in dl
+// (the early `= false` made it a memory byte); the object is reached through a pointer to the table
+// slot (retail reloads it from the slot after the alpha store); and `(real)sqrt(..) * g_4b9dcc`
+// frees the x87 temporaries before the multiply, as retail does.
+// Still open: retail keeps the object table in ebp and `kind` (spilled to [esp+0x18] after the
+// flag test) in memory, with a frame 4 bytes larger (a float slot at +0x1c and the opacity byte get
+// dead zero stores in the final fade block); ours needs `volatile` on kind to keep it out of ebp,
+// which is why this stays a near miss. Retail loads the flag byte into al and tests it with
+// `shr al,2; test dl,al` (dl == 1 from `result = true`), ours folds it to `test [esi+0x10a],4`
+// whatever the spelling (bool cast, `& result`, byte local, `== 1`: all 175-190). Retail also reads
+// the fade at [ecx+0x2b0] straight from memory at every use of the first clamp (no local); spelled
+// that way (a repeated inline helper or a pointer local) the code matches there but swaps esi/edi
+// (object / table offset) and scores 186-208.
 // @retail 0x3d7f0
 bool __stdcall function_3d7f0(long object_index, real *out_alpha, bool *out_special)
 {
-    bool result = false;
+    bool result;
     s_scalar_object_header *header = &((s_scalar_object_header *)g_4e0300->data)[object_index & 0xffff];
-    byte *object = header->object;
+    byte **object_slot = &header->object;
+    byte *object = *object_slot;
     byte *definition = g_4e3b44[*(long *)object & 0xffff].bytes;
     volatile long kind = *(signed char *)(object + 0xaa); // kept in memory as retail does, see the note above
     real alpha = 0.0f;
@@ -2856,7 +2870,7 @@ bool __stdcall function_3d7f0(long object_index, real *out_alpha, bool *out_spec
             break;
         case 2:
         {
-            point3f position = *(point3f *)(object + 0x30);
+            point3f position = *(point3f *)(*object_slot + 0x30);
             function_4baf0(object_index, object_view_distance(&position), &first_output, &opacity);
             alpha = opacity * 0.003921568859368563f;
             break;
@@ -2881,7 +2895,11 @@ bool __stdcall function_3d7f0(long object_index, real *out_alpha, bool *out_spec
                     alpha *= 1.0f - fade;
             }
         }
+        else
+            result = false;
     }
+    else
+        result = false;
     if (!result && *(long *)(object + 0x14) != NONE)
         result = function_3d7f0(function_baf80(object_index), &alpha, out_special);
     header = &((s_scalar_object_header *)g_4e0300->data)[object_index & 0xffff];
