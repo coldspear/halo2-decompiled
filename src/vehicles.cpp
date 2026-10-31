@@ -20,6 +20,7 @@ helpers only they call. */
 #include "object_markers.h"
 #include "object_iterator.h"
 #include "unknown_1eb550.h"
+#include "vehicle_ray.h"
 #include <math.h>
 #include <string.h>
 
@@ -3600,16 +3601,6 @@ void __stdcall function_f62f0(long vehicle_index)
 		}
 	}
 }
-
-/* a ray: a point, a vector, the fraction along it something was hit and the
-   normal there */
-struct s_vehicle_ray
-{
-	point3f point;
-	vector3f vector;
-	real t;
-	vector3f normal;
-};
 
 bool function_182800(s_vehicle_ray *ray, long ignore_index, void *world);
 bool __stdcall function_168f40(long flags, s_vehicle_ray const *ray, long ignore_object_index, long ignore_unit_index);
