@@ -118,7 +118,7 @@ real distance_sq3f(point3f const *a, point3f const *b);
 // key_a is enregistered in BP (a preheader copy and a reload at the back edge) and the globals, point and
 // i rotate to EDI, EBX and ESI. The fast check needs distance_sq3f (0x24550) in the image (105 without
 // it). `distance_squared = 0.0f; if (*point_reference)` gives retail's block layout (102 positional,
-// score 65 (was 65): retail keeps the globals in EBX, point in EBP (so it stays a stack parameter), i
+// Earlier (also at 65): retail keeps the globals in EBX, point in EBP (so it stays a stack parameter), i
 // in EDI, entry in ESI (pushed after the count test) and reloads each key into CX; ours puts entry in
 // ECX, so key_a is enregistered in BP (a preheader copy and a reload at the back edge) and the
 // globals, point and i rotate to EDI, EBX and ESI: the same seven registers in another assignment.
@@ -192,6 +192,11 @@ real distance_sq3f(point3f const *a, point3f const *b);
 // split result store 65; fabsf for the height test 65; the globals local declared in the loop body (bound
 // read from g_4e0350) 113 (334 bytes); capacity test inverted (full arm first) 73; best stored before
 // results[0] 66.
+// Round 32 (lane 10, one-file LTCG harness, exact at 65): radius declared second or first (stack
+// order unchanged, harness calls adjusted) 65/65; the key temporary renamed (wanted, a_key, z_key) 65
+// each; `++i` 65; the marker count read once into a local 105 (353 bytes). Diagnostics: an unused
+// pointer to i or to key_a 65/65; point_reference dropped 71 (key_a is still loaded in the prologue into
+// BP and reloaded at the back edge: retail's key loads stay at each test because BP holds point).
 // @retail 0x19ec40
 long function_19ec40(
 	point3f const *point,
