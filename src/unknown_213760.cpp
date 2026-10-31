@@ -1155,9 +1155,9 @@ PRIVATE inline void cache_header_initialize_strings(s_cache_header *header)
     data[0x198] = 0;
     data[0x1bc] = 0;
 }
-// score 104 (was 104): retail hands the file handle to the read call by value, which the declaration
-// in include/async.h and the callers outside this file cannot give; frame 0x1144 and the extent agree.
-// score 104 (was 104): frame 0x1144 and extent agree; file displacement, request-copy, the first read
+// score 104 (was 104): frame 0x1144 and extent agree; file displacement, request-copy
+// scheduling, the first read handle copy and write-success join still differ.
+// Earlier: frame 0x1144 and extent agree; file displacement, request-copy, the first read
 // call's handle copy and the write-success join remain.
 // frame 0x1144 and extent agree; file displacement (retail's product in ECX
 // and `lea ebp`), the task zeroing/path/counter registers, the first read call's handle copy, the
@@ -1262,6 +1262,9 @@ PRIVATE inline void cache_header_initialize_strings(s_cache_header *header)
 // Round 233: complete post-completion success and failure decisions, each in bool/byte/short/long
 // widths, all 178 at 930 bytes; every form shrinks the frame to 0x1140. Original nested write
 // result/output storage restored; retail frame 0x1144 and file/request register homes remain.
+// Round 449: native initialized validity slots byte/signed-byte/word/long
+// 270/270/263/271; with ordinary completion while 307/307/295/308.
+// Original Boolean slots, byte fill, completion helper and complete body restored.
 // @retail 0x213970
 void function_213970(void)
 {
