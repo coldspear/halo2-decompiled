@@ -383,6 +383,14 @@ short *function_e70b0(long unit_index, short *value);
 // the returned pointer 49; `7 != ...` 49; `0 < state->timer` 49 (the same code each time). Diagnostic, not
 // kept: the actor address written offset first (`(index & 0xffff) * size + data`) 49, so the operand order
 // of the address expression does not decide the ECX/EDX tie either.
+// Round 98 (lane 8; LTCG env link with the ballast and 0xe70b0's object, equal to the full listing):
+// the swap comes from the LTCG-inlined 0xe70b0 action query. Linked without 0xe70b0's object (the
+// query stays an external fastcall call) the same source gives retail's roles (index EDX, actor ECX,
+// temporaries EDX) for the first 97 rows; 0xe70b0 written with a unit local, or the query spelled out
+// in place (diagnostics), keep the swap. Trials: `(short)state->unknown34` 49; `short action = 0;`
+// 49; the timer block as one `> 0 && !--timer && ...` condition 49 (identical code each time); the
+// query result in a named `short const *` 105 aligned 49 (436 bytes); re-measured in the env: the
+// query called, then `action != 7` 49, slot cast before the actor 49 (identical code).
 // @retail 0x1afb30
 void __stdcall function_1afb30(long actor_index, s_slot *slot)
 {
