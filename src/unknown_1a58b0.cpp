@@ -898,6 +898,12 @@ void function_25aba0(long actor_index);
 // when it became the host (the host is chosen first, its `level--` then fuses). State-one / kind-2 / choice as
 // an if/else chain on memset 119 (state-one split as retail, kind-2 hosts and fuses); the enabled arm in the
 // chain too 119 (identical).
+// Round 52 (harness exact once 0x1a7ad0 has several callers): the kind-2 failure `level--` fuses in all six
+// statement orders with either choice-failure order (aligned 3-10); real: stamp, state, pop with retail's
+// stamp-first choice arm 119 (only the kind-2 pop differs, 2 bytes short); pop, stamp, state 46; the
+// kind-2 test inverted with the failure statements inside it 29 (identical); success leaving by `break`
+// 29 (identical); the check result in a `started` bool 29 (identical). `level = level - 1` there and a
+// `continue` after the failure statements: identical / 42 positional.
 // @retail 0x1a7cc0
 void __stdcall function_1a7cc0(long actor_index)
 {

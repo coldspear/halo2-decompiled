@@ -1869,6 +1869,15 @@ PRIVATE __forceinline bool audio_target_is_current(byte *actor, long object_inde
 // it 453; the 0x40 failure as the else arm 638 (frame 0x28); `<= 0` with the failure arm braced 453.
 // Everything before the 0x40 failure block matches but for branch targets: ours reloads the definition
 // before `eligible = false`, retail stores first and so shares the 0x1a block's tail.
+// Round 30 (lane 11, plain; aligned diff 29 at 620/617 instructions): `object[0x39d] <= 0` 277 (retail's
+// `ja`, aligned 28; the 0x40 block and the exits are the rest); the 0x80 failure as an else arm with the
+// squad lookup's clear inside the then arm 277 (aligned 30); the last eligibility block nested in the
+// 0x40 block's `if (eligible)` 277 (same code), inside the 0x40 test's else arm 277 (same code); the 0x40
+// result as an assignment with the later tests under `if (eligible)` 652. Diagnostic: the success exit
+// written after the failure exit with a label 277 (same code: VC places the success exit first whatever
+// the source order); a compile-only harness keeps the exit order and the success block's load order
+// (weight, tag value, tag pointer; retail loads the tag pointer first) for a break with a retest, a found
+// flag, `tag_index[0]`, a copied tag and a weight pointer local.
 // @retail 0x20d8c0
 short function_20d8c0(long source_index, s_audio_priority_table *table, byte const *request,
     long object_index, long target_index, long previous_index, long *tag_index, real *weight)

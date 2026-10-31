@@ -1161,6 +1161,11 @@ void c_game_engine_markers::v21(long object_index)
 // (432 bytes), the unit's player index read through the object getter at both reads 113 (entry becomes v24's,
 // object kept across the type test), `bool away = !flag` after the player pointer 86 (438 bytes; tail and the
 // hoisted call setup retail's, but `not cl; test cl, 1` and the EDX hold remain), `bool home = flag; if (!home)` 119.
+// Round 109 (lane 6, fast): permuter 600 s, 10 tries, none below 40; a separate local for the event block's second
+// player-index read 40 (same code); team at each call with a const player and the unit looked up before the slot
+// 119 (428 bytes); the engine-type arms swapped (`== 9` first) 48; a const player pointer 40 (same code). The
+// matched v30 (0x240ee0) keeps the players' data load unfolded with the team per arm; here that form folds it
+// into `add eax, [ecx+0x44]`, which leaves EDX free for the options pointer from entry.
 // @retail 0x240ff0
 void c_game_engine_markers::v23(long object_index, long unit_index)
 {

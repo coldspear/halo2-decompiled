@@ -675,6 +675,12 @@ __forceinline void job_thread_buffer_get(s_async_task *task, byte **buffer, dwor
 // integer denominator converted at both divisions 207; per-use size fields 235;
 // guarded conversion initialized/separately assigned 64/64; shared extent with per-use
 // conversion/guarded conversion 233/235. Original body restored.
+// Lane 16 r46: `void *` view 51; with the total converted in place 73; total operand orders on the view
+// 51/51; `real total_size;` declared first 51. On the view, storage and owner/buffer/size/flag as one
+// record (init `buffer = storage`) 157 (the reloads appear; 0x2adb10 131, 0x120a90 matched); plus the
+// per-arm size 161 (689 B); plus `body_size > body_offset` 157 (dispatch hoist appears, into ESI); plus a
+// function-scope position 157; size/position renamed 157 each: size keeps ESI, position EDI (retail
+// the reverse), so the hoisted body-size load lands in the size register instead of ECX.
 // @retail 0x2ad7c0
 PRIVATE long __stdcall signed_file_read_work(s_async_task *task, void *parameters_view, long parameters_size)
 {
