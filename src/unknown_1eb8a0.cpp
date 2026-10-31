@@ -220,7 +220,8 @@ void function_1eb6f0(s_ease_input *input, s_ease_state *state, s_ease_output *ou
 	}
 }
 
-// score 642 (was 642): Frame 0x24 and clock EDI agree; d/q homes and scalar schedules remain. Native
+// score 642 (was 642): frame 0x24 and clock EDI agree; direction/sample homes and coefficient schedules remain.
+// Earlier: Frame 0x24 and clock EDI agree; d/q homes and scalar schedules remain. Native
 // Frame 0x24 and clock EDI agree; direction/sample homes and coefficient schedules remain.
 // Frame 0x24 and clock EDI agree; direction/sample homes and scalar schedules remain.
 // Frame 0x24 and clock EDI agree; d/q homes and scalar schedules remain. Native
@@ -304,6 +305,8 @@ void function_1eb6f0(s_ease_input *input, s_ease_state *state, s_ease_output *ou
 // Complete supplied-direction native/const/setter/CRT observations 731/731/743/731,
 // frame 0x2c and caller loss in each. Original 0x24 frame, inputs, qualifiers and caller restored;
 // direction/sample residence and coefficient schedules remain.
+// DL210: native active/limited/settled byte declarations, masks 1-7, then all with fast; existing completion bit helper in value/arm forms;
+// scores 642/649/649/642/642/649/649/649/642/642. Original source forms restored.
 // @retail 0x1eb8a0
 long function_1eb8a0(
 	s_ease_state *s,
