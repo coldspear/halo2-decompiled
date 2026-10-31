@@ -206,6 +206,13 @@ __forceinline void function_28e774(point3f const *arg_0, point3f const *arg_1, v
 // written placed-first or offset-first 4/4; the alignment dot's arguments swapped 4; the dot through
 // &local_12->field_70 6 (j and k flip, i becomes retail's); the dot through &field_80 4; through
 // &local_13 394; case one/two's copy as a direct field store 8 (the facing dot flips).
+// Round 131 (lane 4) on 8: alignment dot3f(local_14, &field_80) 8 (same code); dot3f(&field_80,
+// &local_12->field_70) 74; dot3f(&local_12->field_70, &field_80) 68; facing dot3f(&direction, facing)
+// 8 (same code: VC orders the facing sum itself); one placed point declared ahead of local_13 at the
+// switch scope for cases four and five 43; permuter (4 tries) best 6 only by a volatile bool for
+// the location result (a steering volatile, not applied).
+// Also on 8: case four's placed point declared before its function_b9a90 call 8 (same code); local_14
+// as `vector3f const *` 8 (same code).
 // @retail 0x28e770
 void __stdcall function_28e770(long arg_0, long arg_1)
 {

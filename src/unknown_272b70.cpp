@@ -2159,6 +2159,10 @@ PRIVATE __forceinline bool function_276381(long arg_0, s_unit_request *arg_1)
 }
 
 /* whether an actor an ai index names runs the command script named */
+// score 7 (was 7): Seven request-clear versus actor-address scheduling rows remain at exact retail length.
+// DL209: Byte/char/short/long results born after actor lookup, constant false or actor-admission
+// produced: 28/29/28/29/28/37/28/34. All remove the saved BL lifetime and regress; original result
+// restored.
 // @retail 0x276380
 bool function_276380(long ai_index)
 {

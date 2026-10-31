@@ -1669,6 +1669,9 @@ PRIVATE inline long equipment_secondary_weapon_r21(long unit_index)
 // weapon and short count 263/263/266. Original producers, clear order and complete body restored.
 // Tried (MiniMax I run 17): 0x1e5240's body (weapon index, record lookup, 0x1e5280) and ai_object_get's pool
 // indexing written out by hand 231; hand copies of existing functions are not kept without a match.
+// DL210: byte/signed-byte/unsigned-dword ammunition ordinals 263/263/323; paired real-array
+// role names 263, with those ordinals 263/263/323; readonly real weapon input pair 263.
+// Original ordinal, array names, mutability and complete body restored.
 // @retail 0x1e2a90
 void function_1e2a90(long actor_index)
 {

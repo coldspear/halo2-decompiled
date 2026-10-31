@@ -84,6 +84,9 @@ static inline s_12eb00 *entry_at_index(s_12ed00 *table, long index)
 // 21; cursor copies output/remaining/clusters 22; pins as x >= lo ? (x <= hi ? x : hi) : lo 29; renamed
 // result/cursors 21; count parameter second or last (caller updated) 21; result read once in
 // `previous_index = count++` moves its slot to +0x2c (101). The result is the heaviest spilled local.
+// Output pointer addition 21; offset addition 21; hi < x pins with a named contribution 18;
+// with unsigned final/accumulation offsets 18/18; with an outer countdown while 18;
+// reversed pin order 239; nested pin tests 18 (fast). Restored: best gain only 3.
 // @retail 0x12eb00
 long function_12eb00(long count, s_fog_cluster_distance *clusters, s_12eb00 *output)
 {
