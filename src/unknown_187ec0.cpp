@@ -263,6 +263,12 @@ struct s_seat_animations
 // and the per-arm entry pointer 78 (0x188130 17); that with `!result &&` in the while test instead of
 // the break 78 (17); with the count read inside the outer loop 84 (0x188130 1); with `type == 0` at each
 // use 88 (0x188130 18). Retail's EBP for animation is what keeps it a stack argument.
+// Round 95 (lane 8), on round 118's 52 form (no inner guard, per-arm entry, animation read once
+// through its address; reproduced 52, 0x188130 matches; its getter adds into ECX and copies to EAX
+// where retail forms the element with `lea ebx, [ecx + esi]; test ebx, ebx`): element_index also
+// read through its address as in 0x1882d0 52 (same code); result declared before first 69
+// (0x188130 1); the array-select entry `&(first ? ... : ...)[i]` 62 (0x188130 3); `if (result)
+// break;` before the parent step 66 (185 bytes); count declared before result 61.
 // @retail 0x187fe0
 s_seat_animation_entry *function_187fe0(long type, s_seat_animation const *animation, c_type_47f957 element_index)
 {

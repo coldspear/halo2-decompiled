@@ -700,6 +700,12 @@ struct s_1f9762
 // (~150 forms: else-if condition orders, declaration positions, names, previous-point if/else or
 // two calls, the path-records layout at +0x50c, a typed 0x4d8 vector, operand orders, a one-use
 // current-point pointer in the projection) keep y,z.
+// Round 14 (lane 2; fast, aligned in brackets, 30 at the start): only the first dot direction first
+// 67 [28] (retail's i product is direction first in the first dot, point first in the second; ours
+// the reverse); only the second 67 [30]; `last` as `field_2d <= field_2e + 1` 69; the previous-point
+// ternary with its arms reversed 92, with the first dot swapped 92; diagnostics, one-caller helpers
+// (not keepable): the previous point as a forceinline accessor 67 [28], the approach computation
+// as a forceinline helper returning whether it has length 67 [36].
 // @retail 0x1f9760
 bool function_1f9760(long actor_index, long object_index, point3f const *point, real distance,
 	bool *last_out, bool *direction_valid_out, vector3f *direction_out)
