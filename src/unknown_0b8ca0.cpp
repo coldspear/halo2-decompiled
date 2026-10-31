@@ -1743,6 +1743,9 @@ transform4x3f *function_b8bd0(long object_index, short node_index);
 // OBJECT_HEADER_GET(index) 302, the type test as `!((1 << type) & 0x80)` 290, the active flag not
 // volatile 289, the 0xc0 bit 6 test by shift 281. The slot_handler.h node-matrix helper can't be
 // included here (its header view clashes with this file's). Restored.
+// Round 205: Shared rotation/axis providers 332/332; shared point provider alone/rotation/axis 542/431/447;
+// rotation/axis with the native activity member 315/330; rotation with the earlier inverse phase 334.
+// All restored; frame, accepted table transport and node-query expansion remain.
 // @retail 0xb93b0
 void __stdcall function_b93b0(long parent_index, volatile long index, volatile short node)
 {

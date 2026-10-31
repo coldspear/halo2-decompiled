@@ -1799,6 +1799,12 @@ PRIVATE __forceinline void score_text_161420(byte const *widget, long valid)
 // indexed team 148; invalid-widget early exit with indexed team 148. Diagnostic, restored at once:
 // 0x1fa50 as that free function at its definition and every call, plus the indexed team loop: MATCH,
 // 0x1fa30/0x1fa50/0x1fb10 and every caller of 0x1fa50 unchanged (plain).
+// Round 129: indexed team text 148 again (1863 B but aligned 104 -> 60: retail's 0x2ec base; what
+// remains is scratch rotation: retail takes AL for every later justification and EDX/ECX for each
+// text call with the receiver before the push, ours rotates CL/DL/AL); the font/style block as a
+// call to the existing 0x13edb0 425, with indexed team 416 (not inlined, 1754/1767 B); indexed team
+// with a short counter 252; player row pointer per iteration 148 (1832 B), with indexed team 140
+// (1851 B, aligned 251).
 // @retail 0x161420
 void function_161420(long player_index, real alpha)
 {

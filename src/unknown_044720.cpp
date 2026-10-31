@@ -349,6 +349,9 @@ void __stdcall function_44c90(long group, dword selection_mask, long level,
 // Round 437: One intersection result and a single marking block, crossed with read-only
 // geometry/native bound sphere/uniform node reads, 223/223/223/223/234/234/242/242. All
 // conditional-result forms restored; all matched controls survived.
+// Round 446: Native center reference/own inline declaration/both 190/190/190;
+// each with the full table/dispatch ordinal 191/191/191; explicit stdcall with
+// original/reference center 190/190. Original definition, declaration and sole caller restored.
 // @retail 0x45560
 void function_45560(short entry_index, point3f const *center, real radius)
 {

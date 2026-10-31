@@ -517,6 +517,11 @@ typedef void (__stdcall *particle_callback_175610)(s_particle_175610 *, s_partic
 // zero store follows the declaration). On the indexed form with scale first (113, 1136 bytes; only the
 // two rotations differ: rows i/j/k sum k,i,j / j,i,k / i,k,j against retail j,i,k / i,k,j / i,k,j):
 // the 0xf80f mask passed inline 113 and the index declared at the function top 113 (rotations unchanged).
+// Round 93 (lane 8): the helper's copy loads the vector j, k, i where retail loads j, i, k, and row i's
+// sum follows that order. Scale initialised before multiplier 40 (the 1.0 stores only); with the two
+// particle copies swapped 48; with them declared at the inner loop's scope and assigned after the
+// particle lookup 40; with them made just before the rotation test 352 (1187 bytes); indexed
+// definitions with scale first 113 (1136 bytes) and alone 115.
 // @retail 0x175610
 void function_175610(s_particle_value_cache *cache, s_particle_system_datum *system, s_particle_location_datum *location, particle_callback_175610 callback, void *context)
 {
@@ -1366,6 +1371,9 @@ bool function_17afd0(long effect_index, long value);
 // Round 312: same-view classification after attachment on the retained availability gate,
 // bool/byte/short/long attachment with original/direct camera result 100/125/100/125/111/122/110/122.
 // Two-point gain restored; later-result forms can coalesce owner/NONE but regress overall. Original snapshot and body restored.
+// Round r4 (lane 17): camera flag renamed to sort after same_view 102 (slots unchanged: not name-ordered here); camera
+// flag declared before same_view 103; shifted word bit 9 + view global at each use + false-then-set availability 138
+// (508 bytes); owner = NONE at the top of the loop body 141 (488); same_view assigned in if/else arms 102 (same code).
 // @retail 0x174220
 void __stdcall function_174220(bool view_pass)
 {

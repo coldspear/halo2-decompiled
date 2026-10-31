@@ -233,6 +233,13 @@
 // direct coefficient 11 37; direct final chain 39; inline declaration target 37 but sibling 169 fast;
 // band3_35 before zz5 36; band3_21 before zz5 49; only sqrt2 double 30; early zz5/band3_21
 // declarations 30 each. Best 30 plain at 660/660 but sibling 0x146020 scores 11; original body restored.
+// Round 107: that 30 form's sibling loss is 0x146020's frame growing 0x40 -> 0x44 (a double local makes
+// this function want an 8-aligned stack); retail has no double local. Retail keeps sqrt(2) only because
+// sqrt(105) is pushed above it before band3_21 (it can't pop a buried root), so its band3_21 product is
+// `fmul st(2)` where ours absorbs the dying root (`fmulp st(2)`). Fast trials, 0x146020 matched in all: a
+// fresh cubic block (roots real locals or inline, zz5 new or zz scaled in place) in retail's order
+// (15, 11, 13, 9, 10, 12, 14) 141-156, in the current order with result[14] as one expression 69-162
+// (both roots local 69/80, inline 79/89); sqrt(2.0) written in both band products on this body 158.
 // Lane 14 r19: why 0x146020 drops to 11: a named `double` root gives this function an 8-byte stack
 // alignment need that LTCG passes to the caller (its frame grows 0x40 -> 0x44); `sqrt(2.0)` written in
 // both band products gives the same retained x87 root without it. 0x146020 also keeps `order` in EDX

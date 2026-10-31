@@ -114,6 +114,11 @@ void __stdcall function_1d6560(s_havok_component *component, s_physics_model_own
 // MiniMax R: both flag results computed as ((flags & 8) | 0x30) >> 2 and >> 3 instead of branching: 95 (not kept).
 // Round 200: byte/char/short/word layer result 92/91/119/119; with one direct full-width type
 // 141/141/121/121, all four lose the matched caller. Original layer and dispatch restored.
+// Round r4 (lane 17): one header pointer for type and object 132 (220 bytes, kind moves to ESI, caller 213); header
+// array local with one object_index read and one type read 124 (228, component on the stack, caller 209); one type
+// read keeping the component read in case 0 94 (256, component/index swap EAX/ECX, caller 13), the same with result
+// declared first 94 (caller 13); header array local with the component read at both uses 127 (224, caller 209).
+// The register parameters follow how often the body reads component: one read puts it on the stack.
 // Round 320: both rigid-body flags read live through the model; repeated/shared byte type
 // and original/explicit object-bit result arms 117/111/114/117; explicit level tests
 // 117/111/114/117. Every form loses the matched caller; complete original body restored.
@@ -324,6 +329,10 @@ struct s_flag_word_bits
 // also 280 with word flags; directly declared existing word-bitfield type 261. Original body, flag
 // declaration, type location and includes restored. Masked-context diagnostics 275/297/300/294 in
 // both widths repeat the older allocation and are excluded from the fresh count.
+// Round 208: Recursive inline with first-body/availability/model masks 0..7:
+// 261/298/257/298/278/280/278/280; availability-first with later policy, complementary policy, both
+// and direct bounds: 274/296/297/318. Four-point 257 rejected; original method, class declaration
+// and clamp restored. Frame/status/group homes remain.
 // @retail 0x1d6630
 void s_physics_component_walk::function_1d6630(s_physics_model_owner *owner, char const *kinds,
     dword const *entry_mask, s_physics_body_groups *groups, void *context, long parent, long current,

@@ -864,6 +864,10 @@ real normalize2d(point2f *v);
 // return, folded false exit). Request result returned from its arm 182 (919 B); early false return after
 // the retry 135; retry admission and call joined by && 135; unit index local 135; validity block
 // flattened into an early false return 232. All restored.
+// Round 208: Retry-outcome-owned chosen-speed defaults with early result declaration, valid-scope
+// retry outputs and horizontal-first pair declarations, masks 0..7: 212 each at 914/935 bytes.
+// Original chosen-speed initialization and complete body restored; retained DL result and
+// movement/request exits remain unresolved.
 // @retail 0x1f8160
 bool function_1f8160(long actor_index, signed char const *types, point3f const *target, bool force)
 {
@@ -1155,6 +1159,13 @@ real function_50650(real cosine);
 // clamp through a PIN macro, a named return value, and the velocity through the file's own planar
 // normalizer: identical code each (137). Retail preloads the velocity's j before fsqrt and scales i from
 // memory into a reciprocal copy; the epilogue pops sit before the final minimum's branches.
+// Round 29 (lane 11, fast; control 137): the whole minimum as one return expression 283 (1422 bytes: the
+// macro repeats the nested minimum); a two-pointer 2-D dot helper (as in 0x1b0cd0) for the velocity dot 137,
+// for the facing and velocity dots 137 (same code); facing_scale declared before turning_scale 135 (retail's
+// entry store order: facing, turning, velocity, following); the velocity copy as `= { i, j }` 137. Compile-only
+// listing: the 2-D normalize written out (plain or `*=` products) gives normalize2d_fast's code; retail keeps
+// velocity.j loaded across the length test (`mulss j, inv`, i through a copy of inv), ours folds both; the
+// non-LTCG listing places the four pops after the last merge's comiss as retail does, our LTCG build does not.
 // @retail 0x1f9e70
 real function_1f9e70(long actor_index, long object_index, point2f const *position,
     vector2f const *path_direction, vector2f const *facing, vector2f const *desired,
@@ -1486,6 +1497,10 @@ PRIVATE inline real movement_normalize2d(point2f *v)
 // Round 444: Ordinary origin with zero result after type/side/projection geometry
 // 292/284/284; assigned-sign counterparts 292/281/281; forward-scoped result with
 // direct/assigned sign 300/300. All restored; zero/radius and vector homes remain.
+// Round 208: Forward-before-lateral projections with ordinary origin, y-first type/side center pairs
+// and origin-workspace-first masks 0..7: 257/286/286/279/257/286/286/279. Original projections, row
+// stores and complete body restored; natural input convention, zero/radius and direction homes
+// remain.
 // @retail 0x1f99d0
 real function_1f99d0(long actor_index, long object_index, short type, point2f const *target,
     point2f const *origin, point2f const *facing, s_obstacle_list const *obstacles)
