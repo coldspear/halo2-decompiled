@@ -1665,13 +1665,13 @@ void function_bba20(long index);
 
 transform4x3f *function_b8bd0(long object_index, short node_index);
 
-// Round 27: the parent lookup written through pool->data, the activity bit carried in a byte, the
-// shift-form bit-7 test and the type-below-eight test each regress (298/285/292/292 against 285);
-// the original body is restored.
 // score 285 (was 285): the frame (0x64) agrees; 1239 bytes against 1236. The entry now matches up to
 // +0x76 (pool in EBX, -1 in EAX). Retail inlines the node matrix lookup (0xb8bd0's body, here called
 // out of line because its file is /Ob1) and re-derives pool->data into EBX after the ancestry loop
 // for both the parent and the header, where ours takes the header from the entry's pool->data.
+// Round 27: the parent lookup written through pool->data, the activity bit carried in a byte, the
+// shift-form bit-7 test and the type-below-eight test each regress (298/285/292/292 against 285);
+// the original body is restored.
 // Round 89: the node matrix through function_b8bd0 at its use, the link through the early parent
 // pointer (retail's two parent lookups) kept, 305 -> 285 (a local for the matrix 285 too); on it the
 // same fresh lookup written in place as 0xbdef0 does 350; the header from g_4e0300->data 298; index
@@ -1738,6 +1738,13 @@ transform4x3f *function_b8bd0(long object_index, short node_index);
 // Round 205: Shared rotation/axis providers 332/332; shared point provider alone/rotation/axis 542/431/447;
 // rotation/axis with the native activity member 315/330; rotation with the earlier inverse phase 334.
 // All restored; frame, accepted table transport and node-query expansion remain.
+// Round 30 (lane 11, fast = full here): after the ancestry loop retail derives the header from the
+// fresh data load it uses for the parent (EBX, data spilled at +0x14), tests bits 7 and 8 of the object
+// flags in shift form and computes the header bit in 8-bit arithmetic. A compile-only harness gives
+// each piece: the header as `g_4e0300->data + offset`, `(header->flags & 4) != 0` (`shr al, 2; and
+// al, 1`), and `>> 7`/`>> 8` shift tests. In the build: the header from g_4e0300->data 298 (pool moves
+// to EDI at entry), with both shift tests 304, plus the byte bit 300; the byte bit alone 281 (4, under
+// the gate), with both shift tests 290 (aligned 190 -> 174). All restored.
 // @retail 0xb93b0
 void __stdcall function_b93b0(long parent_index, volatile long index, volatile short node)
 {
