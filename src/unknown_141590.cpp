@@ -5,6 +5,7 @@
 #include "unknown_11c920.h"
 #include "unknown_0259d0.h"
 #include "vector_products.h"
+#include "normalize3d.h"
 #include <math.h>
 #include <string.h>
 
@@ -496,20 +497,6 @@ void orientation_from_matrix4x3(
 	out->scale = matrix->scale;
 }
 
-__inline real normalize3d(vector3f *v)
-{
-	real m = (real)sqrt(v->i * v->i + v->j * v->j + v->k * v->k);
-	if (!(fabs(m) < 0.0001f))
-	{
-		real inv = 1.f / m;
-		v->i = inv * v->i;
-		v->j = v->j * inv;
-		v->k = inv * v->k;
-		return m;
-	}
-	return 0.f;
-}
-
 void function_142390(
 	plane3f const *plane,
 	transform4x3f *out);
@@ -518,31 +505,10 @@ static __forceinline void matrix4x3_basis_store(transform4x3f *out, point3f cons
 {
 	out->scale = 1.f;
 	out->forward = *forward;
-	vector3f left;
-	left.k = forward->j * up->i;
-	left.k -= forward->i * up->j;
-	left.j = up->k * forward->i - forward->k * up->i;
-	left.i = forward->k * up->j;
-	left.i -= up->k * forward->j;
-	out->left.k = left.k;
-	out->left.j = left.j;
-	out->left.i = left.i;
+	cross3f_staged(up, forward, &out->left);
 	out->up = *up;
 	real_point3d_set(&out->position, 0.f, 0.f, 0.f);
 	out->position = *position;
-}
-
-static __forceinline void plane_vector_normalize(vector3f *out)
-{
-    real k = out->k;
-    real magnitude = (real)sqrt(out->i * out->i + out->j * out->j + k * k);
-    if (!(fabs(magnitude) < 0.0001f))
-    {
-        real inverse = 1.f / magnitude;
-        out->i = inverse * out->i;
-        out->j = out->j * inverse;
-        out->k = inverse * k;
-    }
 }
 
 static __forceinline void function_x7a3668(plane3f const *plane, transform4x3f *out)
@@ -550,7 +516,7 @@ static __forceinline void function_x7a3668(plane3f const *plane, transform4x3f *
 	vector3f w;
 	point3f position;
 	function_11d000(&plane->n, &w);
-	plane_vector_normalize(&w);
+	normalize3d(&w);
 	position.x = plane->d * plane->n.i;
 	position.y = plane->n.j * plane->d;
 	position.z = plane->n.k * plane->d;
@@ -783,7 +749,7 @@ void function_143250(
 	}
 }
 
-// score 1781 (was 1808): frame 0x314 versus retail 0x300; rotation admission and basis/matrix homes differ.
+// score 1781 (was 1781): frame 0x314 versus retail 0x300; rotation admission and basis/matrix homes differ.
 // Earlier: full frame 0x300 agrees; rotation input and basis/matrix homes remain.
 // Frame pointer 3182; separate adjacent basis pairs [0,1] 2278, [2,3] 2320,
 // [4,5] 2286, [6,7] 2329.
@@ -838,6 +804,9 @@ void function_143250(
 // [0,1,4]/[3,4,5,6]/[0,1,3,4,5,6] 1843/1806/1837/1836/1799/1781/1915/2075.
 // Rows [0,1,4] kept: 1781 plain, 10789/10773 bytes, frame 0x314; all other measurements unchanged.
 // Only fourteen additional matrix stores move; every scalar, precision boundary, value and application tuple remains.
+// Round 447: Third-band retained late rows [0,1,4] by columns in six row orders, then descending columns across rows and within each row
+// 1791/1795/1795/1790/1795/1791/1812/1803. Rotation admission and basis/matrix spill homes remain.
+// Original executable source and all trial helper/interface changes restored.
 // @retail 0x143600
 real *function_143600(real const *rotation, unsigned long order, real const *coefficients, real *result)
 {

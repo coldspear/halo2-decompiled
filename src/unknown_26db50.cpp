@@ -562,6 +562,11 @@ PRIVATE inline void record_rotate_vector(vector3f *vector, vector3f const *axis,
 // Round 200: output-pointer rotation with four formal priorities 90/90/90/90;
 // with native phase before distance 143/143/143/143 (frame 0xdc). Original void helper,
 // input copies and complete body restored; output-result lifetime does not resolve the spill.
+// Round 106: the existing 0x29c860 rotation helper (sin/cos of the angle inside, j/k cross terms in a vector,
+// i in its row) in place 225 (frame 0xd4), on a copied source vector 124 (rotation core as retail up to register
+// names, frame 0xe0); in place with the ring phase named before/after the distance 230/230 (SSE ring conversion,
+// radius copied through integer registers); the ring loop as a plain `for` 266, with the named phase 262, with
+// both 271 (1057-1066 bytes).
 // Round 2 of lane 18, on the 96 form (j/k cross terms first, ring phase named before the distance;
 // there only the direction components' registers, the radius copy and the sector load differ):
 // plain radius 222 (repeats the listed form on this base); radius as a reference into the object 264;

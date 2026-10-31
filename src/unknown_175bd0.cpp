@@ -1805,6 +1805,9 @@ long function_1785c0(s_effect_object_marker const *marker, s_effect_datum *effec
 // before the position block 236 (795 bytes).
 // Round 172: the forward rows' accumulators follow row statement order (XMM5, XMM4, XMM3); statement
 // orders i,k,j / j,i,k / j,k,i / k,i,j / k,j,i 82/77/82/81/81.
+// Round 450: complete live marker fields alone/node-first/matrix-live/both
+// 215/218/223/223; with staged cross 215/218/223/223. All lose the matched caller;
+// original point, marker, normalizer and cross producers restored.
 // @retail 0x1786f0
 void function_1786f0(s_effect_object_marker *out, s_effect_marker_source const *source, short marker_index)
 {
@@ -1995,6 +1998,9 @@ static inline bool effect_location_in_zone_178c80(s_location const *location, po
 // Round 172: shared colour helper (system, A, B) 178 (0x177040 92); its parameters renamed 178
 // (identical); both type queries as the call's arguments 145 (`multiplied()` runs first); cursor computed
 // after the colour call 158 (552 bytes); matrix at function scope 178.
+// Round 450: live cluster field alone/zone/entry/both 128/165/379/379; with
+// live base 128/165/379/379. Entry-field forms outline the existing zone producer;
+// its forced expansion on live cluster/entry gives 186. Original producer and body restored.
 // @retail 0x178c80
 void function_178c80(real scale, s_effect_datum *effect, s_particle_system_datum *particle_system, s_effect_particle_system_definition *definition, real unknown, bool field_b4)
 {
@@ -3007,6 +3013,15 @@ void __stdcall function_17a380(s_effect_datum *effect)
 // parameters swapped 93 (cached, identical)/120 (per call); per call with the index read through its
 // address 127; definition before the next index 114; system looked up first 119; shared colour helper
 // (system, A, B) 92.
+// Round 210: Native immutable settings value with cursor/tint/node combinations
+// 109/109/108/108/109/109/108/108. The full value expands frame 0x4c to 0x84 instead of retail
+// 0x54 and every form loses matched caller 0x176f60 through the generated input convention.
+// Original settings pointer, cached mode, query carriers, cursor and complete body restored.
+// Round 46 (lane 9), on the spawn-cursor form (89 here): colour B read first 90; next index read after the
+// definition call 96, with colour B first 96; both colours declared inside the type-query block 90 (aligned 27:
+// the loop is then retail's except the cached mode push; left are the system in EDI, colour A in EBX, colour B
+// spilled and the type object in ESI, retail ESI/spilled/EDI/EBX), that with the mode read per call 109 (register
+// effect index, 0x176f60 25), with the mode declared after the colour call 117, with a signed mode 90.
 // @retail 0x177040
 long __stdcall function_177040(long particle_system_index, long effect_index)
 {

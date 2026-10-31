@@ -99,6 +99,10 @@ PRIVATE __forceinline long function_2b2ed6(XUID const *xuid, bool *active)
 // code); the bit test inside each arm of the friends/players shift ternary 605; that ternary inverted
 // 359; the final text test inverted 496; separate title and suffix clears in retail's order 358.
 // Body restored.
+// Round 449: native four-member status output, existing range member and
+// uninitialized recent-player entry lifetime, all seven combinations 358;
+// complete graph with native status workspace also at entry 358. Original
+// array, member observations, output scopes and full body restored; homes remain.
 // @retail 0x2b2ed4
 void __stdcall function_2b2ed4(c_y_menu_list *list, bool friends, bool empty,
     c_class_1a2c81 *item, s_friend *datum)

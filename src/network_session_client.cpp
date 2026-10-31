@@ -668,6 +668,23 @@ static inline bool session_set_machine_limit(c_class_58d20 *session, long value)
 // read before the summary 131; summary fetched after the copy loop 76; the copy loop through a
 // members pointer 55. Harness-only: index declared at block top, the loop argument hoisted, the
 // player loop as a forceinline helper, all ESI.
+// Round 107: in the first-pass harness removing either in-loop session argument of the 0x6e910 call (the
+// 0x4db0 address or the 0x49c8 value), or the member count read, gives EBX/ESI/EDI; named copies of them
+// (inside the call block or before the loop) and a players array pointer are propagated back (ESI). Real
+// (fast with 0x58d20/0x6e500/0x72700/0x6e6b0): limit setter only when the 0x4994 setter succeeds 154 (421
+// bytes); players array pointer for the test and the call 55; dword player index 56; named argument
+// pointer inside the call block 55; mask/slot test as `continue` 55.
+// Lane 14 r19: diagnostics (reverted): without the three in-loop session uses the session is not
+// enregistered at all (152); without only the 0x49c8 read in the call block it takes EBX with retail's
+// index ESI and player pointer EDI (35, the rest is the constant), so the session outweighs the loop index
+// by less than one call-block use. Forms (fast, listing the inlined callees 0x5c490 0x58d20 0x5b080
+// 0x5c5c0 0x6e910, which reproduces the plain 55): variant address named before the loop 52 (substituted
+// back); `continue` guards 55; `do { } while (++i < 16)` 221; `while (i < 16)` 221; the loops through
+// the membership getter 0x5a680 55; 0x6e910's team parameter as `long` (no `char` truncation) 55.
+// Round 21 (lane 14, fast with the inlined callees): the call's last argument through the existing
+// get_value_49c8() 142 (503 bytes: the live test comes back); the copy countdown declared before its
+// index 55 (same code); the result initialised from the state test 169 (507); the copy loop counting
+// member_count itself down 118; the machine-address pointer written at both uses 55 (same code).
 // @retail 0x6e720
 bool function_06e720(c_class_58d20 *session)
 {

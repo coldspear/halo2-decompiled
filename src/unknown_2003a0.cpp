@@ -50,37 +50,21 @@ extern short const g_44aee8[20] =
 	3, 7, 3, 3, 3, 3, 1, 2, 2, 4, 4, 4, 5, 5, -1, 3, 7, 7, 7, 4
 };
 
-// score 90 (was 90): the five handles are now filled by memset (retail's NONE in EDX, LEA ECX
-// base and five stores); aligned on retail the body differs in 6 instructions (49 before),
-// but the second flag bit's load is hoisted above the branch and its store merged after it
-// (retail ORs/ANDs the byte in memory in each arm), which shifts the positional listing by one,
-// and the first bit is masked with AND EAX where retail has AND AX. Round 87 on the memset:
-// second bit as the record's bitfield 94 (the word's value is forwarded); SET_FLAG ternary 90;
-// byte or dword bitfield containers in the header 90/94 (cost 0x275a50); both bits as bitfields
-// 94; word truncation before the mask 90; masking bitfield insert for the first bit 90; dword
-// second-bit access 94; signed first-bit store with bitfield second bit 94.
-// Earlier at 82: real flag word/byte views 82; word-only flags 105; multi-use source flags 86;
-// real handle array index/library/pointer fills 82/90/101; flag aliases with indexed/library
-// fills 82/90; late next-link/word/long sentinel subsets 82 (seven orders); native-short
-// five-handle counter 99; Boolean first/second/both bits 107/88/112; conditional second bit 88;
-// library clear with first/both bits 124/127; counted pointer fill 82, with Boolean bits 112.
-// DH round 257: Typed 0x74 input record with native source bits and first/second output bitfields, eight
-// combinations 90/90/90/90/94/94/94/94. All record, interface, caller and body changes restored; flag
-// mask/store gaps remain.
-// Round 200: shared byte/word second-bit setters 92/92; word first bit with original/byte/word
-// second bit 103/107/103; byte first bit with original/byte/word second bit 106/106/106.
-// Shared setters do not recover the word mask or per-arm memory stores; original body restored.
+// Allocates a squad record and initialises it from its definition.
 // @retail 0x200c20
 void function_200c20(byte const *definition)
 {
 	long index = record_pool_allocate(g_51e9d8);
 	s_squad_datum *squad = squad_get(index);
 	*(word *)((byte *)squad + 2) = 0;
-	*(word *)((byte *)squad + 2) |= (word)((*(dword const *)(definition + 0x20) >> 8) & 1);
-	if (*(dword const *)(definition + 0x20) & 0x200)
-		*((byte *)squad + 2) |= 2;
+	if (*(dword const *)(definition + 0x20) & 0x100)
+		squad->flag0 = true;
 	else
-		*((byte *)squad + 2) &= ~2;
+		squad->flag0 = false;
+	if (*(dword const *)(definition + 0x20) & 0x200)
+		squad->flag1 = true;
+	else
+		squad->flag1 = false;
 	squad->first_actor_index = NONE;
 	squad->first_vehicle_index = NONE;
 	*(long *)((byte *)squad + 0x78) = NONE;
@@ -208,13 +192,6 @@ void __stdcall function_202420(long group_index)
 		*(bool *)((byte *)squad_group_get(*group_reference) + 0x22) = true;
 }
 
-struct s_group_record_iterator
-{
-	s_squad_group_datum *group;
-	s_record_pool_iterator records;
-	long unknown10;
-};
-
 struct s_squad_group_totals
 {
 	byte unknown00[4];
@@ -290,12 +267,6 @@ void __stdcall function_202570(long group_index)
 	group->count = count;
 	group->remaining_count = remaining_count;
 	group->active = active;
-}
-
-/* the group walk of 0x202720 */
-PRIVATE __forceinline s_squad_group_datum *next_group_record_202370(s_group_record_iterator *iterator)
-{
-	return iterator->group = g_4f55d0->active ? (s_squad_group_datum *)data_iterator_next_inlined(&iterator->records) : NULL;
 }
 
 /* walks the squad groups of g_51e9dc, only while the ai is active */
@@ -490,6 +461,16 @@ s_squad_definition_entry *function_203330(s_squad_definition_view const *squad);
 // remain.
 // Round 200: getter inline/cdecl/stdcall/inline-cdecl/inline-stdcall contracts 92 each;
 // inline/cdecl/stdcall with branch-owned next 89 each. Original getter and iterator restored.
+// Round 21 (lane 15): a found flag set at the type-2 break and tested after the scan gives
+// retail's control flow at retail length (336) but 94, since retail threads both scan exits past
+// the exhaustion test; with the 0x58 arm first 94 (aligned diff 48 against 52). The zero register
+// needs both the next = 0 store and the index's zero start (start at one diagnostic 81). On the
+// flag form: index before count/outer/found first/count in the condition/!= NULL/entry pointer
+// 94 each; NONE arm first 117, early return 117; select forms (alternate local or field read,
+// count slot if/ternary/value ternary, entries if/!if/ternary) 94 each, address ternary 91;
+// inline entries helper 94; index from next 94, long index 95, guarded do-while 94, squad index
+// stored before next 93; block view selected per use 93, in the condition 99, one block pointer
+// 104 (318 bytes). Retail also places the NONE store between the two entries arms.
 // @retail 0x204ec0
 void function_204ec0(s_squad_iterator *iterator, short squad_index, short flags, short mode)
 {
@@ -854,6 +835,13 @@ done:
 // 173; first scan as a while loop 202 (617 bytes); `goto done` on the exhausted iterator 185 (619);
 // block selection as if/else 176; squad lookup without the word cast 176; third scan without the
 // palette re-read 188.
+// Round 21 (lane 15): retail sign-extends the iterator flags at +8 (movsx), so the field is a
+// short: short flags 175 (aligned 123 against 124); with it, direct g_4e0350 reads in the second
+// scan 175, the definition read once before the squad test 198, current cleared at entry 172,
+// long result 211 (633 bytes). Retail keeps the definition in EBP through the second scan and
+// re-reads g_4e0350 each pass; ours hoists g_4e0350 into EBX and re-reads the definition.
+// Retail's NONE lives in ECX from entry into the third scan (re-set by `or ecx, -1` on its back
+// edge), with the result always in its stack slot.
 // @retail 0x205010
 short function_205010(s_squad_iterator *iterator)
 {
@@ -1829,7 +1817,14 @@ PRIVATE __forceinline void squad_area_consider(byte *squad, byte const *definiti
     }
 }
 
-// score 224 (was 257): Frame 0x3c agrees; count/definition/best/point homes, entry loads and packed reference tests remain.
+// score 224 (was 224): main's body (m3 review of lane 10 r33). The r33 form below reached 7 (4 with the
+// ternary negated), but all of it rests on squad_area_consider taking its two indices as `short const &`
+// so the inlined code re-reads entry+4/+6 after the distance call: with plain shorts the same form is 336.
+// Like a volatile read, that reference only steers re-reads, so it is kept only with a byte match.
+// Lane 10 r33 form at 7: loop 1's table choice falls through to the +0x60 arm (retail to +0x58), and loop
+// 1's best-candidate stores differ: retail loads and stores the area index before the palette index
+// there (loop 2 stores the palette index first, as ours does).
+// Earlier at 224: Frame 0x3c agrees; count/definition/best/point homes, entry loads and packed reference tests remain.
 // Packed comparisons 393; shared actor walk 344; split point scopes 344; early target 365;
 // native reference indices 350; entry fields at use 344; inline distance call 678.
 // Native player iterator 305; native entry cursor 316; word validation 305; matching-area
@@ -1889,6 +1884,24 @@ PRIVATE __forceinline void squad_area_consider(byte *squad, byte const *definiti
 // Round 436: lookup palette long 224 plain (kept); lookup area/both long 261/253;
 // consideration palette/area/both long 259/304/305; both palette inputs/all indices long 258/276.
 // The four-point lookup-both gain is below threshold; all other formal widths restored.
+// Round 207: promoted repeated entry indices 253; fallback palette 253; both 273;
+// retained absolute squad ordinal 347, with entry/fallback/both indices 335/329/305;
+// ordinal with complete reach expression 347. Original carriers and helper body restored.
+// Round 33 (lane 10): both reference compares through REFERENCE_EQUAL (retail compares each as one
+// dword) 265 (1250 bytes); with loop 1's per-pass table choice, entry fields read at each use and
+// the range tests nested in the loop (retail has no area null test, so the lookup helper went) 316;
+// the area helper taking the two indices as `short const &` (retail re-reads entry+4/+6 and
+// record+0x38 after the distance call and keeps loop 2's index in memory) 267 (aligned 41); the
+// entry address formed in each arm of the table ternary 86 at 1266 bytes; the ternary's condition
+// negated (retail falls through to +0x58) 83; the actor reference's element index in a long local
+// 16; the player walk on the 16-byte datum iterator (retail's player index at 0x48, its datum slot
+// at 0x3c) 4; with the ternary's condition back to `squad[0x60] ?` 7 (kept: the negation alone is a
+// 3-point gain). On the way: area index stored first in the helper 84 (fixes loop 1, breaks
+// loop 2); point declared per block 86, with the player iterator at function scope 86; on the 4
+// form, the entry pair through an `s_reference const &` 4, nearest stored after the best fields 8,
+// the helper's index parameters swapped 4 (identical), the nearest test written `*nearest > distance`
+// 4, the area index through a pointer to its entry field 4; a 600 s permuter run, 58 tries, none
+// below 4.
 // @retail 0x204450
 void function_204450(long definition_index, long squad_index)
 {
@@ -2112,6 +2125,13 @@ bool function_1df5d0(short team_a, short team_b);
 // 250/259/249; whole aggregation/centroid boundaries 284/249. Shared byte setter at opening/every
 // bit store 218/179. Original complete body and include set restored; cursor/contribution homes
 // remain.
+// Round 21 (lane 15), aligned instruction count in brackets (baseline 140): retail never sets
+// the count for an actor with neither unit nor perception (EBX keeps its last value, loaded from
+// the stack parameter before the loop); without our `else count = 0` 242 [94] (869 bytes), which
+// also gives retail's EBX load and the EDX zero for the clears; count at function scope 242;
+// header begin/next/both 242 each; hostile declared first 245; word/short count 241/241. Left:
+// our `&= ~0x10` splits around the zero, and g_4f55d0 stays in EDX into the first walk (retail's
+// squad arm reuses EDX, so it reloads at the loop top).
 // @retail 0x203360
 void function_203360(long squad_index)
 {
@@ -2296,6 +2316,16 @@ PRIVATE __forceinline long squad_tick_round(real ticks)
 // inline/ordinary 432; forced cdecl/stdcall 275/275; inline or ordinary cdecl/stdcall 432 each,
 // losing matched 200d80/201df0/204ca0. Original target and both private helper declarations
 // restored. Public area contracts were blocked by a held declaration file.
+// Round 21 (lane 15), aligned instruction count in brackets (baseline 160): retail's squad walk
+// is the file's squad_datum_walk_next (NULL preset, active test each pass, masked walk index;
+// matched 0x202720 uses it): with a word index 335 [139], long index 333 [133] (1088 bytes,
+// frame still 0x48); area iterator at function scope/before the walk/first 333 each; with
+// `else if (active && timer > elapsed) ... else if (active) deactivate` (retail tests the
+// computed flags & 0x80 twice) 312 [126]; word read of the wake flags 314 [133]; both 309
+// [124]; point/raised/location at function scope, with the area iterator too 309/309. Retail
+// gives the area iterator its own slot (0x40) and shares the squad walk with the raised point;
+// ours shares the area iterator with the point; scope changes don't move it. The walk renamed to
+// sort before the area iterator (same-size slots by name): original body 275, walk form 333.
 // @retail 0x201ea0
 void function_201ea0(void)
 {
@@ -2544,13 +2574,6 @@ void __stdcall function_202e90(long arg_0, short arg_1, long arg_2)
 
 void function_201520(short arg_0, long arg_1, long arg_2, long arg_3, long arg_4);
 
-struct s_200d80
-{
-    s_squad_datum *field_0;
-    s_record_pool_iterator field_4;
-    long field_10;
-};
-
 PRIVATE __forceinline s_squad_datum *function_200db0(s_squad_record_iterator *arg_0)
 {
     s_squad_datum *local_0 = NULL;
@@ -2738,6 +2761,9 @@ bool function_1fb8a0(long arg_0, short arg_1);
 // Round 436: native trigger table, raw/native entries and mutable/read-only cached receivers
 // 50/50/50/50; the same complete tables observed at every use 91/91/91/91.
 // All table/entry declarations and executable forms restored; the index reload remains.
+// Round 207: incoming-index, trigger-table/count and combined role names 50/50/50;
+// two-use trigger predicate counted as bool/byte/long/word 131/131/135/135,
+// Boolean count with the role names 131. Original trigger count and body restored.
 // @retail 0x202be0
 void function_202be0(long arg_0, long arg_1)
 {
@@ -2899,99 +2925,7 @@ local_11:
     }
 }
 
-PRIVATE __forceinline byte *function_202752(s_record_pool_iterator *arg_0)
-{
-    byte *local_0 = NULL;
-    if (g_4f55d0->active)
-        local_0 = data_iterator_next_inlined(arg_0);
-    return local_0;
-}
-
 static __forceinline long real_to_long(real value);
-
-// score 227 (was 227): Frame 0x30 agrees; active/pool reloads and zero-result joins remain.
-// Role names 227; native squad iterator 227; squad result local 227; short timers 227;
-// timer-only step 230 (725 bytes); separate group phases 277; both forms 297.
-// Single-result squad step 298; zero inline depth 584; global optimization off 439;
-// frame pointer 258; size preference 633. Original kept.
-// Timer squad for-walk 266; final squad iterator 263; timer group for-walk 329; timer snapshots 245;
-// positive-timer continues 227.
-// Native zero initialization 255; timer addresses 227; final group for 289; final squad for 329;
-// first squad-phase lifetime 227.
-// This round: group local publication 280; group field publication 293; group failure exit 293; squad
-// conditional return 264; squad direct return 227; local group conditional squad 277; field group
-// direct squad 293; local group direct squad 280.
-// Native group both/first/root 250/272/282; native squads 258; both native walks 256; group
-// workspace lexical order 250; both workspace lexical order 256.
-// Phase-local native squad timer/final/both 252/262/259; phase-local native groups 293; all phase-local native walks 314.
-// Round 117: Activity input group/squad/both 227/227/227; conversion-workspace names 227; factor-first periods 227; ordinary inline group/squad 227/227.
-// Round 121: Boolean group-step contract 227; unused group/squad/both suffix words removed 228/228/228; typed squad-step return 227. Original records and helper contracts restored.
-// Round 260: native group/squad/both iterator reference formals 227 each; group or squad
-// references with its activity input 227 each; both references with group/squad/both activity
-// inputs 227 each. Original helper contracts, observations and all four walks restored.
-// Round 176: Shared conversion input/output/both scratch 227/227/227; input/output/both with
-// native groups 250/250/250; both with native group/squad walks 256; phase-local groups 292.
-// All computation points preserved; original four walks and scratch scopes restored.
-// Round 73: retail reloads the ai globals pointer every pass of the group walks (ours keeps it in
-// EBP) and presets the step's NULL result before the active test. NULL-preset group step 280
-// (682 bytes); group walks on the step's returned pointer 227; squad walks likewise 227; both
-// with the NULL-preset step 280/280.
-// @retail 0x202720
-void function_202720(void)
-{
-    s_group_record_iterator local_0;
-    s_200d80 local_1;
-    if (g_4f55d0->active)
-    {
-        local_0.records.data = g_51e9dc;
-        local_0.records.index = NONE;
-    }
-    while (next_group_record_202370(&local_0) != NULL)
-    {
-        if (*(short *)((byte *)local_0.group + 0x1e) > 0)
-        {
-            real local_2 = (real)g_510c54->field_2_3 * 2.0f;
-            long local_3;
-            local_3 = real_to_long(local_2);
-            *(short *)((byte *)local_0.group + 0x1e) -= (short)local_3;
-        }
-    }
-    if (g_4f55d0->active)
-    {
-        local_1.field_4.data = g_51e9d8;
-        local_1.field_4.index = NONE;
-    }
-    while ((local_1.field_0 = (s_squad_datum *)function_202752(&local_1.field_4)) != NULL)
-    {
-        if (*(short *)((byte *)local_1.field_0 + 0x64) > 0)
-        {
-            real local_2 = (real)g_510c54->field_2_3 * 2.0f;
-            long local_3;
-            local_3 = real_to_long(local_2);
-            *(short *)((byte *)local_1.field_0 + 0x64) -= (short)local_3;
-        }
-    }
-    if (g_4f55d0->active)
-    {
-        local_0.records.data = g_51e9dc;
-        local_0.records.index = NONE;
-    }
-    while (next_group_record_202370(&local_0) != NULL)
-    {
-        if (*(long *)((byte *)local_0.group + 0x10) == NONE)
-            function_202a00(local_0.records.datum_index, NONE);
-    }
-    if (g_4f55d0->active)
-    {
-        local_1.field_4.data = g_51e9d8;
-        local_1.field_4.index = NONE;
-    }
-    while ((local_1.field_0 = (s_squad_datum *)function_202752(&local_1.field_4)) != NULL)
-    {
-        if (*(long *)((byte *)local_1.field_0 + 0x6c) == NONE)
-            function_202be0(NONE, (word)local_1.field_4.datum_index);
-    }
-}
 
 struct s_squad_datum_walk
 {
@@ -3011,6 +2945,58 @@ PRIVATE __forceinline s_squad_datum *squad_datum_walk_next(s_squad_datum_walk *w
     }
     return squad;
 }
+
+// @retail 0x202720
+void function_202720(void)
+{
+    s_group_datum_walk groups;
+    s_squad_datum_walk squads;
+    s_squad_group_datum *group;
+    s_squad_datum *squad;
+    group_datum_walk_new(&groups);
+    while ((group = group_datum_walk_next(&groups, g_4f55d0->active)) != NULL)
+    {
+        if (*(short *)((byte *)group + 0x1e) > 0)
+        {
+            real local_2 = (real)g_510c54->field_2_3 * 2.0f;
+            long local_3;
+            local_3 = real_to_long(local_2);
+            *(short *)((byte *)group + 0x1e) -= (short)local_3;
+        }
+    }
+    if (g_4f55d0->active)
+    {
+        squads.iterator.data = g_51e9d8;
+        squads.iterator.index = NONE;
+    }
+    while ((squad = squad_datum_walk_next(&squads, g_4f55d0->active)) != NULL)
+    {
+        if (*(short *)((byte *)squad + 0x64) > 0)
+        {
+            real local_2 = (real)g_510c54->field_2_3 * 2.0f;
+            long local_3;
+            local_3 = real_to_long(local_2);
+            *(short *)((byte *)squad + 0x64) -= (short)local_3;
+        }
+    }
+    group_datum_walk_new(&groups);
+    while ((group = group_datum_walk_next(&groups, g_4f55d0->active)) != NULL)
+    {
+        if (*(long *)((byte *)group + 0x10) == NONE)
+            function_202a00(groups.group_index, NONE);
+    }
+    if (g_4f55d0->active)
+    {
+        squads.iterator.data = g_51e9d8;
+        squads.iterator.index = NONE;
+    }
+    while ((squad = squad_datum_walk_next(&squads, g_4f55d0->active)) != NULL)
+    {
+        if (*(long *)((byte *)squad + 0x6c) == NONE)
+            function_202be0(NONE, squads.walk_index);
+    }
+}
+
 
 // @retail 0x201c80
 void function_201c80(void)
@@ -3128,6 +3114,22 @@ void function_2011f0(long arg_0);
 // Round 200: native creation/request/final-chain getter subsets 355/338/355/338/355/338/355;
 // all with first cached squad receiver 403. Creation subsets reach 1328 bytes but worsen
 // instruction allocation. Original lookup producers, narrowed values and complete body restored.
+// Round 21 (lane 15), scores with the aligned instruction count (baseline 192) in brackets:
+// renamed unavailable mask 338 (slot unchanged); squad = squad_get(arg_1) at entry with the
+// final splice through squad_get 348 [192]; arg_1 unmasked at every call and the +0x3a0 store
+// 374 [206]; both 356 [167] (frame 0x130); with the placement row from arg_1 & 0xffff 352
+// [155]; with the 0x203330 getter for the definition 348 [156] (getter alone 374); 0x200ee0
+// output declared at seat/entry scope 348/348; with seat = NONE once at its declaration 355
+// [88] (frame 0x134 again; alone 357 [221]); long row category 351 [88]; short-compared
+// prior-object word 352 [87]; long difficulty 349, switched as short 352; seat/placement/
+// spawn/chain renamed in retail slot order or reversed 352/352 (slot order unchanged); spawn
+// index set in each arm of `(short)arg_2 == NONE` 347 [78]; natural short attempt for loop
+// 352 [85], with per-arm spawn index 353 [80] (gives retail's unthreaded arg_0 = 0); a squad
+// local fetched in each chain pass 350 [75] / 356 [77] with the for loop. Lead: retail sizes
+// the memset through a fresh placement lookup ((word)arg_1 * 0x74 + 0x48, movzx) while the
+// row local serves every other use; that mixed read (not kept) gives 253 [61] at 1332 bytes.
+// Left after it: placement/arg_2 EBX/EBP swap, seat/placement/spawn/chain slot order,
+// promoted difficulty, setne on the long final flag (retail pushes a bool formal).
 // @retail 0x201520
 void function_201520(short arg_0, long arg_1, long arg_2, long arg_3, long arg_4)
 {

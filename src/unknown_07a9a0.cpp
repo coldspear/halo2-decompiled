@@ -294,6 +294,12 @@ void function_07b3e0(void)
 // Round 45 (lane 9): iterator form re-measured 58 (aligned 9); iterator set up through an inline (iterator, pool)
 // helper 58; datum index through data_datum_index on a pool local 57; iterator at function scope 58; a `for` over the
 // step's returned datum 53 (135 bytes); scan on the global with the datum from a pool local 64 (the local spills).
+// Lane 14 r19 (fast `0x7b430 0x7b650` reproduces 39): index declared before the pool 39; a `for` loop
+// from data_find_index(pool, 0) 125 (188 bytes); the final valid store through the pool local 42;
+// iterator fields stored index first with the global read into the data field 58; iterator
+// initialised from the global 58 (both: retail's code but one pool register). The matched 0x18c060's
+// EBX/EBP pair is the hoisted global plus the iterator copy; this global is aliasable (reloaded at the
+// end in retail too), so retail's EBX here is a local copy.
 // @retail 0x7b430
 void function_07b430(void)
 {
