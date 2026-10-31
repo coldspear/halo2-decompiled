@@ -198,6 +198,12 @@ void replication_table_release_chain(s_handle_peers *peers, long count, long con
 // priority at the arm scope 170 (814 bytes; type keeps EBX through the pending chain, whose index
 // spills); active cursor bounded by a remaining countdown 55 (same code); indexed loop bounded by its
 // own count local 170; `type = 4` after the active chain query 170; blocked declared after `type = 4` 170.
+// Round 14 (lane 2): retail keeps type in EBX and splits it only around the pending loop (stored to
+// +0x34 before the chain query, reloaded at 0x98402 before the join) because that loop's call needs
+// EBX for the vtable; with the active chain indexed ours keeps type in EBX, puts the vtable in ESI
+// and spills the pending index. On the indexed form (fast, 0x89d20 with it): one function-scope
+// `blocked` for both chains 170; `i != handles_count` in the pending/active loop 170/170; the pending
+// item locals declared size first 170; on the cursor form, the same item order 55.
 // @retail 0x98150
 long c_handle_table_450cd0::v1(long a1, long max_count, void *output)
 {

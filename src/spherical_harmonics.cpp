@@ -265,6 +265,10 @@
 // again 33, sqrt21 declared with the other roots 6, zz5 defined before result[11] 188 (700 bytes),
 // zz5 after xx_3yy 6, sqrt5 initialised at its declaration 6. The 6 form still writes sqrt(2.0),
 // `zz5 - 1.0f` and the band3_21 product at each use, so it is only keepable as a full match.
+// Round 14 (lane 2): that 6 form spliced into the current file is still 6 (fast, 0x146020
+// matched); left the sqrt15 load retail puts between `fld z` and `fmul z`, and zz5/band3_21 trading
+// stack slots (retail stores zz5 over zz). On it: zz5 renamed a_zz5/zz_5/z5 6/6/6, zz renamed 6;
+// permuter (anneal, 600 s) 50 tries, best 6. Original body restored.
 // @retail 0x143360
 void spherical_harmonics_evaluate_direction(vector3f const *direction, dword order, real *result)
 {
