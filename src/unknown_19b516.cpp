@@ -196,6 +196,13 @@ void c_widget::v16()
 // instructions); head copy as the body's first statement or in an if/do-while: base code; the widget
 // passed to a forceinline search helper: base code; an out-of-file previous-or-last function is not
 // inlined at /O1 (called). Retail's entry result stays a scratch value copied in the shared loop head.
+// Round 51 (LTCG env link of this file, equal to the full listing): the step, the entry or both through
+// the base class's helper directly 2; entry and step through two distinct helpers (separate result
+// symbols) 2; the NULL-first if/else helper 2; ternary helper at both 17; `result = previous; if
+// (!result) result = last_sibling();` at both 20 (90 bytes, entry straight into ESI), written-out walk
+// 20; early-return helper at both 17; the if/else step into the widget gives retail's tail but its
+// entry its own `test eax, eax; push esi; mov esi, eax; je` (92 bytes); that step with an early-return,
+// `if (!result)`, ternary or out-reference entry 17 each (entry computed into ESI and threaded).
 // @retail 0x22ec1b
 void c_widget::v17()
 {

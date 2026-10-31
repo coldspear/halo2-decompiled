@@ -2631,7 +2631,7 @@ void function_a8b10(long unit_index);
 
 /* takes a unit out of its vehicle seat: detached, its weapon back in hand,
    its exit animations */
-// score 68 (477 bytes, retail 483). With 0xe0070's loop written with a found flag (lane 14 round 12;
+// score 9 (was 68): 483 bytes as retail. Earlier: score 68 (477 bytes, retail 483). With 0xe0070's loop written with a found flag (lane 14 round 12;
 // not kept, a test-set flag is kept only with a match) it scored 9 and only scratch registers differed:
 // retail eax/ecx for the 0xcbd50 slot read, edx for the 0xee460 push and eax/ecx for the two seat pushes;
 // ours one step on (ecx/edx, eax, ecx/edx).
@@ -2647,6 +2647,21 @@ void function_a8b10(long unit_index);
 // (plain; fast 92 from the reload); type flag after the early return 154 (and 0xeaad0 lost its match);
 // the unit through UNIT_ACTION_HEADER_GET 68; vehicle index read after the early return 68;
 // `!unit->object_type` at the 0xe0070 call 68 (all plain).
+// Round 51 (score 9, 0xe0070 matched): only scratch registers differ, retail EAX/ECX for the 0xcbd50
+// slot read, EDX for the 0xee460 push, EAX then ECX for the two seat pushes; ours ECX/EDX, EAX, ECX,
+// EDX (one allocation behind). An LTCG env link (this file + the callee closure) gives the full
+// listing; there: an unused local 9 (plain); the 0xb58c0 owner in a local, the 0xcbd50 result in a
+// local passed on, tail actor/player locals, the 0xcdeb0 result in a short local, the 0xe0070 test
+// nested, the flag after the vehicle index, the flag as byte/char/dword cast, an inline unit getter
+// (plain/forceinline/with a local) or weapon-of-unit helper at the 0xcbd50 argument, header-based
+// reads, `is_vehicle == false`, `!TEST_FIELD_BIT(is_vehicle)`, an empty then-arm, `== -1`, the
+// 0xcbd50 test joined to the flag with `&&` and 0xee460 under its own test, `(void)&is_vehicle` 9 each
+// (identical); action name at the call 39; header pointer for the unit 10; state/action before the
+// early return 23; action declared first 11; seat as a short local 24; seat cleared first 11;
+// `not_vehicle` 13; flag as long 23, TEST_FIELD_BIT 10; 0xcc810 in both arms 27. Diagnostics: two
+// extra temps (a load and store) just before or inside the second `!is_vehicle` block give retail's
+// registers (one extra temp does not; two before the 0xd4 test rotate that chain instead), so retail
+// makes two more free-choice allocations (or one fewer) between the 0xd4 chain and the slot read.
 // @retail 0xea8e0
 void __stdcall function_ea8e0(long unit_index, bool hurried)
 {

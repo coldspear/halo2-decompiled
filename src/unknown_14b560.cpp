@@ -2649,6 +2649,15 @@ static inline bool player_datum_iterator_next(s_data_datum_iterator *iterator)
 // Round 433: Existing first iterator with direct data observations, returned datum ownership and
 // exhaustion-first arms; direct-data forced expansion; fast 103/103/103/102/102/102/102/103.
 // Original body and existing helper restored.
+// Round 51: the cause is the final `unknown9e = false` store: our build keeps the globals pointer
+// (EDI) available across both loops for it, reloading it on loop 1's back edge and after each loop-2
+// call, so `last_unit` takes EBP and the loop-1 registers swap; retail reloads the global only at that
+// store and keeps it in ESI for the prologue tests alone. On an LTCG env link (this file, its closure
+// and 0x13cb40's file; equal to the full listing; aligned counts against 77): the existing
+// players_globals_14f2e0() for the in-loop store, or for both stores 77; busy arm first 79;
+// `if (!failed)` store 77; global re-read into `globals` before the store 77; the store through
+// `globals` 73 (the global takes ESI as retail, but 618 bytes: the field address is kept on the
+// stack); `globals` scoped to the prologue 77; `failed` declared with the loop-1 locals 81.
 // @retail 0x14cdd0
 void function_14cdd0(void)
 {
