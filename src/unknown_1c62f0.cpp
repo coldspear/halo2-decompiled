@@ -160,6 +160,11 @@ void c_animation_channel::clear()
 // early/retail 68/68; defaults through copy_from 45/45; complete native
 // replacement assignment/copy_from 75/52. All lose five matched caller controls;
 // original body restored. Saved graph and identifier carriers remain.
+// Round 32 (lane 11, fast with the six matched callers; retail's callers load ECX first, then EDX,
+// then EAX, but the matched callers already do so with this declaration, so no reorder was tried):
+// `long const` graph parameter 36 (same code); single-exit result 49 (127 bytes, callers lose); the
+// id copied right after the NONE pair 41; unknown0e stored before graph 43; rate stored before the
+// frame 42. Diagnostic only: size-preference pragma 56 (120 bytes).
 // @retail 0x1c6470
 bool c_animation_channel::set(long graph_tag_index, word flags, c_type_709360 animation_id, long unknown08,
 	char unknown0c, char unknown0d, char unknown0e)

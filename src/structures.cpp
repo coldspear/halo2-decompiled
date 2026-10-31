@@ -250,6 +250,13 @@ static __forceinline bool structure_bsp_collision_available()
 // the requery under `if (!excluded)` with `found = false` otherwise 77 (263 bytes). The one-file LTCG
 // harness passes the surface in EAX (the real build in ESI) even with 0xd2bb0's file and the other
 // callers of 0x14ac60/0x14a8e0 linked, so it cannot screen this function.
+// Round 32 (lane 11, fast; 0x14af40 has the same BL flag and inlines 0x10a0b0 where this calls it, so
+// a helper shared by the two was tried): the scenery test in a force-inline bool helper with
+// `if (!excluded && 0xbf9a0)` storing the 0x14a8e0 result and `if (excluded) return` 118 (307 bytes),
+// as plain inline 105 (245 bytes, out of line); the flag through a reference out-parameter 118; a helper
+// returning the 0xbf9a0 result with the flag through a pointer 118; the flag cleared, then set from
+// `!= 2` inside the type test 56 (288 bytes, setne and the direct exit stay; a flag set in a test).
+// Compile-only (/O2 without /GL) all of these, plain/force-inline/single-exit helpers, thread the flag.
 // @retail 0x14b120
 bool function_14b120(s_surface_query_source source, void *surface)
 {
