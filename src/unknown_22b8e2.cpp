@@ -86,6 +86,12 @@ void function_2d140(long, real const *, long, long, s_filter_vector const *);
 // parallel span/distance/both/weight/span+weight/distance+weight/all/all+integer-bound producers
 // 6/6/6/6/6/6/6/188.
 // All source forms restored; bottom/top conversion scheduling remains.
+// Round 12 (m3 lane 2; exact one-link harness: this file with 0x13a532's, 0x1396c7's, 0x22acb4's and
+// 0x2d140's files): grid as 18 separate statements 6; grid as a vertex struct {x, y, u, v} 6; bounds as
+// two real_bounds 6; bounds as an s_float_rect 6; each bound converted just before its first grid row 7.
+// Harness only: top/bottom converted after grid row k (k = 1..6) moves each conversion after all three
+// stores of a row, never between (positional 6-9); the blends among the grid rows 7-104; the global
+// stores before the point/reciprocals/conversions/grid 206/181/93/77 (positional).
 // @retail 0x22b8e2
 void function_22b8e2(s_22b8e2 const *arg_0, long arg_1, color4f const *arg_2)
 {

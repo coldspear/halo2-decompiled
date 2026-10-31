@@ -227,6 +227,13 @@ __forceinline void function_293133(real arg_0, vector3f const *arg_1, vector3f *
 // true flag stored before the two false ones 42 (the +0x18 store then lands after the two false
 // ones, still ahead of the rest); the two false flags as one chained assignment 43; grouped dot
 // with the vector copied first 90; grouped dot with the true flag first 41 (masked difference 5).
+// Round 108 (lane 6): the helper's shape is the classic rotate-about-axis (dot(axis, vector) times
+// 1 - cos, the same three cross terms, rows cos*v + k*axis - sin*cross), so only colouring is left.
+// The cross terms before the dot 66 (dot then sums j, k, i); the dot grouped (i + k) + j 42 (retail's
+// sum order, but ours makes the k product the accumulator: v.k in XMM4 where retail has XMM1); on
+// it: the rows as one expression each 42 (same code), the helper returning the vector 42, a vector
+// pointer local in the caller for the copy and the call 118, (vector, axis, sine, cosine) parameters
+// with sine and cosine named in the caller 42, the grouped dot named before the product 42.
 // @retail 0x293130
 long __stdcall function_293130(long arg_0)
 {

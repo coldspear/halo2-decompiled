@@ -137,6 +137,12 @@ PRIVATE __forceinline point2f const *particle_spawn_extents(s_particle_system_da
 // nine match losses, restored); native component array with inherited/ordinary reads 6/47;
 // all three tail declarations at entry 6; tail local names 6; reciprocal/squared-speed declaration
 // at entry separately 6/6. Original frame, helper, field accesses and qualified reads restored.
+// Round 12 (m3 lane 2; one-link harness with 0x247950's, 0x246cd0's, 0x259d0's and 0x1462e0's files
+// reproduces case 1 exactly): case 1 sinf 6, cosf 4; `position.x = velocity.i = 0.f` 2; velocity through
+// vector3f_assign with sine/cosine arguments 549 (2300 bytes: case 1's tail cross-jumps into case 2's);
+// a double sine 507. Harness only: the two zero stores in all 60 placements among the four trig stores
+// (both statement orders) keep xorps (or the velocity lea) between fld and fsin; the velocity through
+// vector3f_assign and the position through real_point3d_set 493; the position setter alone 305 (positional).
 // Round 29 (lane 11): case 1 with sinf for the sine 6, cosf for the cosine 4, both 8; the cosine store
 // before the sine store 11 (the one-use sine is evaluated at its use, after the fcos); the sine declared
 // before the radius call 2 (same code: it is carried past the call). Our scheduler fills the fld latency

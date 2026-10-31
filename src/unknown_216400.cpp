@@ -360,6 +360,9 @@ PRIVATE inline bool append_save_entry_2164c0(s_save_list_2164c0 *list, s_save_en
 // unknown_216b60.cpp so LTCG inlines it 32 (plain, same code); a count local post-incremented
 // in the copy and stored back after it 33; `entry.type` passed to 0x216e50 32; `entry.type`
 // set inside the type loop before leaving it 32.
+// Round 177 (fast, append helper): the result declared `bool const` 32, as `char` 32, as `!(count ==
+// 4096)` 32 (all same code); the room test `4096 - list->count != 0` 51 (mov/sub before the setne);
+// `if (!result) return result;` before the copy 32 (same code).
 // @retail 0x2164c0
 void function_2164c0(long memory_unit, s_save_list_2164c0 *list)
 {

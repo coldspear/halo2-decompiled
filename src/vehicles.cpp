@@ -788,9 +788,21 @@ __forceinline long vehicle_round(real value)
 
 /* flips a vehicle back over: a spin about its forward (or its side) for up
    to two seconds while it's upside down */
-// score 12 (was 12): three products with up.j keep it in a register (retail folds it as the memory
-// operand: the first cross's k term and the side cross's i and k terms), and the fail path re-zeroes
-// AL before returning false (retail returns the entry's zero), two bytes over retail.
+// score 8 (was 12): retail's length and tail now; four products load the other operand (ours loads up.j
+// for the first cross's k term and the side cross's i term, up.i for the side cross's j term, and the
+// velocity for the dot's i term; retail loads forward each time). Kept: one `bool result` exit, the
+// failure arm first (`if (!(...)) { clears } else { ...; result = true; }`) and word_flags_set for the
+// flag clear (the clear stays a fused `and byte` last, as retail).
+// Round 130: result + else-arm stores with `flags348 &= ~0x40` 30 (759 B, clear split), with a word
+// clear or a bit-field clear 15 (clear moves first), SET_FLAG 15, word_flags_set/byte_flags_set 12/12
+// (tail exact, six products flip), both helpers with the two returns 12/12 (753 B), the failure arm
+// first 8 (kept); on it: an up pointer local 94, a named dot result 10, `-(up.k / rate * 2)` 159,
+// De Morgan tests 11, byte_flags_set 8, result declared first 178. A compile-only screen (products
+// match the full build) found none under four flips in 576 combinations of declaration orders,
+// result placements, cross3f_staged for either cross, the up pointer, named dot and rate forms.
+// Before round 130 (score 12): three products with up.j keep it in a register (retail folds it as the
+// memory operand: the first cross's k term and the side cross's i and k terms), and the fail path
+// re-zeroes AL before returning false (retail returns the entry's zero), two bytes over retail.
 // Double literals 98; shared crosses 140; both 79 (kept); angular/both scales 83/83;
 // scaled sum 83; single result/vector names 79/79; seven scalar name/scope forms 79;
 // coefficient at use 93, with shared sum 95.
@@ -821,10 +833,17 @@ bool function_ef870(long vehicle_index)
 {
 	s_vehicle *vehicle = VEHICLE_GET(vehicle_index);
 	byte *definition = VEHICLE_DEFINITION_GET(vehicle);
+	bool result = false;
 
-	if (TEST_FIELD_BIT(VEHICLE_WORD_BITS(vehicle->flags348)->bit6) && vehicle->unknown34d &&
+	if (!(TEST_FIELD_BIT(VEHICLE_WORD_BITS(vehicle->flags348)->bit6) && vehicle->unknown34d &&
 		(long)vehicle->unknown34e < vehicle_round((real)g_510c54->field_2_3 * 2.0f) &&
-		0.9f >= vehicle->up.k)
+		0.9f >= vehicle->up.k))
+	{
+		vehicle->unknown34e = 0;
+		vehicle->unknown34d = 0;
+		word_flags_set((word *)&vehicle->flags348, 6, false);
+	}
+	else
 	{
 		real strength = vehicle->unknown34d == 2 || vehicle->unknown34d == 4 ? 0.3 : -0.3;
 		vector3f linear_velocity;
@@ -862,12 +881,9 @@ bool function_ef870(long vehicle_index)
 		}
 		function_b77d0(vehicle_index, &linear_velocity, &angular_velocity);
 		vehicle->unknown34e++;
-		return true;
+		result = true;
 	}
-	vehicle->unknown34e = 0;
-	vehicle->unknown34d = 0;
-	vehicle->flags348 &= ~0x40;
-	return false;
+	return result;
 }
 
 

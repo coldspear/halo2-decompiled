@@ -163,6 +163,7 @@ void function_262800(long actor_index, s_reference reference, bool unknown);
 // early store and return 79, view through the index getter after/before the node 74/88, one shared store
 // 52; the guard clause 7. On 7: the final call under a positive test 7, `(short)` cast 7, the type byte
 // declared signed char 7, a positive test around the 0x1f4f40 call 7.
+// Lane 16 r46 (plain): the 0x262800 reference copied into a named local first 7 (its temp moves to EDI).
 // @retail 0x1b89d0
 void __stdcall function_1b89d0(long actor_index, s_slot *slot)
 {
