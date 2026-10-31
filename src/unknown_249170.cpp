@@ -153,6 +153,11 @@ PRIVATE __forceinline point2f const *particle_spawn_extents(s_particle_system_da
 // velocity.j / after position.x with sine/cosine products 321 (swap kept); `real const sine` 2 (same code);
 // position.y before velocity.k / velocity.k before position.y 2 (same code); sine declared ahead of the
 // radius call and assigned after it 2 (same code).
+// Round 211: shared seed cursor extended to cases 1/0/4/8/0+1/1+4/1+8/0+1+4+8
+// 2/16/2/16/9/16/9/24.
+// returned random-vector outputs in cases 2/3/5/2+3/2+5/3+5/all; all with sphere position helper
+// 78/460/75/477/527/473/532/535.
+// All source forms restored; case 1 fsin/xorps scheduling remains.
 // @retail 0x249170
 void function_249170(real const *values, s_particle_spawn_state *particle, s_particle_spawn_definition const *definition, s_particle_system_datum const *system)
 {

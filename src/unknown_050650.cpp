@@ -724,6 +724,16 @@ bool __stdcall function_1ffe00(long actor_index, long object_index);
 // unchanged). Left: retail keeps result at the lower byte (0xa) and point_valid at 0xb, and writes the
 // remembered-prop code once per case (case 1's copy re-tests state < 1 and cross-jumps into case 2's at the
 // 0x1e3b00 call), where ours shares one label after the switch.
+// Lane 14 r22 (plain checks): case 1 with its own remembered-prop copy (`state >= 1 && state <= 2`
+// arm, then `state < 1 || unknown00 == NONE` to done) 309 (1496 B, no cross-jump); both cases with
+// their own copy and no shared label 309; `bool result = false; bool point_valid = false;` 278;
+// point_valid set once at the aim-at-point label instead of in cases 3/5/6 281 (1424 B; the Boolean
+// homes become retail's: retail stores it at 0x296c67, where cases 3/5/6 jump and case 6 falls in,
+// and cases 1/2 enter after the store); with that, `point_valid = result = false` 279 (the entry
+// then agrees through both flag stores). Left: retail lays the remembered-prop, actor-direction,
+// normalize, output and return code right after case 2 (case 1 cross-jumps into it, case 0 and 4
+// into its normalize step) and the aim/weapon code after case 6; its failure exit stores
+// result = false before returning.
 // @retail 0x2967b0
 PRIVATE bool function_2967b0(long actor_index, s_type_952051 *specification,
 	bool aiming, vector3f *direction, bool *has_target_point, point3f *arg_0e6828)
@@ -909,6 +919,11 @@ done:
 	return result;
 }
 
+// score 9 (was 9): Round 30 (lane C): the prologue still builds the actor offset in ESI and folds
+// the table base into it (`add esi, edx`); retail computes the offset in EAX and forms the actor
+// with `lea esi, [eax + edx]`. New forms: a data-base local with a masked slot local, a byte
+// offset local and the `&array[index]` subscript form (9 each); an `unsigned short` slot local
+// gives 38 (`movzx esi, cx`) and was reverted.
 // score 9 (was 9): only the prologue differs: retail builds the actor offset in EAX
 // (`mov eax, ecx`) and moves the actor to ESI with `lea esi, [eax + edx]`; ours builds it in ESI.
 // Tried: a specification pointer local 9; an if/else chain without the early return 9; the valid
