@@ -127,6 +127,13 @@ struct c_aggregate : c_child
 // store before the child read 45; the dispatch gate as nested ifs 45; a const dispatch cursor 45;
 // the cleanup item read into its local before the test 89 (368 bytes). BLOCKED by the build flag:
 // the retail frame needs `produced` to share a slot, which only a non-LTCG object gives.
+// Round 33 (lane 10): loop 1's child and error tests nested 45 (identical); loop 2's inner walk over
+// a block pointer range 128 (389 bytes); v5's count output as a `long &` 45 (identical); loop 2's
+// cursor declared at function scope 45 (identical); produced declared at the top of loop 1's body
+// and zeroed in the call's block 55. A compile-only /FAs build without /GL gives retail's 0x8020
+// frame (produced, loop 2's cursor and loop 3's count in one slot) and leaves request in EBP (retail
+// EBX) and the end bound loaded first; the starts store first, nested tests, a source copy, the
+// bounds declared end first, a block-pointer walk and a `!error` gate don't move either there.
 // @retail 0x97d80
 long c_aggregate_450cf4::function_97d80(dword *source, s_request *request)
 {
