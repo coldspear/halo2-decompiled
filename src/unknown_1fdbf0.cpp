@@ -407,6 +407,9 @@ vector3f *function_11d000(vector3f const *v, vector3f *out);
 // 43; the j and k rows interleaved (both projections `axis * local_0`, then both cosine terms, then both
 // sine terms, then both stores) 57 (gives retail's cosine in a register and early d.j load, colours stay
 // ours: direction j/i take xmm1/xmm2 where retail gives them axis k/j); that with k first 57.
+// Round 111 (lane 6, fast): the rotation reading the forward local 86 (773 B); the axis through a const pointer local
+// 43; the direction read through a second pointer to it 43; `valid` declared before `axis` 43; only the j/k
+// projections written axis-first 43 (all identical code).
 // @retail 0x1fddd0
 bool function_1fddd0(long actor_index, point3f const *origin, vector3f *direction,
     long *out_index, real *arg_c9241c, long *out_object)
