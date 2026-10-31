@@ -512,6 +512,16 @@ bool balance_teams_greedy(s_balance_problem *problem, long team_count, s_balance
 // `!(candidate.count_spread() >= reference->count_spread())` 67; the selection written `!improved ? &current :
 // &best` 70; the selection moved after the candidate copy (before the swaps) 151; `best = candidate;` before
 // `improved = true;` 71. No other function calls count_spread, total_spread or rank_spread out of line.
+// Round 14 (lane 2): aligned the only cause is the count_spread order (and the `mov ebx, esi` it
+// adds); a compile-only screen reproduces it even with count_spread's body defined after this
+// function, so it is not purity: VC queries the stack-local candidate (`lea ebx, [esp+0x38]`) after
+// any pointer or member solution, in every operand order (probes against `best` and `current`
+// directly do the same). Real builds, 67 each (same code): the comparison as a forceinline
+// `better_than` method on the candidate, as a forceinline `worse_than` method on the reference, as a
+// forceinline free function of both pointers, the selection as an if/else, the reference declared at
+// the top of the inner loop and assigned after the swaps. Compile-only, same order: `this->` inside
+// the method, the selection passed as the call's argument, `(&candidate)->`, a reference variable,
+// the selection written at each use, `!(reference <= candidate)`.
 // Lane 16 r46: the reference declared at the top 67; count_spread as a free function on a pointer 67; the
 // test in a forceinline (candidate, reference) helper 67; renamed trial/baseline 67; `candidate(current)`
 // 67. Compile-only (no /GL, extern methods): the call on the stack copy runs after the call through the
@@ -759,6 +769,10 @@ bool balance_teams_by_count(long player_count, long const *party_indices, long t
 // Separate maximum reduction and guarded memcpy, copy before/after scan, indexed/advancing
 // source and if/conditional maximum 93/93/83/83/79/79/88/88. Count register exchange and clamp
 // homes remain; original body restored.
+// Round 14 (lane 2; fast with 0x91e30): imbalance declared with the other locals at the top and set
+// to NONE before the call 34; declared there with its NONE initializer 65 (190 bytes); open slots
+// computed just before the call 87 (170 bytes), with imbalance at the top too 87; next_party declared
+// after the array and index 34.
 // @retail 0x91f00
 bool balance_teams_can_add(long player_count, long const *party_indices, long extra_count, long team_count,
 	long maximum_team_size, bool flag_parties, long flag_minimum, long flag_maximum, bool use_parties,
