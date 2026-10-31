@@ -584,6 +584,11 @@ short function_b5000(s_transport_endpoint *endpoint, void const *buffer, short l
 // `if (sent != -2) return result;` then the restore and the goto 25 (retail's order, folded false);
 // success arm first in an if/else 10; position declared before the loop 10. Retail's shared
 // return (BL, not folded) follows the would-block test, so it comes first in its source order.
+// Round 90: accepted-send else/continue with the restore after it 10; the nonnegative-guard
+// equivalent 10; result from the sentinel before the conditional restore 74; result assigned
+// before the restore 10; both negative paths returning result 37; only the blocked path returning
+// result 44; result from a second sentinel test after the restore 75; success-first direct negative
+// return 30; error/sentinel else-if chain 50. Original body restored.
 // @retail 0xb6000
 bool s_http_connection_ab::send()
 {

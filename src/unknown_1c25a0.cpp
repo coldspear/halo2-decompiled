@@ -1095,6 +1095,10 @@ struct s_1c4040
 // first 30; island-array store without the volatile cast 27; long active 30; fixed island read through g_51e9a4
 // (world local only for the array choice) 31 with retail's AL/ECX ranking but the world load hoisted into EDX
 // before sub esp; every world read through g_51e9a4 32.
+// Round 90: declaration-first paths in three adjacent translation units, singly and combined, 8 each.
+// In the diagnostic custom regime: fixed-island direct read with a two-use retry local 31; the
+// complementary array-direct read 31; adding a two-use active local 31; world declared before the
+// record 31; block-scoped world 32. Original body and declaration order restored.
 // @retail 0x1c4040
 bool function_1c4040(long attempt, bool active, bool any_object, bool even_if_unknown, long excluded_component_index)
 {

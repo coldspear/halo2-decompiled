@@ -341,6 +341,9 @@ PRIVATE __forceinline vector3f *normalize_particle_velocity_2b(vector3f *v)
 // score 10 (was 10): frame 0xb4 and length 1516 agree. The back-edge parameter reloads (ours first,
 // next, definition; retail definition, next, first) and the maximum-speed branch's squared length
 // differ (ours the vector normalizer's k,i,j statements; retail (i+j)+k with k in the lower register).
+// Round 90: first-particle local 10; settings pointer 10; const properties 10; const particle 10;
+// const nearest 10; separate speed-squared value 10; length_sq3f 105; the particle squared helper
+// 107; force-inline dot3f declaration 10. Original body and declarations restored.
 // Round 125 (lane 4): a cache.values pointer local 10; properties read through the definition at
 // each use 297; the vector normalizer's sum as one expression 34; the velocity normalizer in both
 // branches with k read first and (i+j)+k 34; the first input mask read before the cache setup 38. A
