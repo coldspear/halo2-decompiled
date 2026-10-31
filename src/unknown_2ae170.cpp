@@ -1203,6 +1203,7 @@ __forceinline void c_sound_effects::add_send(long mixbin, long mode, real gain, 
 // `remaining = 0;` (needed for retail's four-entry jump table; an empty case 0 drops the table, `gain = 0` 91).
 // Held: the dead store is not kept even with a match, and a new /Op file is a build-flag decision.
 // Earlier at 137: retail is a four-entry jump-table switch on the speaker mode with explicit call
+// Also at 137: retail is a four-entry jump-table switch on the speaker mode with explicit call
 // pairs (no loops), the zero gain held in EDI and pushed, and each -6.0206 attenuation computed at run
 // time (`mov [slot], 0; movss; subss; movss [slot]; mov ecx, [slot]; push ecx`). Round 17 found the
 // cause: retail passes decibels to 0x21e230 (and g_44f710) as a 4-byte struct by value; a copy of the
@@ -1242,6 +1243,9 @@ __forceinline void c_sound_effects::add_send(long mixbin, long mode, real gain, 
 // `*(real *)&gain - 6.0206f` 181 (326 bytes, folded); real gain with that level 236 (278 bytes); the
 // attenuation written at each call 181; the per-bin union with byte front bins 146. Lead: retail needs
 // /Op code generation for the attenuation push and a mode-0 case statement for its four-entry table.
+// Lane 17 round 5: quad as four explicit calls 139 (405 bytes); center pair as a 2..3 loop 138; named
+// attenuation on the loops 137; right endpoints as left + 1 148 (374 bytes); remaining before the flag 137.
+// The decibel-struct interface above is blocked only by the case-0 statement.
 // @retail 0x2afb80
 void c_sound_effects::add_source_mixbins(s_sound_mixbin_source *source, bool rear, long mode, s_mixbin_settings *mixbins)
 {

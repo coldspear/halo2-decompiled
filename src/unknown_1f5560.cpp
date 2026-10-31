@@ -864,6 +864,10 @@ real normalize2d(point2f *v);
 // return, folded false exit). Request result returned from its arm 182 (919 B); early false return after
 // the retry 135; retry admission and call joined by && 135; unit index local 135; validity block
 // flattened into an early false return 232. All restored.
+// Round 208: Retry-outcome-owned chosen-speed defaults with early result declaration, valid-scope
+// retry outputs and horizontal-first pair declarations, masks 0..7: 212 each at 914/935 bytes.
+// Original chosen-speed initialization and complete body restored; retained DL result and
+// movement/request exits remain unresolved.
 // @retail 0x1f8160
 bool function_1f8160(long actor_index, signed char const *types, point3f const *target, bool force)
 {
@@ -1493,6 +1497,10 @@ PRIVATE inline real movement_normalize2d(point2f *v)
 // Round 444: Ordinary origin with zero result after type/side/projection geometry
 // 292/284/284; assigned-sign counterparts 292/281/281; forward-scoped result with
 // direct/assigned sign 300/300. All restored; zero/radius and vector homes remain.
+// Round 208: Forward-before-lateral projections with ordinary origin, y-first type/side center pairs
+// and origin-workspace-first masks 0..7: 257/286/286/279/257/286/286/279. Original projections, row
+// stores and complete body restored; natural input convention, zero/radius and direction homes
+// remain.
 // @retail 0x1f99d0
 real function_1f99d0(long actor_index, long object_index, short type, point2f const *target,
     point2f const *origin, point2f const *facing, s_obstacle_list const *obstacles)

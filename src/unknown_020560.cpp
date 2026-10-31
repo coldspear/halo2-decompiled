@@ -1281,6 +1281,12 @@ bool function_0bfe60(dword const *flags, long bit);
 // before the loop 52; the push pointer read as `*(dword volatile **)device` 52; the test index written
 // at both calls 142 (as lane 13); status declared before the test index 53; `slot->b == player` 52;
 // `player == g_5234c4` 53.
+// Round 31 (lane 10): on the round-7 row form (38) the rest is one register permutation (retail
+// counter/total EBP, player EBX, slot fields and test index EDI, device EBX; ours EDI, EBP, EBX,
+// EDI). The total as short or word 125/125 (the clamp re-extends); the row named at the loop top 85;
+// round-7 form with a short total 135; with the mask tested before the player 135; with the slot
+// tests as a `continue` filter 38. A one-file harness with the D3D objects linked is not exact (60:
+// it cannot reproduce MakeRequestedSpace's register argument).
 // @retail 0x20bb0
 void __stdcall function_20bb0(long player, dword mask, long const *indices, long count, bool query, visibility_draw_callback draw)
 {

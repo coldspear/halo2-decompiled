@@ -2148,7 +2148,8 @@ bool __stdcall function_e23e0(long arg_159e6d, point3f const *point, real value,
 	long rigid_body_index, bool started);
 
 /* places the biped's ragdoll bodies, from its root rigid body outward */
-// score 6 (was 6): frame 0x110, entry and length 224 agree; six mask/Boolean/output stack offsets differ.
+// Matches with the list's address passed where retail passes it (lane 17 round 5). Earlier, at 6: frame 0x110,
+// entry and length 224 agreed; six mask/Boolean/output stack offsets differed.
 // Native one-word visited mask 91 kept; root clamp 143, with native mask 100; common result 123;
 // declaration-time zero 100, with common result 123; result first 100, with common result 123.
 // Lookup/output scope 86 (five-point incremental gain, 11 extra bytes; restored); with root clamp 101;
@@ -2194,7 +2195,9 @@ bool __stdcall function_e1b60(long arg_159e6d, point3f const *point, real value)
 		{
 			bool placement_result = function_e1c40(arg_159e6d, point, value, root, NONE, NONE, 0);
 			visited[root >> 5] |= 1 << (root & 0x1f);
-			result = function_e23e0(arg_159e6d, point, value, &placement_result, visited, root, placement_result);
+			/* retail passes the list's address here; 0xe23e0 only forwards this parameter, and
+			   retyping it to the list (held for its owner) would drop the cast */
+			result = function_e23e0(arg_159e6d, point, value, (bool *)&list, visited, root, placement_result);
 		}
 	}
 	return result;
@@ -2205,8 +2208,9 @@ void function_1d1540(s_havok_component *component);
 
 /* turns the biped into a ragdoll: lifted a little when it fell through
    something, its nodes placed from its Havok bodies */
-// score 125 (was 125): frame 0x18 agrees; header-offset spill, biped/component/variant roles and packed
-// result homes remain.
+// Matches (lane 17 round 5) with both flag tests through TEST_FIELD_BIT, the node count as the signed size over
+// sizeof(transform4x3f) and one lookup for the tail's flag set. Earlier, at 125: frame 0x18 agreed; header-offset
+// spill, biped/component/variant roles and packed result homes differed.
 // Boolean word conditions 154; result first 125; both 154; ragdoll/reach names 125;
 // conditions/names 154; result/names 125; all three 154; all with indexed nodes 292.
 // Shared vector sum 126; native variant record 125, with sum 126; read-only component 125, with
@@ -2231,10 +2235,10 @@ bool __stdcall function_e16b0(long arg_159e6d)
 	point.x += *(real *)(variant + 0x70);
 	point.y += *(real *)(variant + 0x74);
 	point.z += *(real *)(variant + 0x78);
-	if ((biped->flags_348 >> 9) & 1)
+	if (TEST_FIELD_BIT((biped->flags_348 >> 9) & 1))
 	{
 		s_biped *object = BIPED_GET(arg_159e6d);
-		dword node_count = (word)*(short *)((byte *)object + 0x114) / 0x34;
+		dword node_count = *(short *)((byte *)object + 0x114) / sizeof(transform4x3f);
 		transform4x3f *nodes = (transform4x3f *)((byte *)object + object->node_matrices_offset);
 
 		*(real *)((byte *)biped + 0x6c) += 0.125f;
@@ -2244,7 +2248,7 @@ bool __stdcall function_e16b0(long arg_159e6d)
 		}
 	}
 	function_1c3770(arg_159e6d, 0);
-	if ((component->unknown04 >> 11) & 1)
+	if (TEST_FIELD_BIT((component->unknown04 >> 11) & 1))
 	{
 		result = function_e1b60(arg_159e6d, &point, value);
 	}
@@ -2265,9 +2269,14 @@ bool __stdcall function_e16b0(long arg_159e6d)
 			*(long *)((byte *)biped + 0x448) = g_510c54->game_time;
 			function_e0e00(arg_159e6d);
 		}
-		if (arg_159e6d != NONE && *(short *)((byte *)BIPED_GET(arg_159e6d) + 0x112) != NONE)
+		if (arg_159e6d != NONE)
 		{
-			BIPED_GET(arg_159e6d)->object_flags |= 0x20000000;
+			s_biped *object = BIPED_GET(arg_159e6d);
+
+			if (*(short *)((byte *)object + 0x112) != NONE)
+			{
+				object->object_flags |= 0x20000000;
+			}
 		}
 	}
 	return result;
@@ -3946,11 +3955,13 @@ bool __stdcall function_e4770(long arg_159e6d)
 }
 
 void function_e5790(long arg_159e6d);
+extern real g_47f05c;
 
 /* lands or is knocked to the ground: a crouching biped standing up into a
    ceiling is lifted clear, the hit is remembered (+0x44c..), and a flag
    plays the knocked-down animation */
-// score 124 (was 124): frame 0xc agrees; point/index input registers, upward-sum scheduling and cap loading remain.
+// score 104 (was 124): frame 0xc and length 422 agree; only the point/handle input registers remain (retail takes
+// the point in EAX and the handle in ECX). Earlier: point/index input registers, upward-sum scheduling and cap loading.
 // Native word flags, entry point/velocity workspaces, explicit lift arms, separate contact
 // admissions, contact-index name, state scope, library point copy and immutable receiver
 // all 124; lift initialized from room 121 (subthreshold, restored). Complete upward sum
@@ -3962,6 +3973,10 @@ void function_e5790(long arg_159e6d);
 // once #858 has landed or closed.
 // Round 198: Complete upward products, doubled extent and actual position-getter result:
 // seven subsets and immutable full form all 124; original body, interface and cap source restored.
+// Lane 17 round 5: the lift cap read from the global g_47f05c (retail loads it from .data and doubles it at run
+// time) 104 at 422 bytes, kept; the upward sum k-first (retail's j*j then k*k then i) 104, kept with it; on that,
+// the handle-first order (handle, point, contact, knocked, both declarations and both calls) MATCHES fast and
+// plain: still HELD for #858, restored. Named cap local 104; clamp as an if 104.
 // @retail 0xe4a20
 void __stdcall function_e4a20(point3f const *point, long arg_159e6d, long object_index, bool knocked)
 {
@@ -3974,14 +3989,14 @@ void __stdcall function_e4a20(point3f const *point, long arg_159e6d, long object
 			vector3f velocity;
 
 			function_ba1d0(arg_159e6d, &velocity, NULL);
-			if (g_4687b0->j * velocity.j + g_4687b0->k * velocity.k + g_4687b0->i * velocity.i > 0.001f)
+			if (g_4687b0->k * velocity.k + g_4687b0->j * velocity.j + g_4687b0->i * velocity.i > 0.001f)
 			{
 				byte *definition = BIPED_DEFINITION_GET(biped);
 				real room = *(real *)(definition + 0x26c) - *(real *)(definition + 0x270) * 2.0f;
 
 				if (room > 0.0f)
 				{
-					real lift = room > 0.0328f * 2.0f ? 0.0328f * 2.0f : room;
+					real lift = room > g_47f05c * 2.0f ? g_47f05c * 2.0f : room;
 					point3f position;
 
 					function_b9dd0(arg_159e6d, &position);
