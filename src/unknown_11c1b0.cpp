@@ -101,6 +101,11 @@ void function_16e2c0(long arg_0);
 // range test); the copy at the top in either direction 128/128 (retail's registers and early store,
 // own slot). Leads: the registers follow whether the current index is live across the range test
 // without an early store; only the argument's home is still missing from the copy-at-top form.
+// Round 92 (--fast, reproduces 50): the requested index read once through the argument's address
+// (`short const *ref = &arg_0; short requested = *ref;`) with the saved index defined at entry 128
+// (own slot: the argument's home is no longer shareable); the address read with the saved index still
+// in the block 50; the address read after the current index, before/after the saved index 128/128; the
+// saved index as its own read of the global at entry 130. Restored.
 // @retail 0x11c1b0 standard
 bool __stdcall function_11c1b0(short arg_0, bool arg_1)
 {

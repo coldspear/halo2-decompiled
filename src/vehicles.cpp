@@ -428,7 +428,7 @@ bool function_f42f0(long vehicle_index);
    definition's steering curve, and its throttle and turn rates */
 PRIVATE inline void vehicle_approach(real *value, real const *rates, real bound, real dt);
 
-// score 229 (was 237): Frame 0x10 versus 0x14, cross/dot and argument homes remain; genuine control scalars kept.
+// score 211 (was 229): Frame 0x10 versus 0x14, cross/dot and argument homes remain; genuine control scalars kept.
 // Shared cross/dot/approach subsets 262/246/262/239/248/239/248; both dots 235
 // (regrouping restored). Exponent and ordinary clamp subsets 246 each; all with
 // shared rate approach 237, retained after plain confirmation.
@@ -436,6 +436,17 @@ PRIVATE inline void vehicle_approach(real *value, real const *rates, real bound,
 // 244/282/307/229/274/236/298/298; real absolute ratio/division/both/late sign 229/229/229/234.
 // Cross/dot, scalar-argument and rate schedules remain; original grouping and game-call roles preserved.
 // Native grouped-left and one-use absolute-call-result forms are exact-only; all restored.
+// Round 50: the steering limits copied as one real_bounds (retail's ecx/edx copy, frame 0x14) 243;
+// with one rates pointer for each bound and approach 229 (both pointers at once 293); direct
+// up/velocity fields 230; a vector3f left 227 (cross products then grouped as retail's); the
+// absolute ratio named before the sign 220 at 979 bytes; with the original axis pointers 219;
+// forward pointer only 215; cross3f and dot3f 215; dot3f result named lateral 211 (kept: the cross
+// and the forward dot are retail's). Compile-only screens of the cross/dot (they match the real
+// build there): pointer/field mixes and declaration orders 7-53; gear select as a ternary, if/else
+// or inverted 211 (inverted: retail's layout, no count change, not kept). Left: retail multiplies
+// left.j first (an `fxch` ours skips, which shifts every later instruction by one); computing
+// left.j * velocity.j before left.k gives that (diagnostic: 14) but is no natural form. Also the
+// maximum-angle store and the radians constant load sit one instruction off.
 // @retail 0xeec90
 void function_eec90(long vehicle_index, real *steering)
 {
@@ -443,13 +454,11 @@ void function_eec90(long vehicle_index, real *steering)
 	s_vehicle *vehicle = VEHICLE_GET(vehicle_index);
 	byte *definition = VEHICLE_DEFINITION_GET(vehicle);
 	vector3f const *forward = &vehicle->forward;
-	vector3f const *up = &vehicle->up;
-	vector3f const *velocity = &vehicle->local_velocity;
-	real left_i = forward->k * up->j - forward->j * up->k;
-	real left_j = forward->i * up->k - forward->k * up->i;
-	real left_k = forward->j * up->i - forward->i * up->j;
-	real angle = (real)atan2(left_j * velocity->j + left_k * velocity->k + left_i * velocity->i,
-		velocity->k * forward->k + velocity->j * forward->j + forward->i * velocity->i);
+	vector3f left;
+
+	cross3f(&vehicle->up, forward, &left);
+	real lateral = dot3f(&left, &vehicle->local_velocity);
+	real angle = (real)atan2(lateral, dot3f(&vehicle->local_velocity, forward));
 
 	if (TEST_FIELD_BIT(VEHICLE_WORD_BITS(vehicle->flags348)->bit3) &&
 		!function_f42f0(vehicle_index) && !(function_d1210(vehicle_index) > 0.0f))
@@ -460,11 +469,13 @@ void function_eec90(long vehicle_index, real *steering)
 	else
 	{
 		real throttle = vehicle->throttle;
-		real bound = (0.0f > throttle ? *(real *)(definition + 0x1f8) : *(real *)(definition + 0x1f4)) * throttle;
-		vehicle_approach(&vehicle->speed, (real const *)(definition + 0x1f4), bound, dt);
+		real const *rates = (real const *)(definition + 0x1f4);
+		real bound = (0.0f > throttle ? rates[1] : rates[0]) * throttle;
+		vehicle_approach(&vehicle->speed, rates, bound, dt);
 		real turn_input = vehicle->steering;
-		bound = (0.0f > turn_input ? *(real *)(definition + 0x230) : *(real *)(definition + 0x22c)) * turn_input;
-		vehicle_approach(&vehicle->turn, (real const *)(definition + 0x22c), bound, dt);
+		rates = (real const *)(definition + 0x22c);
+		bound = (0.0f > turn_input ? rates[1] : rates[0]) * turn_input;
+		vehicle_approach(&vehicle->turn, rates, bound, dt);
 	}
 
 	real maximum_angle = (real)((*(real *)(definition + 0x250) == 0.0f ? 1.0 : *(real *)(definition + 0x250)) *
@@ -476,8 +487,9 @@ void function_eec90(long vehicle_index, real *steering)
 	else if (angle > 3.1415927f)
 		angle = 3.1415927f;
 
+	real ratio = (real)fabs(angle / maximum_angle);
 	real sign = angle >= 0.0f ? 1.0f : -1.0f;
-	real eased = (real)pow(fabs(angle / maximum_angle), exponent) * sign * maximum_angle;
+	real eased = (real)pow(ratio, exponent) * sign * maximum_angle;
 
 	if (eased < -3.1415927f)
 		eased = -3.1415927f;
@@ -485,9 +497,11 @@ void function_eec90(long vehicle_index, real *steering)
 		eased = 3.1415927f;
 
 	real target = vehicle->gear ? eased : 0.0f - eased;
+	/* the steering limits in degrees: +0x204 the largest angle, +0x208 the smallest */
+	real_bounds angles = *(real_bounds const *)(definition + 0x204);
 	real rate = *(real *)(definition + 0x210) * 0.017453292f;
-	real minimum = *(real *)(definition + 0x208) * 0.017453292f;
-	real maximum = *(real *)(definition + 0x204) * 0.017453292f;
+	real minimum = angles.hi * 0.017453292f;
+	real maximum = angles.lo * 0.017453292f;
 	real difference = target - vehicle->steering_angle;
 
 	if (difference != 0.0f)
@@ -2272,6 +2286,18 @@ PRIVATE inline void vehicle_contact_steer(s_vehicle_physics_state *state, s_vehi
 // Round 49: torque/counter declaration swap 189; steering helper with a matrix argument 189;
 // both 189; const spin 189; late torque/late counter/both 189 each; behavioural counter name 189.
 // Original target and steering helper restored.
+// Round 50: the contact definition as an element pointer read twice (legal bit tests) 187 (below
+// the margin). On the early-bit graph (named bits after the flags read, plain if/else-if gear) 100
+// at 991 bytes; with the short gear 156; plus the element pointer (retail's dead `add eax, edi`) 62:
+// the loop then equals retail but for slots. Spin wrap there: period through a pointer 89 (976
+// bytes); value-in/value-out helper 241 (`ret 4`: vehicle_index moves to a register); value copy
+// inside the helper 93 (still `fld` of the field); the wrap with direct field names 29 at 991 bytes
+// (spin code then retail's: value temp, period re-read, field stored before the sign test; not
+// kept: early bits and a hand-written helper need a match). Left at 29: frame 0x34 against 0x30
+// (an extra never-referenced dword at the top) and torque/loop-offset slots swapped (retail shares
+// the throttle slot with torque; compile-only does too, LTCG pairs it with the offset). i before
+// torque, scoped throttle with late torque, a named gear-select result, the throttle magnitude
+// passed inline: 29 each. Original body restored.
 // @retail 0xf1f80
 void __stdcall function_f1f80(long vehicle_index, s_vehicle_physics_state *state)
 {
@@ -3790,6 +3816,12 @@ PRIVATE __forceinline real vehicle_larger(real a, real b)
 // magnitude 109/109. Every definition field resolved at use with real/double result
 // 445/475. Gains of three/four fail the thresholds; original body restored. Lookup
 // scheduling, return carrier and native case-tail sharing remain.
+// Round 50: single `return result;` 123 (cases 2 and 5 jump into case 8's tail); with the
+// larger as if/else 117, keep-first-unless-not-larger 122, two returns 119; with only case 8
+// spelled as `result = |a|; if (!(result > |b|)) result = |b|;` 93 at retail's 384 bytes (case 2
+// then jumps into case 5, 6/7 still apart; not kept: the helper written out by hand). Retail's
+// case 8 differs from cases 2 and 5 (it alone loads xmm0 before the compare), so its source
+// likely differs from theirs too. Original body restored.
 // @retail 0xf78e0
 real __stdcall function_f78e0(long vehicle_index, long limit)
 {

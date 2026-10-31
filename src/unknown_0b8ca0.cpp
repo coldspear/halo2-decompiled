@@ -1745,6 +1745,14 @@ transform4x3f *function_b8bd0(long object_index, short node_index);
 // al, 1`), and `>> 7`/`>> 8` shift tests. In the build: the header from g_4e0300->data 298 (pool moves
 // to EDI at entry), with both shift tests 304, plus the byte bit 300; the byte bit alone 281 (4, under
 // the gate), with both shift tests 290 (aligned 190 -> 174). All restored.
+// Round 4 (lane 18, fast): the header's active bit as a byte bitfield of the header view 281 (retail's
+// byte shr/and; four-point gain, not kept); on it the bit-7 flag test by shift 285, the header from
+// OBJECT_HEADER_GET(index) 302, the type test as `!((1 << type) & 0x80)` 290, the active flag not
+// volatile 289, the 0xc0 bit 6 test by shift 281. The slot_handler.h node-matrix helper can't be
+// included here (its header view clashes with this file's). Restored.
+// Round 205: Shared rotation/axis providers 332/332; shared point provider alone/rotation/axis 542/431/447;
+// rotation/axis with the native activity member 315/330; rotation with the earlier inverse phase 334.
+// All restored; frame, accepted table transport and node-query expansion remain.
 // @retail 0xb93b0
 void __stdcall function_b93b0(long parent_index, volatile long index, volatile short node)
 {

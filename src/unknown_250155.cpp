@@ -1413,6 +1413,9 @@ int __cdecl matchmaking_compare_value(void const *a, void const *b)
 // Round 303: branch-owned first/second/both working collection counts 153/153/158;
 // both with definite selected result 158, indexed tails 159, shared query 164,
 // indexed tails/shared query 162, all three 162. Original counts and complete body restored.
+// Round 447: Native query output-pointer contracts, seven parameter subsets; all with shared mode-one output storage
+// 116/116/116/116/116/116/116/123. Extra query frame dword, count homes and scalar tail fills remain.
+// Original executable source and all trial helper/interface changes restored.
 // @retail 0x2514fd
 void c_matchmaking_list::v3()
 {
@@ -2145,6 +2148,13 @@ void function_1905bf(long controller, bool flag);
 // Round 78: signed-scope done label 151; signed-scope label with separate unsigned return 137;
 // unsigned constant return 137; unsigned-to-signed done jump 106; tested base result 109;
 // unsigned own return 138; final done label 151; constant handled returns 106. Original body restored.
+// Round 128 (exact one-link harness on the generated TU + callee files): the bool result alone 106
+// (all instructions retail's; the exit sits last); `goto done` in the handled cases 146 (gives retail's
+// two tail-merge hosts, change_team in case 4 and the false call in param case 2, but the result moves
+// to a stack byte); with the early test returning directly 151; the outer tests nested around the body
+// 111; the not-signed-in arm ending in its own return with the goto cases 137. Harness only: the
+// not-signed-in block first (with return or goto) 133/128; the signed path returning the base call
+// directly 125 (result folded away); `else if` without the online local 125.
 // @retail 0x250b1e
 bool c_session_lobby_screen::v10(s_widget_event *event)
 {
@@ -2456,7 +2466,7 @@ static __forceinline long local_player_find(long const *local_list, long player)
 
 /* fills the lobby's player list (players, count of them), with the local
    players' chosen teams; hides the slots past the count */
-// score 95 (was 111): the locals live in the other stack slots (shown count, the first
+// score 95 (was 95): the locals live in the other stack slots (shown count, the first
 // loop's player, the second loop's four widget indices), retail reloads players[i] after the
 // voice-state query, and the last loop keeps the screen in edi and bitmap_a in ebx where
 // ours keeps the screen in ebx and false in edi.
@@ -2475,6 +2485,10 @@ static __forceinline long local_player_find(long const *local_list, long player)
 // Round 104 (on the long find_bitmap, 95): a separate counter per loop 93 (gives retail's two element-
 // pointer slots, ebp-8 and ebp-0x18); with it the four widget indices declared in reverse 93, shown count
 // declared after the matchmaking flag 98, no_team before team_index 93, a screen copy for the last loop 93.
+// Round 128: the four widget indices declared once at function scope for both loops 92 (in reverse 92);
+// with a separate counter for the second loop 93, for the second and third loops 93; the separate
+// counter alone 93. The players[i] reload after the voice query is retail's view of 0x53b40's side
+// effects (ours keeps the value across the call), so it may sit outside this file.
 // @retail 0x25042d
 void function_25042d(c_session_lobby_screen *screen, long valid, s_session_flags_view *session, long *players, long *local_list, long count)
 {
@@ -2866,6 +2880,13 @@ PRIVATE inline void squad_item_set_team(s_widget_item *item, short team)
 // Round 313: Child-domain 4 with original/shared bitmap/generic text/both queries 112/104/116/110;
 // child-domain 5 with those four APIs 112/104/120/112. Receiver, bitmap and animation gaps remain;
 // original body restored.
+// Round 128: the map bitmap block without its goto (the 0x137550 call written in both arms, which VC
+// tail-merges) gives the same code, kept. Without the inline_depth pair 302 (the item constructor loop
+// inlines); the row text index passed uncast 116; the row text through find_child directly 235 (row
+// loop as retail, but this moves out of ESI and the constant 3 takes it); the map-name block without its
+// goto 206; game-first bitmap selection 156. Diagnostic: with a constant index the row loop's find_text
+// inlines as in retail, so the variable-index call stays out of line on find_text's own cost: lead,
+// 0x22ee17 taking a short index (src/unknown_22e27b.cpp, another lane's file this round).
 // @retail 0x253339
 void c_network_squad_browser_screen::v3()
 {
@@ -3047,32 +3068,26 @@ void c_network_squad_browser_screen::v3()
 		function_2b0a7b((s_widget_view_2b0a *)bitmap, 0);
 		if (squad)
 		{
-			long group;
-
 			if (squad->category)
 			{
 				s_session_entry_c_view *entry = (s_session_entry_c_view *)function_19c5f0(squad->map_key);
 
-				if (!entry)
+				if (entry)
 				{
-					goto bitmap_shown;
+					function_2b0a7b((s_widget_view_2b0a *)bitmap, function_137550(entry->s_type_b8a6a0, 0));
 				}
-				group = entry->s_type_b8a6a0;
 			}
 			else
 			{
 				s_session_entry_b_view *entry = (s_session_entry_b_view *)function_19c1f0(squad->map_key);
 
-				if (!entry)
+				if (entry)
 				{
-					goto bitmap_shown;
+					function_2b0a7b((s_widget_view_2b0a *)bitmap, function_137550(entry->s_type_b8a6a0, 0));
 				}
-				group = entry->s_type_b8a6a0;
 			}
-			function_2b0a7b((s_widget_view_2b0a *)bitmap, function_137550(group, 0));
 		}
 	}
-bitmap_shown:
 	for (i = 0; i < sizeof(squad->player_names) / sizeof(squad->player_names[0]); i++)
 	{
 		text = find_text((short)(i + 4));

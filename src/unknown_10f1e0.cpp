@@ -1543,6 +1543,10 @@ bool __stdcall function_110ab0(long unit_index)
 // callers unchanged, frame still 8), plus an object-headers local 478; with a short depletion 506, short
 // depletion and overlay 510, both with the headers local 495; the depletion written through a forceinline
 // `byte *` helper 474 (same code).
+// Round 209: Base-permission observation before both read-only held queries, bool/byte/short/long
+// 451/451/471/473; with the early overlay observation 506/495/512/504. Short/long overlay forms
+// recover frame twelve but regress to 1833/1825 bytes. Overlay moves were exact-match-only.
+// Original observations, paired queries, results, dispatch and complete body restored.
 // @retail 0x1103a0
 bool __stdcall function_1103a0(long unit_index, long requested, bool allow)
 {
@@ -1870,6 +1874,10 @@ PRIVATE __forceinline void project_112070(vector3f const *v, vector3f const *for
 // code); the overlay loop as `while` 790 (same code), as `for` with the play call under its own `if` 882,
 // the play call under its own `if` in the do-loop 790 (same code), a `for` that skips empty ids with
 // `continue` 882.
+// Round 209: Main/blend-pair/all native channel value construction 790/790/790; immutable repeated
+// curve values alone/main/pair/all 790 each; all with immutable animation IDs 790. Complete
+// comparison listings unchanged. Original constructors, helpers, inputs and float grouping
+// restored; frame 0xcc versus 0xd4 and first-angle/overlay expansion remain.
 // @retail 0x112070
 void __stdcall function_112070(long unit_index, dword const *node_mask, long node_count,
 	real_quaternion_transform *transforms)

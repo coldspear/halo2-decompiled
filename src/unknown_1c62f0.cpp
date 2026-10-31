@@ -767,6 +767,12 @@ long animation_events_dispatch(s_graph_tag *graph, s_animation *animation, dword
 // eight masks 97. Every one-use result form is restored. Original shared result, callback
 // observations, parameter aliases and state graph retained; word-load schedule and second callback
 // reload remain.
+// Round 22 (lane 13; aligned difflib count 15 at 97: the flags-word load after the byte clear, the
+// second-dispatch callback reload, the identity spill before the rate branch and the third
+// dispatch's argument registers): next frame computed before the position store 97 (aligned 18);
+// the callback sampled once into a named local from the volatile read 132 (frame 0x10); a named
+// loop-frame value for both 97 (same code); flag 1 as `((dword)flags >> 1) & 1` 97 (same code);
+// the rate reset before the identity store 98.
 // @retail 0x1c66a0
 void __stdcall c_animation_channel_advance(c_animation_channel *channel, real frame, s_animation_state *state,
 	animation_event_callback callback, long user)

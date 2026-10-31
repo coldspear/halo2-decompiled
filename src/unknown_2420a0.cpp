@@ -1144,6 +1144,12 @@ void c_game_engine_markers::v21(long object_index)
 // (identical); team at each call 119-equivalent (117 reduced); that with the type test flipped 117; that
 // with the player pointer taken inside the flag block 92; the player-index and flag tests joined in
 // one condition with the team at each call 117.
+// Round 20 (lane 15, fast; reduced image 40 here): the team at each call again 119 (the options pointer held in
+// EDX from entry; retail cannot hold it because it builds the player pointer in EDX/ECX, table then data, where
+// ours folds the data load into the add); on it: the absolute index computed before the player-index test 94
+// (432 bytes), the unit's player index read through the object getter at both reads 113 (entry becomes v24's,
+// object kept across the type test), `bool away = !flag` after the player pointer 86 (438 bytes; tail and the
+// hoisted call setup retail's, but `not cl; test cl, 1` and the EDX hold remain), `bool home = flag; if (!home)` 119.
 // @retail 0x240ff0
 void c_game_engine_markers::v23(long object_index, long unit_index)
 {

@@ -204,6 +204,9 @@ __forceinline void fog_accumulate(s_fog_accumulator *out, color3f const *color, 
 // (same code); the existing normalize_inline for the opposite vector with both 347 fast, 367 plain
 // (retail's vector homes; plain still saves esi at entry and spills the third remaining weight);
 // the existing normalize 0x30bf0 called instead 526. Body restored.
+// Round 240: inner descriptor cursor/two-axis dispatch/byte ordinal and their pairs/all
+// 369/417/448/443/452/416/468; direct table-end cursor 512 (fast control 374).
+// With full-context control recovered at 355, the descriptor cursor scores 419; original body restored.
 // @retail 0x131030
 void function_131030(long tag_index, vector3f const *view_direction, s_fog_accumulator *first, s_fog_accumulator *second, s_fog_accumulator *third)
 {

@@ -642,6 +642,13 @@ __forceinline byte *job_thread_buffer_get(s_async_task *task, dword *size);
 // compares, an out-parameter getter, getter store orders: no better. On the 34 form the claim and
 // size helpers as plain, static or inline functions, or in another file (inlined by the link): 34
 // each, 0x2adb10 279 each.
+// Lane 14 r20, with the record (0x2adb10 in brackets): the view alone 51 [133]; the current getter
+// 159 [131], with the view 157 [130], with per-arm size 156 [130]; a getter returning the size with
+// the buffer through `byte **` 50 [139], with the view 49 [139], plus per-arm size 36 (aligned 27:
+// the total's sum order, the dispatch hoist's register and the size/position ESI/EDI swap left)
+// [139]; the same getter with the flag from a fresh read 36 [280]; claim/size helpers with a local
+// buffer 156/154 [130-138], with the claim returning a fresh read 34/34/36 [278-280, 944 bytes];
+// that getter called out of line (plain function here or in async.cpp) 77 (672 bytes).
 // DL round 206: shared header/body extent 236; retained total as signature offset 226;
 // integer denominator converted at both divisions 207; per-use size fields 235;
 // guarded conversion initialized/separately assigned 64/64; shared extent with per-use
@@ -853,6 +860,19 @@ struct s_signed_file_write_parameters
 // to retail's length, sum order and dispatch hoist but 156 (buffer through eax, size/position
 // registers swapped). Left: getter store/load order per site, extend offset spilled where retail
 // spills the buffer.
+// Lane 14 r20 (one record of storage, owner, buffer, size and flag, `buffer = storage` at init,
+// defined in this file; 0x2ad7c0 in brackets): the current getter 131 [159]; with the view 130
+// [157]; the getter returning the size, buffer through `byte **`, 139 [50], with the view 139
+// [49], plus 0x2ad7c0's per-arm size 139 [36]; claim (buffer read into a local, flag, owner) and
+// size helpers 138/130 by call order [156/156], owner first 137 [154], local read first 137 [154];
+// claim storing the owner then the flag and returning a fresh read 279/278 by call order (944
+// bytes, aligned 41) [34/34], flag first 280 [36]; the size/`byte **` getter with the flag from a
+// fresh read 280 (944, aligned 51) [36], also returning a fresh size 280 [36]; that getter as a
+// plain function in async.cpp 313 (called: /Ob1 file) [77, called], without `__forceinline` or with
+// `inline` here 139 [77, called]. In the 944-byte forms the header site loads the buffer into EAX
+// and copies it to EDI and puts the size in EBX, where retail loads the buffer straight into EDI
+// and the size into EAX (copied to EBX before the memset's zero); the 940-byte forms keep retail's
+// buffer register but give the buffer the parameters home (retail the task home).
 // @retail 0x2adb10
 PRIVATE long __stdcall signed_file_write_work(s_async_task *task, s_signed_file_write_parameters *parameters, long parameters_size)
 {

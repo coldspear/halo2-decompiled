@@ -643,7 +643,7 @@ public:
 static inline byte *surface_tag(long index) { return g_4e3b44[index & 0xffff].bytes; }
 static inline byte *surface_pointer(byte *base, long offset) { return *(byte **)(base + offset); }
 
-// score 453 (was 453): frame 0x44 versus 0x2c; attribute scans and D3D call expansion differ.
+// score 422 (was 453): frame 0x44 versus 0x2c; attribute scans and D3D call expansion differ.
 // Integer orientation 529; null-first lighting 522; per-scan results 530; real type
 // cursors 574; existing format/state helpers 473 (kept, full); cursors/orientation
 // 573; helpers/orientation 471 (two-point addition dropped); all three 516.
@@ -684,6 +684,10 @@ static inline byte *surface_pointer(byte *base, long offset) { return *(byte **)
 // search provider with only this caller: rejected. Literal values, readonly iterators and
 // force-inline declarations before/after the include 372 each; no inline recovery.
 // Original searches, signed orientation, APIs and helper graph restored.
+// Round 240: complete oriented/binormal/position API inputs and their pairs/all
+// 462/434/441/448/450/422/436; all with readonly vertex/rest receivers 436.
+// Keep only binormal and position values, each consumed through all three components: 422 plain,
+// 1452/1361 bytes. Original APIs, both orientation passes, fields and arithmetic preserved.
 // @retail 0x116b00
 void __stdcall function_116b00(long tag_index, long unused, long group, long variant, long pass, long index, void *context)
 {
@@ -729,7 +733,11 @@ void __stdcall function_116b00(long tag_index, long unused, long group, long var
 		D3DDevice_SetRenderState(D3DRS_CULLMODE, orientation > 0 ? D3DCULL_CCW : D3DCULL_CW);
 		real sign = orientation;
 		if (tangent != NONE) D3DDevice_SetVertexData4f(tangent, g_4687ac->i*sign, g_4687ac->j*sign, g_4687ac->k*sign, 1.0f);
-		if (binormal != NONE) D3DDevice_SetVertexData4f(binormal, g_4687a8->i, g_4687a8->j, g_4687a8->k, 1.0f);
+		if (binormal != NONE)
+		{
+			vector3f binormal_direction = *g_4687a8;
+			D3DDevice_SetVertexData4f(binormal, binormal_direction.i, binormal_direction.j, binormal_direction.k, 1.0f);
+		}
 		D3DDevice_Begin(D3DPT_TRIANGLESTRIP);
 		for (long i = 0; i < definition->strip_index_count; ++i)
 		{
@@ -738,7 +746,8 @@ void __stdcall function_116b00(long tag_index, long unused, long group, long var
 			s_surface_rest_vertex *rest = &definition->vertices[vertex_index];
 			if (normal != NONE) D3DDevice_SetVertexData4f(normal, vertex->normal.i*sign, vertex->normal.j*sign, vertex->normal.k*sign, 1.0f);
 			if (uv != NONE) D3DDevice_SetVertexData2f(uv, rest->u, rest->v);
-			D3DDevice_SetVertexData4f(0, vertex->position.x, vertex->position.y, vertex->position.z, 1.0f);
+			point3f position = vertex->position;
+			D3DDevice_SetVertexData4f(0, position.x, position.y, position.z, 1.0f);
 		}
 		D3DDevice_End();
 	}

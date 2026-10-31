@@ -608,6 +608,14 @@ real function_267370(long object_index);
 // Round 46: both NONE resets delayed across carrier selection 420 fast; unknown26c alone 415 fast/372 plain;
 // unknown274 alone 416 fast; the whole reset group 421 fast; initial/parent/held header getters and
 // bool held bit 416 fast each (reduced control 416). Original body restored.
+// Round 92 (plain checks; --fast builds this function at 416): helper reading the cluster/zone index
+// fields directly 96; the vehicle index split from the carrier (copy before 0xbaf40, set to the root)
+// 101, which gives retail's carrier block exactly (EAX, compare against the -1 register, `mov edi, eax`)
+// with the -1 still in EDI from the plane test; that with a NONE-initialised if/else carrier 101.
+// Locate-only on the split: plane compares against -2 52; cluster and zone keys as words against 0xffff
+// 33 (no sharing; left the zone compare's imm16 encoding, one byte, the plane x*i order and three
+// second-cross products); cluster word only 358 (the zone -1 joins the reset web); `(short)NONE` 87;
+// existing 0x11c120 through a forceinline redeclaration stays out of line 510. All restored.
 // Lane 17 round 2 (plain checks; the fast image gives 416 for the unchanged body): retail inlines 0x11c120
 // here only (five other callers call it), so the plane compares stay immediates there; our header copy is
 // optimized with this body and shares the resets' -1 in EDI. A swapped-operand staged cross (diagnostic)
@@ -1037,6 +1045,11 @@ void function_1e04a0(long primary_tag, long character_index, long unit_index, lo
 // handle domain and complete body restored; frame 0x118 and sentinel EDI/ESI remain.
 // Round 414: direct success-path object/weapon/metadata views, their pairs and all three
 // 320 each; immutable placement view at each use 339. Original observations and full body restored.
+// Round 92 (--fast, reproduces 320): pairs of lane 5 r77's block shapes (a int grenade tests, b palette
+// count at each use, c the squad flag as a bool set from `(flags >> 10) & 1` under `if (squad)`, d the
+// ternary substitution result): c 356; c+d 363; b+d 350; b+c 357; a+b 346; a+d 355; a+c 350; b+c+d 365;
+// all four 369. First difference unchanged: retail's -1 web (ESI) reaches the loop-entry
+// `squad_index != NONE` compare with squad_index in ECX; ours keeps squad_index in ESI and -1 in EDI.
 // @retail 0x1e0850
 long __stdcall function_1e0850(long character_index, long squad_index, s_203780 const *placement, bool substitute)
 {
