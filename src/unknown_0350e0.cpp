@@ -1743,15 +1743,23 @@ PRIVATE inline real clamp_2e9e0(real value)
     return value < 0.0f ? 0.0f : value > 1.0f ? 1.0f : value;
 }
 
-// score 508 (was 594): draft passed (cosine * size, sine * size, x_scale, y_scale) to function_480a0; retail passes
+// score 507 (was 508, 594 originally): draft passed (cosine * size, sine * size, x_scale, y_scale) to function_480a0; retail passes
 // (x_scale * size, y_scale * size, cosine, sine) (0x2f209-0x2f247: edx=sine and [0x2c]=cosine pushed as args 4 and 5, the
-// scales multiplied by size into the two float args). Retail also re-reads the entry flags from memory after function_47fd0
+// scales multiplied by size into the two float args). Checked against retail block by block (0x2e9e0-0x2f2ca, 2026-10-31): every
+// field offset and size, condition direction, constant (0x45dbc0 1.0, 0x45dbbc 0.5, 0x45dc0c 2.0, 0x45dc54 pi/180, 0x45dddc pi,
+// 0x45dfa0 1/256), the 2e3f0 outputs, the 163ba0/13bb90/13b390/13be80/2f2d0/47fd0/131f40/480a0 argument orders and the loop shape
+// agree; the only other mismatches found are the slot flags read (now a dword like retail's 0x2eaa9 and 0x20d80) and the order of
+// the time/hash sum (retail h0*k, + time, + h1 at 0x2ecd6-0x2ed1f; the form below emits that order, the old one emitted h1 first).
+// Retail also re-reads the entry flags from memory after function_47fd0
 // (test byte [edi], 8), recomputes the opacity expression in each PIN arm, reads far_angle straight from the definition, and
 // loops with the count guard kept. What still differs: retail inlines D3DDevice_SetVertexData2f (0x2f17c-0x2f1ba) but the reduced
-// image calls it (full build may differ); ebx and ebp swapped (retail definition in ebx, NONE/time in ebp); stack slot order;
-// the time/hash sum is emitted h1 first (retail h0*k + time + h1); 0.0/1.0 are reloaded instead of kept in xmm5/xmm6.
+// image calls it (full build may differ); ebx and ebp swapped (retail definition in ebx, NONE/time in ebp); stack slot order and
+// frame (0x90 against 0x94; retail puts alpha at +0x28, tag +0x30, position +0x40, direction +0x4c, amount +0x6c, scale +0x84,
+// color +0x88 and shares +0x14 between time and size); the camera angle sum is emitted k, j, i (retail j, i, k at 0x2ed71-0x2edbb)
+// whatever order the terms are written in (3 orders, 507); 0.0/1.0 are reloaded instead of kept in xmm5/xmm6.
 // Tried: far_distance read in place (552), all clamps as PIN (543), declaration order of the out locals (no change),
-// attenuation hoisted together with animated (576), several spellings of the hash sum (548).
+// attenuation hoisted together with animated (576), several spellings of the hash sum (548), the flags dword kept in a local
+// (590), camera sums as separate double locals (no change).
 // @retail 0x2e9e0
 long __stdcall function_2e9e0(byte const *context, s_2e3f0_record const *record)
 {
@@ -1772,7 +1780,8 @@ long __stdcall function_2e9e0(byte const *context, s_2e3f0_record const *record)
         if (visibility <= 0.0f) return 0;
     }
     real context_alpha = 1.0f;
-    if ((context[4] & 2) && (context[4] & 1))
+    // retail loads the slot's flags as a dword (mov eax, [esi+4], 0x2eaa9), as 0x20d80 does, not a byte
+    if ((*(dword const *)(context + 4) & 2) && (*(dword const *)(context + 4) & 1))
         context_alpha = clamp_2e9e0(context[3] * g_5234c8);
     color3f animated = { 1.0f, 1.0f, 1.0f };
     vector3f delta;
@@ -1803,7 +1812,7 @@ long __stdcall function_2e9e0(byte const *context, s_2e3f0_record const *record)
         dword seed = (dword)context >> 5;
         dword hash = 0xffffffff;
         function_163ba0(&hash, &seed, 4);
-        time = (hash & 0xff) * (1.0f / 256.0f) + time + ((hash >> 8) & 0xff);
+        time = ((hash >> 8) & 0xff) + ((hash & 0xff) * (1.0f / 256.0f) + time);
     }
     if (*(long *)(definition + 0x4c) > 0)
         attenuation *= function_13bb90((s_tag_data *)*(byte **)(definition + 0x50), time, 0.0f);
