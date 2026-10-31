@@ -68,7 +68,7 @@ bool actor_has_joint_invitation(long actor_index, short type);
 long function_25d810(long object_index, long actor_index, bool create);
 bool function_25d9b0(long prop_index);
 
-// score 86 (was 125): the `priority > 0` gate after both branches gives retail's block order (no-invitation
+// score 86 (was 86): the `priority > 0` gate after both branches gives retail's block order (no-invitation
 // branch last, jumping past the gate), priority in SI, view in EDI and the state spilled to the argument slot.
 // Left: actor and node swap EBX/EBP through the body, and the zero exits share `xor esi, esi; mov ax, si` where
 // retail has its own `pop ebp; xor eax, eax; pop ebx` epilogue (9 bytes short). Frame 0xc and invitation call agree.
@@ -126,6 +126,13 @@ bool function_25d9b0(long prop_index);
 // fallback last jumping in past the priority test), but priority is spilled and the state kept in
 // ESI (retail the other way) and the zero exit sits at the loop bottom; that without the top-level
 // init plus `if (!entry) return entry` after the loop 186 (entry spilled, frame 0x10).
+// Round 13 (fast): `short result = 0;` at the top with `if (ok) result = priority;` in the gate 117 (551 bytes:
+// actor EBX and node EBP as retail, but result gets its own slot, frame 0x10, and priority is spilled to the
+// argument slot), result declared before the invitation test 169, with `else result = 0;` 141; a separate
+// pointer for the node the evaluation uses (node copied into it in the loop, the loop's and the fallback's
+// lookups assigned to it) 110 (retail's head, actor EBX/node EBP, but that pointer spilled, frame 0x10),
+// declared first 110. Any extra value live from entry, or a split node, gives retail's actor/node registers;
+// retail gets them without a stack slot.
 // @retail 0x1b7e40
 short __stdcall function_1b7e40(long actor_index)
 {
@@ -301,6 +308,11 @@ evaluate:
 // lookup 88, with the view tested in its own nested if 88; diagnostics (not kept): the file built /Ob1 changes
 // nothing (109, 0x1b7e40 unchanged), a second velocity query 108 and the view call before the near test 93 stay
 // inlined. So neither the caller file's /Ob1, the call's position nor the caller's size moves LTCG's decision here.
+// Round 13 (fast): the slot's data block typed through `slot->unknownc` (the slot-data-block form) 73 (same
+// code: retail reads both fields off the slot pointer); 0x25d740's body through the existing prop_ref_view 73
+// (still inlined here, its other callers unchanged), with the single-exit form 88; the single-exit form 88
+// (278 bytes); the two outer tests joined with `&&` and the call in the else arm 88. BLOCKED-BY 0x25d740
+// (LTCG inlines it at this call site only). The slot cast at each use, as 0x1b82d0 reads it, 73.
 // @retail 0x1b81c0
 short __stdcall function_1b81c0(long actor_index, s_slot *slot, bool active)
 {

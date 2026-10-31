@@ -3007,6 +3007,10 @@ void __stdcall function_17a380(s_effect_datum *effect)
 // parameters swapped 93 (cached, identical)/120 (per call); per call with the index read through its
 // address 127; definition before the next index 114; system looked up first 119; shared colour helper
 // (system, A, B) 92.
+// Round 210: Native immutable settings value with cursor/tint/node combinations
+// 109/109/108/108/109/109/108/108. The full value expands frame 0x4c to 0x84 instead of retail
+// 0x54 and every form loses matched caller 0x176f60 through the generated input convention.
+// Original settings pointer, cached mode, query carriers, cursor and complete body restored.
 // Round 46 (lane 9), on the spawn-cursor form (89 here): colour B read first 90; next index read after the
 // definition call 96, with colour B first 96; both colours declared inside the type-query block 90 (aligned 27:
 // the loop is then retail's except the cached mode push; left are the system in EDI, colour A in EBX, colour B
