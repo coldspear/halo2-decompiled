@@ -1455,6 +1455,12 @@ void function_d0d20(long unit_index)
 // Primary-only/secondary-only default-first results 56/57. Primary getter consumed directly
 // after the ordinary secondary reads 58; with the secondary default-first 61. Original body
 // restored; incoming unit home, second pool reload and weapon-result diamonds remain.
+// Round 96: both 0xcbd50 calls (retail's stack argument in EBP, ret 4 and default-first results) with the
+// first argument through a block-scoped pool local 48, through a pool-local unit pointer 48; the existing
+// inlined current-weapon getter (unknown_1e1f20.h) for the first weapon with a pool-local second
+// argument 48 (load order changes, the second weapon read reuses the guard's unit); the guard through
+// the pool local with UNIT_GET arguments 57 (141 bytes, unit in EDI); first argument pool-local, second
+// UNIT_GET 74. With 0xcbd50 the inlined lookups always merge with a UNIT_GET guard or argument.
 // @retail 0xd1540
 void __stdcall function_d1540(long unit_index)
 {
