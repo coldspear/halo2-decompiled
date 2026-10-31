@@ -3607,7 +3607,7 @@ PRIVATE __forceinline long weapon_visible_model_owner(long weapon_index)
         if (weapon->parent_index != NONE) weapon_index = weapon->parent_index;
     return weapon_index;
 }
-// score 1420 (was 1420): Frame 0x3c versus 0x38 and pool/dual/scalar homes remain.
+// score 1420 (was 1420; round 449 reached 1408 but is not kept, see the review line): Frame 0x3c versus 0x38 and pool/dual/scalar homes remain.
 // Earlier: frame 0x3c versus 0x38; pool/offset registers and dual/scalar homes remain.
 // Long blocked fast 1518, barrel active 1513, down/up 1506, overheated 1520; depth one 1521;
 // combined blocked/down/up 1470 plain (fast 1500).
@@ -3704,6 +3704,20 @@ PRIVATE __forceinline long weapon_visible_model_owner(long weapon_index)
 // Round 410: Complementary dual-query bool/byte/short/long 1454/1454/1446/1447;
 // each with the adjacent owner query used directly 1454/1454/1446/1447. Original
 // dual producer and owner-result lifetime restored; frame and pool/dual homes remain.
+// Round 449: Boolean shift-and-bit observations for status/control/trigger,
+// seven nonempty subsets 1416/1437/1437/1420/1420/1437/1441; all with byte
+// blocked/down/up 1426. Status-only reaches retail length (5684) but gains
+// only four, below the gain gate; original masks, signed test and carriers
+// restored. Frame 0x3c versus 0x38 and initial pool/dual homes remain.
+// Round 449 follow-up on status-only Boolean bits: byte blocked/down/both/up/
+// blocked-up/down-up/all 1418/1420/1421/1427/1408/1433/1414; all Boolean
+// carriers 1414. Byte blocked/up kept after plain confirmation at 1408,
+// 5692/5684 bytes, frame 0x38 and first +8; down stays short. Both byte
+// carriers remain canonical 0/1; input masks, signed trigger test, every field
+// observation, helper, call tuple and float expression stay unchanged.
+// Review of round 449 (m3): not kept: the 1408 form needs every flag bit read as `(bool)((byte >> n) & 1)`,
+// a cast that changes no value, and blocked/up retyped short -> byte by score; both are kept only with a byte
+// match. Code back to the masks and short carriers; the subset scores above still stand.
 // @retail 0xfdfb0
 bool __stdcall function_fdfb0(long weapon_index)
 {
