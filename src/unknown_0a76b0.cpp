@@ -1035,6 +1035,11 @@ PRIVATE __forceinline byte *unit_action_seat_get(s_unit_action_unit *unit)
 // (958 bytes); immediate and animated throws as one if/else chain 19; animate and player-index
 // tests nested 19. A compile-only model keeps the exit block last for every structured, goto and
 // inline-helper shape; retail's failure jumps reach the success path's exit copy instead.
+// Round 50: `animate` declared with the entry locals 50; the channel declared with them 266
+// (958 bytes); the grenade pointer from one ternary 269 (974 bytes); the immediate throw ending in
+// `return result` 43; `result = true` before function_a8c10 21. The three `[edi + ecx + 8]` unit
+// lookups stay data-first in a compile-only screen for every order of the entry declarations, an
+// unused header pointer and a header pointer for the first lookup.
 // @retail 0xe7fb0
 bool __stdcall function_e7fb0(long unit_index, s_unit_request *request)
 {
@@ -1199,6 +1204,13 @@ void __stdcall unit_action_throw_grenade_interrupted(long unit_index, long type)
 // hand getters 60/55 (boolean kept). Round 31: hand index first with the hand getter 60 (retail's
 // entry and final store, no reload); header form for the second/first lookup 60/60; one header
 // pointer for both 56; the second lookup at the store 54 (177/172).
+// Round 50: one unit pointer for the getter and the store 55 (same code); a named `secondary` bool
+// 58 (175); the 0xee7f0 call in each arm of `if (primary)` 53; hand first with the hand getter on a
+// unit pointer declared at the top 60; the second lookup after 0x1015a0 66 (182). Lead: hand first,
+// the hand getter, and `s_unit_action_header *header = UNIT_ACTION_HEADER_GET(unit_index);`
+// declared before the getter and never read gives retail's data reload and matches byte for byte
+// (as 0xe5040's unused header does); not kept, an unused local being a dead store. A header that is
+// read (for the getter or the second lookup) loses the reload.
 // @retail 0xe8460
 void function_e8460(long unit_index, bool primary)
 {
@@ -3033,7 +3045,7 @@ bool __stdcall unit_action_vehicle_board_update(long unit_index, long type)
 
 /* ejects from a vehicle (type 32), or (when asked) finishes an ejection at
    once */
-// score 15 (was 15): failure-exit order (retail puts the early vehicle/seat exit, `mov al, dl`,
+// score 4 (was 15): failure-exit order (retail puts the early vehicle/seat exit, `mov al, dl`,
 // before the constant-false exit) and the flag store before the active OR remain.
 // Late success, entry-first, byte/long/word completions 138 each; per-use actions 133;
 // common completion 15; common callback 109 (restored); split admission 115;
@@ -3042,6 +3054,12 @@ bool __stdcall unit_action_vehicle_board_update(long unit_index, long type)
 // Round 91: flag set as one ternary expression 15; vehicle/seat early return 115 (result
 // moves to a stack byte); nested vehicle/seat ifs 15; flags local stored once 35;
 // active-type guard `return false` 113.
+// Round 50: the vehicle/seat test as one `goto done` to the single exit 4 (retail's exit order),
+// kept; with it, the active OR before the flag set/clear 64 (364 bytes); `result = true` before the
+// set/clear 28; the flags as one value ternary 26 (345 bytes); `result = true` after each
+// function_cc810 call 52; the permuter (35 tries) found nothing below 4. What remains: retail
+// stores the merged flags before `or [ebx+8], 1` and reloads the vehicle index into EAX; ours
+// loads it into ECX ahead of the store.
 // @retail 0xeb3c0
 bool __stdcall unit_action_vehicle_ejection(long unit_index, s_unit_request *request)
 {
@@ -3049,36 +3067,36 @@ bool __stdcall unit_action_vehicle_ejection(long unit_index, s_unit_request *req
 	s_unit_action_unit *unit = UNIT_ACTION_UNIT_GET(unit_index);
 	s_unit_actions *actions = UNIT_ACTIONS_GET(unit);
 	long vehicle_index = unit->parent_object_index;
-	if (vehicle_index != NONE && unit->seat_index != NONE)
+	if (vehicle_index == NONE || unit->seat_index == NONE)
+		goto done;
+	if (*((bool *)request + 5))
+		function_e69c0(unit_index, 0x20);
+	if (!UNIT_ACTION_ACTIVE(UNIT_ACTIONS_GET(UNIT_ACTION_UNIT_GET(unit_index)), 0x20))
 	{
+		function_e69c0(unit_index, 0x1d);
+		function_e69c0(unit_index, 0x1c);
+		function_e69c0(unit_index, 0x1f);
+		function_e69c0(unit_index, 0x1b);
+		function_e69c0(unit_index, 0x1a);
+		function_e69c0(unit_index, 0x16);
 		if (*((bool *)request + 5))
-			function_e69c0(unit_index, 0x20);
-		if (!UNIT_ACTION_ACTIVE(UNIT_ACTIONS_GET(UNIT_ACTION_UNIT_GET(unit_index)), 0x20))
 		{
-			function_e69c0(unit_index, 0x1d);
-			function_e69c0(unit_index, 0x1c);
-			function_e69c0(unit_index, 0x1f);
-			function_e69c0(unit_index, 0x1b);
-			function_e69c0(unit_index, 0x1a);
-			function_e69c0(unit_index, 0x16);
-			if (*((bool *)request + 5))
-			{
-				function_e6960(unit_index, 0x20);
-				result = true;
-				function_cc810(vehicle_index);
-			}
-			else if (function_10f430(unit_index, 0x7000101, 0x7000101, 0x7000101, 0x80000c4, 0.0f, 0, 2))
-			{
-				if (*((bool *)request + 4))
-					actions->unknown00 |= 2;
-				else
-					actions->unknown00 &= ~2;
-				actions->active[1] |= 1;
-				result = true;
-				function_cc810(vehicle_index);
-			}
+			function_e6960(unit_index, 0x20);
+			result = true;
+			function_cc810(vehicle_index);
+		}
+		else if (function_10f430(unit_index, 0x7000101, 0x7000101, 0x7000101, 0x80000c4, 0.0f, 0, 2))
+		{
+			if (*((bool *)request + 4))
+				actions->unknown00 |= 2;
+			else
+				actions->unknown00 &= ~2;
+			actions->active[1] |= 1;
+			result = true;
+			function_cc810(vehicle_index);
 		}
 	}
+done:
 	return result;
 }
 
@@ -3421,6 +3439,14 @@ done:
 // genuine contexts and one Boolean completion exit; selected provider output unchanged.
 // Round 34: switching on 0x10f630's first output, as retail does (a value fix, as in 0xebb40),
 // 76 with retail's output slots; the same merged case block (0x10000229) is placed after the call.
+// Round 50: a compile-only screen reproduces the layout: VC sorts each switch's cases by value, so
+// no case order changes it, and the merged mode-1/0x110001b4 block always stays in the request
+// branch (retail: after the query's 0x120001b5 block); swapping the if/else branches gives the same
+// code. The mode mapped to the current-animation name and one shared name switch 103 (477 bytes,
+// the request cases threaded, 0x1100022a duplicated); the query switch as an if/else chain 89;
+// `return result` for the mode default 121; the name switch inside `if (query)` 76; default first
+// 76. A brute-force screen of switch/if dispatch, the three exits as goto/return result/return
+// false and two declaration orders (144 forms) never placed that block in the query branch.
 // @retail 0xebd30
 bool __stdcall function_ebd30(long unit_index, s_unit_request *request)
 {
@@ -4266,7 +4292,7 @@ void function_201520(short value, long type, long a, long b, long c);
 
 /* a surprise: waiting out a paused animation, then its time, then what
    follows it */
-// score 74 (was 75): frame 8 and output homes agree; unit/animation registers, channel tests,
+// score 20 (was 74): frame 8 and output homes agree; unit/animation registers, channel tests,
 // true-exit sharing and final call inputs remain. Action receiver first/pointer names 87/87; native
 // channel flags/combined channel test/unit Boolean 87/87/87; uniform countdown 75; natural guard 87;
 // names/flags/countdown 75; chained clearing 87, with unit Boolean 87, countdown 75, both 75;
@@ -4279,35 +4305,44 @@ void function_201520(short value, long type, long a, long b, long c);
 // merged into `test 9`). What remains: our build keeps the constant 1 in EAX (test masks, the
 // true return, the call argument), so the state name moves to ECX; retail loads the channel's
 // +0x11 byte into BL and tests 1 and 8 apart.
+// Round 50: the constant 1 is kept in a register whenever a `return true` reaches the exit with
+// the call result (a compile-only screen: two returns of true are enough). The failure test written
+// as one `||` chain around the rest, with `bool result = true;` and one exit, 74 -> 26 (retail's
+// entry registers, BL byte tests and true block); single exit with `return true` after the block 87;
+// the 0x10a flag through TEST_FIELD_BIT on that 22; actions declared before the animation state 20
+// (retail's add order), kept. Chained NONE stores 22; the type field as short 23/21 (retail's
+// `or eax, -1` stores, but a movsx read). What remains is the 0x201520 call: retail loads the type
+// with `xor ecx, ecx; mov cx` and stores both NONEs from AX, which a compile-only screen gives only
+// with a 16-bit third parameter of 0x201520 and a short type field: BLOCKED-BY 0x201520 (its
+// definition is in another lane's file).
 // @retail 0xed710
 bool __stdcall function_ed710(long unit_index, long type)
 {
 	s_unit_action_unit *unit = UNIT_ACTION_UNIT_GET(unit_index);
-	s_animation_state *state = (s_animation_state *)((byte *)unit + unit->animation_state_offset);
 	s_unit_actions *actions = UNIT_ACTIONS_GET(unit);
+	s_animation_state *state = (s_animation_state *)((byte *)unit + unit->animation_state_offset);
 	long state_name;
 	long action_name;
+	bool result = true;
 
 	function_10f630(unit_index, &action_name, &state_name);
-	short remaining_ticks = actions->surprise_ticks;
-	if (state_name == 0x700005c && !(*((byte *)state + 0x6c) & 1) && TEST_FIELD_BIT(state->channels[0].flag0) &&
-		!(state->channels[0].unknown11 & 1) && !(state->channels[0].unknown11 & 8))
+	if (state_name != 0x700005c || (*((byte *)state + 0x6c) & 1) || !TEST_FIELD_BIT(state->channels[0].flag0) ||
+		(state->channels[0].unknown11 & 1) || (state->channels[0].unknown11 & 8))
 	{
-		return true;
+		if (state_name != 0x800061e && actions->surprise_ticks <= 0)
+		{
+			result = function_ed600(unit_index, actions);
+		}
+		else if (actions->surprise_ticks > 0 && --actions->surprise_ticks <= 0)
+		{
+			if (!TEST_FIELD_BIT((unit->flags_10a >> 2) & 1))
+				function_201520(1, actions->surprise_value, actions->surprise_type, 1, 0);
+			actions->surprise_value = NONE;
+			actions->surprise_type = NONE;
+			result = false;
+		}
 	}
-	if (state_name != 0x800061e && remaining_ticks <= 0)
-		return function_ed600(unit_index, actions);
-	if (remaining_ticks <= 0)
-		return true;
-	--remaining_ticks;
-	actions->surprise_ticks = remaining_ticks;
-	if (remaining_ticks > 0)
-		return true;
-	if (!((unit->flags_10a >> 2) & 1))
-		function_201520(1, actions->surprise_value, actions->surprise_type, 1, 0);
-	actions->surprise_value = NONE;
-	actions->surprise_type = NONE;
-	return false;
+	return result;
 }
 
 /* a unit's flinch (type 51): its animation, and its time */
@@ -4360,6 +4395,13 @@ void *function_1e4f90(long actor_index);
 // No result carrier 83, with short slot 79, with actor at use 79; post-work false
 // bool/short-slot/short-result/both 83/79/97/101; countdown-predicate result
 // bool/short/long 98/96/97. Whole-program confirmation preserves every match.
+// Round 50: the lead 64; with `ticks--; if (ticks <= 0)` 64; the weapon flag test nested 64; the
+// replacement-or-drop as if/else on a NONE-initialised replacement index 64; `result = false` first
+// and the replacement exit as `goto done` 66 (288); the hand getter on the entry unit pointer in the
+// current form 85; the getter through a header pointer (`header->unit`) 64. The lead plus
+// `s_unit_action_header *header = UNIT_ACTION_HEADER_GET(unit_index);` declared before the getter
+// and never read gives retail's data reload and matches byte for byte (as 0xe5040's unused header
+// does); not kept, an unused local being a dead store.
 // @retail 0xed910
 bool __stdcall function_ed910(long unit_index, long type)
 {
