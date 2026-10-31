@@ -169,6 +169,10 @@ void function_262800(long actor_index, s_reference reference, bool unknown);
 // completion store shared after an `if (view)` block 51 (276 bytes). At 0x1afb30's call to 0x1f4f40
 // our build converts the byte in place as retail does; here EAX holds the actor index too early.
 // Lane 16 r46 (plain): the 0x262800 reference copied into a named local first 7 (its temp moves to EDI).
+// Round 213: inline facing callee 7; inline release callee 7; inline node test 7; both call contracts
+// inline 7; short facing mode 44; short mode with inline facing callee 44; long facing mode 46; long mode
+// with inline facing callee 46; release result used for completion 7; release result with short mode 44;
+// release result with long mode 46; original executable source restored.
 // @retail 0x1b89d0
 void __stdcall function_1b89d0(long actor_index, s_slot *slot)
 {
