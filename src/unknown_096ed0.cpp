@@ -198,6 +198,11 @@ void replication_table_release_chain(s_handle_peers *peers, long count, long con
 // priority at the arm scope 170 (814 bytes; type keeps EBX through the pending chain, whose index
 // spills); active cursor bounded by a remaining countdown 55 (same code); indexed loop bounded by its
 // own count local 170; `type = 4` after the active chain query 170; blocked declared after `type = 4` 170.
+// Lane 16 r46: retail keeps type in EBX everywhere but the pending loop (stored to its home before the
+// chain query, reloaded at the join), i.e. a split around that loop. On the indexed form: type renamed
+// kind/z_type and the count renamed 170 each; a `short` pending index 198; the active owner in a
+// loop-local 170; the pending size sum before the priority test 170. On the cursor form the cursor
+// stepped in the `for` increment 132 (823 B).
 // @retail 0x98150
 long c_handle_table_450cd0::v1(long a1, long max_count, void *output)
 {
