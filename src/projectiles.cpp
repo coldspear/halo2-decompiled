@@ -631,6 +631,14 @@ s_projectile_material_response g_547660;
 // 40/40/40/40/21/21/21/21; the counted form reaches 145 bytes but rotates index/material/scan homes.
 // That aggregate parameter is exact-only and restored. Its ordinal zero before admission/lookup,
 // direct/NULL lookup 50/50/51/54. Original scalar parameter, unused reference, callers and body restored.
+// Round 108 (lane 6), all on the existing two-byte material-type parameter (callers constructing it):
+// a plain counted loop without the count guard 50 (137 bytes: retail's single guard and counter/
+// pointer step, but material ECX, so `add` where retail has `lea edi`/`test`, and the inner loop
+// then misses its alignment pad); with `&& !result` in the loop test 52; material and counter
+// declared at function scope 50; the compare through the type's == operator 50; the parent read
+// then `if (result) break;` with validity alone in the while 66 (127 bytes); a response pointer
+// stepped in the body beside the counter 50 (response in EDX as retail, counter ESI, base load
+// above the guard), with the counter and material declared earlier 50. Scalar body restored.
 // @retail 0xfd4c0
 s_projectile_material_response *__stdcall projectile_get_material_response(s_projectile_definition const *definition,
 	short material_index)

@@ -1281,6 +1281,14 @@ bool function_0bfe60(dword const *flags, long bit);
 // before the loop 52; the push pointer read as `*(dword volatile **)device` 52; the test index written
 // at both calls 142 (as lane 13); status declared before the test index 53; `slot->b == player` 52;
 // `player == g_5234c4` 53.
+// Round 108 (lane 6), on round 7's 38 form (the row passed straight to 0xbfe60, named at the store;
+// only the colours left: counter/total EDI where retail has EBP, test index and player EBP/EBP
+// where retail has EDI/EBX, the device EDI where retail reuses status's EBX): the loop counter
+// declared before the loop 38; `slot->b == player` 38; the index set to the counter and then
+// overwritten from the list 41; the test index computed before the query branch 49; the push
+// pointer without volatile 42; a count local (`indices ? count : g_51f40c.count`) in place of
+// reassigning the parameter 47. Retail inlines
+// the SDK's begin-visibility-test body here, which our link keeps out of line.
 // @retail 0x20bb0
 void __stdcall function_20bb0(long player, dword mask, long const *indices, long count, bool query, visibility_draw_callback draw)
 {

@@ -298,6 +298,16 @@ void function_1fc660(s_tracked_point *tracked, s_tracking_state const *state, s_
 // pairs and all phases 100/43/80/115/102/80/107; all with a short ordinal 144.
 // Tick-only loop is identical code; original body restored. Rate/tick register
 // reuse, j-first prediction and limit/delta scheduling remain.
+// Round 108 (lane 6): `delta` declared before `velocity` 43 (same code). The rate product and add
+// per component, then the tick conversion, then subtract-and-scale per component (`v.c -= p;
+// v.c *= tick_scale;`) gives ticks in XMM3 scaled in place 66 (369 bytes, limit still hoisted);
+// with the squared length named before the limit 53 (366 bytes: limit after the length as
+// retail); written j, i, k throughout 57 (retail's first 0x65 bytes, 369 bytes); j, i, k with the
+// deltas assigned i, j, k 49 (the length then sums (k + j) + i as retail: the sum follows the
+// order the delta fields are assigned); the chains j, i, k, subtract-and-scale i, j, k and deltas
+// i, j, k 47 (366 bytes, first 0x5d bytes as retail; the two tick products then run i, j where
+// retail runs j, i but still stores i first; the delta copies and the correction block differ).
+// Subtracting all three then scaling all three: worse in every order (compile-only screen).
 // @retail 0x1fc4b0
 void function_1fc4b0(s_tracked_point *tracked, s_tracking_state const *state, s_tracking_output *output)
 {

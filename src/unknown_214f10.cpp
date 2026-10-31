@@ -193,6 +193,11 @@ PRIVATE __forceinline long function_214f83(char const *arg_0, s_file_handle *arg
 // 41/41/41/40. Two-point best rejected; original initializer, long outcome, success store,
 // existing completion qualifier and both waits restored. Handle ECX and memory success-byte test
 // remain.
+// Round 108 (lane 6): `success = INVALID != handle; if (success)` 55; success set by an if/else
+// on the handle test 50 (fully threaded); success through a bool reference 55, as a one-element
+// array 55, as a union member 80. A compile-only screen of further shapes (status struct member,
+// byte flag from a long, const reference to the array element, int-returning inline test) forwards
+// the stored byte in every case: only a volatile flag gives retail's store and re-read.
 // @retail 0x214f80
 void game_state_cache_files_open(void)
 {
