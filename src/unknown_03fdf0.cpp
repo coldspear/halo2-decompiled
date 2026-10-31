@@ -284,6 +284,11 @@ void function_4a1e0(s_view_source *source, s_view_camera *camera, long resource_
 // in EAX across the copy where retail loads it into EDI and spills it); on it, current and first both
 // read from previous 140 (495), `&g_4ba138[first]` as the copy destination 144, a for loop over n 144,
 // the selection computed before the copy 170 (490).
+// Round 13 (fast; aligned = difflib count): the indexed form again 144 (492 bytes, aligned 23 against the block
+// form's 39: count CX/zero EAX where retail has AX/ECX, first in EAX where retail loads it into EDI and spills it,
+// no loop-entry jump over the pad); on it an early return on `count <= 0` 144 (aligned 23), the copy size as
+// `sizeof * count` 144 (23), `count >= 1` 145 (26); the block form with the geometry pointer renamed 54 (same code:
+// the slot order does not follow that name); on the indexed form the loop index declared before n 145 (23).
 // @retail 0x402b0
 void function_402b0(long cache_index, long mode)
 {
