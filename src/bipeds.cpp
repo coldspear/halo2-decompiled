@@ -4270,10 +4270,22 @@ void __stdcall function_b8600(long object_index, long unknown);
 /* applies the biped's character physics move: its facing and up, its
    animation names, its movement animation's rate, crouching and grabbing,
    and its new velocity (or, asleep, its new position) */
-// score 742 (was 793): Frame 0xd0 agrees; definition/state/motion homes, early exit, flag widths and vector schedules differ.
-// Default completion fallthrough 776; direct still-result ownership 773; both 749 fast/742 plain kept.
-// Common final result with fallthrough 789; coherent workspace names 800; declared flag stores 781;
-// entry still Boolean 800; definition at every use 864 (fast control 800, ordinary opening 793).
+// score 648 (was 742): the logic was walked against retail block by block and agrees (callees, argument order,
+// field offsets, condition directions, constants 0.1/0.15/0.5/0/+-32768/4/6/+-1). The later velocity is
+// move.velocity itself: retail adds to it in place (0xe2a2c-0xe2a38, [esp+0x44]), stores it to linear_velocity and
+// passes &move.velocity to 0x1c4b00 (0xe2b3b), so the second copy is gone and `velocity` lives only in the matrix
+// block, as in retail's frame (move at +0x30, matrix at 0xac). The aim block stores each step first and then clamps
+// on `<=`/`>=` (shared tail at 0xe2d4c), with bits 0x80 and 0x100 tested separately.
+// Still differs: retail calls 0x1c4a80 at 0xe2c31 and ours inlines it (about 70 bytes; /Ob1 in that function's file
+// fixes it, 641 -> 552 fast, but raises 0x1e55d0 319 -> 355 and is a flags change, so not applied); ours caches
+// move.flags in ebx, so case 6/4/default each end with their own `call 0xe5930` where retail has one (0xe2869);
+// retail keeps NONE in edi (0xe270f); animation_id/state/definition stack slots 0x2c/0x24/0x28 (retail 0x24/0x28/0x2c).
+// Tried: the animation lookup as animation_id's initializer (before the names[1] store; retail stores first,
+// 0xe26c9) 653; move.flags as a dword (retail reads it whole at 0xe28a9) same score; lean bits as `else if` with the
+// crouch test repeated 719; nested with the decay block written twice 787; `do { ... break; } while (false)` 552
+// with /Ob1 (554 with the plain `||` form); case order 6 before 4 same. Earlier rounds: default completion
+// fallthrough 776; direct still-result ownership 773; common final result with fallthrough 789; coherent workspace
+// names 800; declared flag stores 781; entry still Boolean 800; definition at every use 864.
 // @retail 0xe24f0
 bool __stdcall function_e24f0(long arg_159e6d, long *names, s_biped_physics_output *output)
 {
@@ -4282,7 +4294,6 @@ bool __stdcall function_e24f0(long arg_159e6d, long *names, s_biped_physics_outp
 	s_animation_state *state = (s_animation_state *)((byte *)biped + *(short *)((byte *)biped + 0x12a));
 	word const *animation_flags = (word const *)((byte *)biped + biped->unknown33e);
 	s_biped_physics_move move;
-	vector3f velocity;
 	bool still;
 	bool grabbing;
 	real change;
@@ -4342,10 +4353,10 @@ bool __stdcall function_e24f0(long arg_159e6d, long *names, s_biped_physics_outp
 	{
 		if (TEST_FIELD_BIT((*(dword *)(definition + 0x264) >> 2) & 1))
 		{
+			vector3f velocity = move.velocity;
 			transform4x3f frame;
 			vector3f local;
 
-			velocity = move.velocity;
 			if (biped->physics_mode == 1)
 			{
 				velocity.i -= move.position.x;
@@ -4426,10 +4437,9 @@ bool __stdcall function_e24f0(long arg_159e6d, long *names, s_biped_physics_outp
 	}
 	change = function_dd7d0(arg_159e6d);
 	((byte *)names)[9] = TEST_FIELD_BIT((biped->flags_134 >> 23) & 1);
-	velocity = move.velocity;
 	if (!(TEST_FIELD_BIT((*(dword *)(definition + 0x264) >> 1) & 1)) && (function_e4050(arg_159e6d) || grabbing))
 	{
-		velocity.k += (*(real *)(definition + 0x268) - *(real *)(definition + 0x26c)) * g_510c54->field_2_3 *
+		move.velocity.k += (*(real *)(definition + 0x268) - *(real *)(definition + 0x26c)) * g_510c54->field_2_3 *
 			change;
 	}
 	*((byte *)&biped->flags_348 + 1) |= 8;
@@ -4451,8 +4461,8 @@ bool __stdcall function_e24f0(long arg_159e6d, long *names, s_biped_physics_outp
 			bool pushed = !biped->unknown34b && push->i * push->i + push->j * push->j + push->k * push->k > 0.0f;
 			bool resting = function_ddfb0(arg_159e6d) || pushed;
 
-			BIPED_GET(arg_159e6d)->linear_velocity = velocity;
-			function_1c4b00(arg_159e6d, &velocity, NULL, resting);
+			BIPED_GET(arg_159e6d)->linear_velocity = move.velocity;
+			function_1c4b00(arg_159e6d, &move.velocity, NULL, resting);
 		}
 	}
 	else
@@ -4462,9 +4472,9 @@ bool __stdcall function_e24f0(long arg_159e6d, long *names, s_biped_physics_outp
 		point3f position;
 		point3f *origin = (point3f *)((byte *)biped + 0x64);
 
-		position.x = velocity.i * g_510c54->rate + origin->x;
-		position.y = velocity.j * g_510c54->rate + origin->y;
-		position.z = velocity.k * g_510c54->rate + origin->z;
+		position.x = move.velocity.i * g_510c54->rate + origin->x;
+		position.y = move.velocity.j * g_510c54->rate + origin->y;
+		position.z = move.velocity.k * g_510c54->rate + origin->z;
 		if (sleeping)
 		{
 			function_b87b0(arg_159e6d);
@@ -4491,31 +4501,40 @@ bool __stdcall function_e24f0(long arg_159e6d, long *names, s_biped_physics_outp
 		}
 		function_1c4b00(arg_159e6d, g_4687a4, NULL, 0);
 	}
+	if (biped->crouch == 0.0f && *(long *)((byte *)g_4e6948 + 8) != 2 &&
+		((biped->control_flags & 0x80) || (biped->control_flags & 0x100)))
 	{
-		real aim = biped->unknown3a4;
-
-		if (biped->crouch == 0.0f && *(long *)((byte *)g_4e6948 + 8) != 2 && (biped->control_flags & 0x180))
+		if (biped->control_flags & 0x80)
 		{
-			if (biped->control_flags & 0x80)
+			biped->unknown3a4 -= g_510c54->rate * 4.0f;
+			if (biped->unknown3a4 <= -1.0f)
 			{
-				aim -= g_510c54->rate * 4.0f;
-				biped->unknown3a4 = -1.0f > aim ? -1.0f : aim;
-			}
-			else
-			{
-				aim += g_510c54->rate * 4.0f;
-				biped->unknown3a4 = aim > 1.0f ? 1.0f : aim;
+				biped->unknown3a4 = -1.0f;
 			}
 		}
-		else if (aim > 0.0f)
+		else
 		{
-			aim -= g_510c54->rate * 6.0f;
-			biped->unknown3a4 = 0.0f > aim ? 0.0f : aim;
+			biped->unknown3a4 += g_510c54->rate * 4.0f;
+			if (biped->unknown3a4 >= 1.0f)
+			{
+				biped->unknown3a4 = 1.0f;
+			}
 		}
-		else if (0.0f > aim)
+	}
+	else if (biped->unknown3a4 > 0.0f)
+	{
+		biped->unknown3a4 -= g_510c54->rate * 6.0f;
+		if (biped->unknown3a4 <= 0.0f)
 		{
-			aim += g_510c54->rate * 6.0f;
-			biped->unknown3a4 = aim > 0.0f ? 0.0f : aim;
+			biped->unknown3a4 = 0.0f;
+		}
+	}
+	else if (0.0f > biped->unknown3a4)
+	{
+		biped->unknown3a4 += g_510c54->rate * 6.0f;
+		if (biped->unknown3a4 >= 0.0f)
+		{
+			biped->unknown3a4 = 0.0f;
 		}
 	}
 	return true;
