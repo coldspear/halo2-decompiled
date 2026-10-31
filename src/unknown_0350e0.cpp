@@ -4385,17 +4385,27 @@ PRIVATE __forceinline real absolute_32350(real value)
     return value >= 0.0f ? value : 0.0f - value;
 }
 
-// score 506 (was 623): retail returns a separate false byte, not the special flag (`mov al, [esp+0xb]` on every
+// score 492 (was 623, 506): retail returns a separate false byte, not the special flag (`mov al, [esp+0xb]` on every
 // non-success exit; the flag 3d7f0 writes is the byte at [esp+0x13]), so a special object returns false; the draft
 // returned the flag. 31f50's 5th output feeds the depth, its 4th the *2 field (the draft had them swapped), the
 // two cross products are separate branches (cmov before), the frame points come from g_47fd18+0xc, and the final
-// pass is draw_light_source_pass. Still differs: (1) retail pushes esi/edi only after the early exits, ours at
-// entry, and its frame is 4 bytes smaller; (2) 0x4a1e0 takes source/camera/resource in eax/ecx/edx in retail (callee
-// unmatched, same as 0x31170); (3) retail tests the two pass bits as `shr; not; test bl, dl` with ebx = 1 held
-// for the pass inlined below (ours `shr; test 1`, constant 1 not in a register); (4) retail's |x| > |y| keeps
-// both absolute values and re-evaluates the winner in each arm (ja/jbe diamond), ours selects with a move.
-// Tried: the result as a volatile local byte (482; not kept, as it doesn't make the function match), if/else statements for the larger magnitude (531, ternary 524
-// before the frame-point change), `!(bit) || !(bit)` and `== 0` spellings of the gate (same shr/test form).
+// pass is draw_light_source_pass. A block-by-block walk of the rest against retail (2026-10-31) found no further
+// behaviour difference: constants (0.0002, 0.09, 0.9, 0.5, 2.0), field offsets, call argument orders, both
+// cross-product arms, the box fields and the g_509413/g_509414 stores all agree. The two pass bits are tested as
+// `!(bool)((~(flags >> n)) & 1)` (retail `shr; not; test`), as in 0x3d380. Still differs: (1) retail pushes
+// esi/edi only after the early exits, ours at entry, and its frame is 4 bytes smaller; the byte returned on the
+// failure exits is stored at entry and read back from memory in retail (the inlined pass's `enabled` shares its
+// slot), ours folds it to `xor al, al` and merges the exits, which is why retail has five epilogue copies;
+// (2) 0x4a1e0 takes source/camera/resource in eax/ecx/edx in retail (callee unmatched, same as 0x31170);
+// (3) retail holds the constant 1 in ebx for the whole inlined pass (`test bl, dl`, `and al, bl`, `mov [..], ebx`),
+// ours uses immediates; (4) retail's |x| > |y| keeps both absolute values and re-evaluates the winner in each arm
+// (ja/jbe diamond), ours selects with a move (ternary and if/else compile the same, 523 with the origin change).
+// Tried: the result as a volatile local byte (482; not kept, as it doesn't make the function match), if/else
+// statements for the larger magnitude (531, ternary 524 before the frame-point change), `!(bit) || !(bit)` and
+// `== 0` spellings of the gate (same shr/test form), loading the origin once (`*(point3f *)g_47fd18 =
+// *(point3f *)(g_47fd18 + 0xc) = *origin;` gives retail's exact store sequence, 527; through a local copy 608
+// with the cross arms laid out the other way round; later xmm numbers move, so the score rises), every order of
+// the three dot-product terms (the compiler picks k, j, i anyway).
 // @retail 0x32350
 bool __stdcall function_32350(long index, real input_alpha)
 {
@@ -4482,7 +4492,7 @@ bool __stdcall function_32350(long index, real input_alpha)
                 function_48ee0(g_47fd18, shape, g_47fda0);
                 g_485a30 = alpha;
                 function_40e90(0);
-                if (((byte)(g_4c1a48[2].flags >> 10) & 1) && ((byte)(g_4c1a48[1].flags >> 11) & 1))
+                if (!(bool)((~(g_4c1a48[2].flags >> 10)) & 1) && !(bool)((~(g_4c1a48[1].flags >> 11)) & 1))
                 {
                     draw_configured_pass_r18(10);
                     function_222a0();
