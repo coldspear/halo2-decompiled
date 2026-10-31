@@ -489,6 +489,11 @@ bool function_7af40(s_type_99af70 const *address);
 // 0xb40b0 61): with the reads, state stored first 111; the increment through a pointer to the
 // field 111; plain member accesses without the `connection` alias 111; the copy's source as a
 // volatile read of the own path parameter 111. Without the reads, counter/copy/state order 36.
+// Round 36 (lane 10, fast with 0xb40b0), on retail's endpoint reads: the copy's source read once through
+// the own parameter's address 111 (the path load still comes before both sunk stores); counter, copy,
+// state 15 (245 bytes, 0xb40b0 matches; only the state store after the call remains, sharing EAX = 1 with
+// the return); the destination named before the counter 111; the path read into a named source between
+// the counter and the state store 111. VC splits the counter whenever any store precedes the call.
 // @retail 0xb5d40
 bool s_http_connection_ab::connect(long address, word port, char const *path, bool flag)
 {
