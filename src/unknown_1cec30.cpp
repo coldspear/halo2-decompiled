@@ -17,6 +17,7 @@ static __forceinline long real_to_long(real value);
 #include "havok_reference.h"
 #include "unknown_122870.h"
 #include "normalize3d.h"
+#include "vector_products.h"
 #include "constraint_helpers_314090.h"
 #include "joint_descriptions_312920.h"
 
@@ -956,6 +957,13 @@ void function_1d1540(s_havok_component *component);
 // first: EDI) and only the EDI form becomes a register argument; without 0x1d0c20's call LTCG gives the
 // 88 body the component in ECX and the index on the stack, without 0x1d5120's call nothing changes, and
 // 0x1d0c20's aligned transform moved into a forceinline helper changes nothing: 0x1d0c20's call decides it.
+// Round 93 (lane 8): the 88 body (set copy, body pointer, m_fixed first) again 88 (230 bytes; its code is
+// retail's but for the component loaded from [ebp + 8] into EBX with push/pop, ret 4); that keeping the
+// first body pointer for the fixed arm's call (no second fetch) 77 at 220 (index ECX, component an EDI
+// register argument, only ESI saved and EBX unused; 0x1d5120 77 -> 15, but matched 0x1d1b60 59 and
+// retail fetches again after 0x1d1260); the transform by reference 88; inverse declared with local 88;
+// the second fetch into the body local 88. The lead stands: LTCG made the component a register argument
+// only when the first pass left a callee-saved register free.
 // @retail 0x1d0cf0
 void havok_component_rigid_body_transform_set(long rigid_body_index, s_havok_component *component, hkTransform const *transform)
 {
@@ -2180,10 +2188,13 @@ PRIVATE __forceinline void component_surface_vector_clear(hkVector4 *vector)
 {
     vector->m_quad = _mm_setzero_ps();
 }
-// score 109 (was 109): aligned frame 0x34 agrees; the contact loop's normal sums take xmm4/xmm1/xmm3
-// (retail xmm3/xmm2/xmm4), the normal's loop registers (retail keeps the inverse in
-// xmm1 and scales j, k in place), velocity j/k loaded before its length test (retail reloads them into
-// xmm2/xmm3 ahead of the branch), and the property value 0 kept in EDI across the erase remain.
+// score 91 (was 109): aligned frame 0x34 agrees; the contact loop and the normal block are retail's.
+// Left: velocity j/k loaded before its length test (retail reloads them into xmm2/xmm3 ahead of the
+// branch and scales them in place, i through a copy of the inverse; ours copies the inverse for all
+// three), the speed products the same way (retail scales j, k in place), and the property value 0 kept
+// in EDI across the erase. At 109 the contact loop's normal sums took xmm4/xmm1/xmm3 (retail
+// xmm3/xmm2/xmm4) and the normal block copied the inverse for all three (retail keeps it in xmm1 and
+// scales j, k in place).
 // Tried: velocity sums as running sum plus material vector 131 kept; speed sum declared before the
 // velocity 127 kept; normal scaled j, k, i 109 kept (k, j, i 110; i, k, j 121; j, i, k 124; k, i, j 122;
 // all in place 109); velocity scaled j, k, i as well 109; inlined property setter passing the value as
@@ -2217,6 +2228,19 @@ PRIVATE __forceinline void component_surface_vector_clear(hkVector4 *vector)
 // `inline` declaration 436 (the cold call inlined too); velocity normalised into a separate direction vector
 // with a struct/per-field copy in the else arm 204/149; plain `inline` property helper 109; typed surface
 // velocity field 109 (kept, same code).
+// Round 93 (lane 8): the contact sum through vector3f_add(&contact->normal, &normal, &normal) and the
+// normal scaled through vector3f_scale(&normal, 1 / length, &normal) 109 -> 91 (kept, with the velocity's
+// hand-written length/scale block as normalize3d(&velocity), the same code); either alone 157/127. On
+// 109: velocity scale through vector3f_scale or `*=` 109/109; normal `*=` 127; the normal inverse declared
+// before the loop 109; one inverse shared by both blocks 162 (1454 bytes; velocity's three loads hoisted
+// like retail's j/k, but i too), with velocity and speed declared at the top as well 162; inverse or
+// inverse plus speed declared after velocity 109/109; speed declared before the velocity loop 109;
+// both sums through vector3f_add 210, plus helper scales 205/139 (the velocity length sums i first);
+// velocity sum and scale through helpers 157. On 91: velocity sum through vector3f_add either order
+// 396/396 (1426 bytes), with normalize3d or vector3f_scale 139/139; the result scaled into velocity then
+// set 159; velocity declared at the top 407; speed summed and averaged in one `speed` local 138 (the
+// speed products all in place), with velocity declared before it 142; velocity declared before
+// speed_sum 95; both 413.
 // @retail 0x1d87b0
 void __stdcall function_1d87b0(s_havok_component_rigid_body *body, long body_index, s_havok_component *component)
 {
@@ -2242,9 +2266,7 @@ void __stdcall function_1d87b0(s_havok_component_rigid_body *body, long body_ind
             }
             if (!found)
             {
-                normal.i = contact->normal.i + normal.i;
-                normal.j = contact->normal.j + normal.j;
-                normal.k = contact->normal.k + normal.k;
+                vector3f_add(&contact->normal, &normal, &normal);
                 materials[material_count++] = surface->material;
             }
         }
@@ -2259,10 +2281,7 @@ void __stdcall function_1d87b0(s_havok_component_rigid_body *body, long body_ind
     real length = component_surface_length(&normal);
     if (!(fabs(length) < 0.0001f))
     {
-        real inverse = 1.0f / length;
-        normal.j = normal.j * inverse;
-        normal.k = normal.k * inverse;
-        normal.i = inverse * normal.i;
+        vector3f_scale(&normal, 1.0f / length, &normal);
     }
     else
         normal = *g_4687b0;
@@ -2285,14 +2304,7 @@ void __stdcall function_1d87b0(s_havok_component_rigid_body *body, long body_ind
         velocity.k = velocity.k + local_c7c2ff.k;
         speed_sum += component_surface_length(&local_c7c2ff);
     }
-    real velocity_length = component_surface_length(&velocity);
-    if (!(fabs(velocity_length) < 0.0001f))
-    {
-        real inverse = 1.0f / velocity_length;
-        velocity.i = inverse * velocity.i;
-        velocity.j = velocity.j * inverse;
-        velocity.k = velocity.k * inverse;
-    }
+    normalize3d(&velocity);
     real speed = ((bool)((component->unknown04 >> 18) & 1) ? 1.0f : 2.5f) * speed_sum / material_count;
     hkVector4 *result = &body->unknown30;
     result->set(speed * velocity.i, velocity.j * speed, velocity.k * speed);

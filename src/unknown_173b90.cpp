@@ -517,6 +517,11 @@ typedef void (__stdcall *particle_callback_175610)(s_particle_175610 *, s_partic
 // zero store follows the declaration). On the indexed form with scale first (113, 1136 bytes; only the
 // two rotations differ: rows i/j/k sum k,i,j / j,i,k / i,k,j against retail j,i,k / i,k,j / i,k,j):
 // the 0xf80f mask passed inline 113 and the index declared at the function top 113 (rotations unchanged).
+// Round 93 (lane 8): the helper's copy loads the vector j, k, i where retail loads j, i, k, and row i's
+// sum follows that order. Scale initialised before multiplier 40 (the 1.0 stores only); with the two
+// particle copies swapped 48; with them declared at the inner loop's scope and assigned after the
+// particle lookup 40; with them made just before the rotation test 352 (1187 bytes); indexed
+// definitions with scale first 113 (1136 bytes) and alone 115.
 // @retail 0x175610
 void function_175610(s_particle_value_cache *cache, s_particle_system_datum *system, s_particle_location_datum *location, particle_callback_175610 callback, void *context)
 {
