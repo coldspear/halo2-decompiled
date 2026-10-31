@@ -2130,6 +2130,11 @@ void function_269250(long clump_index, long actor_index)
 // are no longer hoisted); target-clear arm through prop_get at each use 220; the existing prop walk
 // struct 3; node iterator declared beside the prop iterator 3. On the opening body the deletion arm as
 // `if (unit) continue; break;` 89 (identical code).
+// Lane 14 r22: unit flag renamed to sort before the group flag 89 (slots unchanged); the completion
+// test as the prop loop's condition (`(!changed || unit) && next`, the removal arm `continue`) 111
+// (741 B, but the entry is not threaded past the test); the removed flag rechecked 3 (both flag slots
+// then agree; only the prop/node pool roles in EDI/EBP differ, set by s_prop_pool_storage, which
+// matched 0x25d770 needs); with the removed test last 190; set before the removal call 3.
 // @retail 0x26ae30
 void function_26ae30(long object_index)
 {
