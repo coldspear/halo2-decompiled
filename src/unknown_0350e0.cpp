@@ -3123,19 +3123,22 @@ void matrix4x3_from_forward_and_up(transform4x3f *out, vector3f const *forward, 
 extern vector3f *g_4687bc;
 struct s_collision_result_1697c0
 {
-    byte unknown00[8];
+    long type;
+    real t;
     point3f point;
     byte unknown14[0x24 - 0x14];
     short unknown24;
-    byte unknown26[0x4c - 0x26];
+    byte unknown26[0x5c - 0x26];
 };
 bool __stdcall function_1697c0(long flags, point3f const *point, vector3f const *vector,
     long ignore_object_index, long ignore_unit_index, s_collision_result_1697c0 *result);
 
-PRIVATE __forceinline void shadow_corner(transform4x3f const *matrix, real x, real y, point3f const *origin,
+PRIVATE __forceinline void shadow_corner(transform4x3f const *matrix, point3f const *offset, point3f const *origin,
     point3f *corner)
 {
-    real z = 0.0f;
+    real x = offset->x;
+    real y = offset->y;
+    real z = offset->z;
     if (matrix->scale != 1.0f)
     {
         x = matrix->scale * x;
@@ -3147,19 +3150,26 @@ PRIVATE __forceinline void shadow_corner(transform4x3f const *matrix, real x, re
     corner->z = matrix->up.k * z + matrix->left.k * y + matrix->forward.k * x + matrix->position.z + origin->z + 0.001f;
 }
 
-// score 460 (was 952): the four corners are written out (retail has four copies of the scale test; it also
-// calls End out of line, which only happens once the corner code is this large - a counted loop, even one
-// the compiler unrolls, scores 465-496 and inlines End). Still differs: ours calls Begin out of line
-// (retail inlines Begin and calls only End; the inliner's choice follows the size of the corner code), and the
-// registers/spills of the corner math (retail keeps radius and -radius in stack slots 8 and 0xc, x in 4, z in
-// 0x10). Retail's vertex order is (-r,-r) (r,-r) (r,r) (-r,r); the old draft had x and y swapped.
+// score 394 (was 460, 952 originally): the four corners are written out (retail has four copies of the scale
+// test and calls End out of line; a counted loop, even one the compiler unrolls, scores 465-496). Retail
+// 0x32d62-0x333f1 agrees with this source: object index masked 0xffff, opacity > 0.05 test, collision call
+// (flags 0x4800001, point object+0x30, vector g_4687bc, NONE, NONE, result), radius = object+0x3c * 0.35, matrix
+// from forward object+0x70 / up object+0x7c, corner order (-r,-r) (r,-r) (r,r) (-r,r) (the old draft had x and y
+// swapped), vertex colour (1,1,1,alpha) then uv (0,0) (0,1) (1,1) (1,0), and z of vertices 1-3 taken from corner 3
+// (0x74; corners 1 and 2 never compute z). D3DDevice::Begin (the member form) lets the compiler inline Begin as
+// retail does (call 0x400fa0 plus the push-buffer words); D3DDevice_Begin keeps it out of line (457). Passing the
+// corner offset as one reused point3f (retail stores z at [esp+0x10] for corner 0 but multiplies a constant 0.0 in
+// the others) took 403 to 394. Still differs: frame 0xd0 vs 0xe0 (retail reserves the alpha spill at 0x78 and 12
+// more bytes below the 0x5c-byte collision result) and the registers/spills of the corner math (retail keeps
+// scale, forward.i and up.j in xmm5, xmm3, xmm4 across all four corners and radius / -radius in slots 8 and 0xc).
 // Tried: loop with ternaries (950), local point3f/sign array loops (465-496), shared x/y/z locals in four
 // blocks (456), block-scoped locals (653), pairs loop (906), sum operand permutations per axis (no change),
-// 0.0f - radius (464), a negative_radius local (464).
+// 0.0f - radius (464), a negative_radius local (464), -radius in the offsets (405), four separate offset
+// locals (396, frame 0xe4), copying collision.point to a local origin (398, real 12-byte copy), a scale local /
+// x *= scale / reordered x sum in the helper (no change).
 // @retail 0x32ce0
 void function_32ce0(long object_index, real opacity)
 {
-    (void)&opacity;
     s_collision_result_1697c0 collision;
     byte const *object = ((s_scalar_object_header *)g_4e0300->data)[object_index & 0xffff].object;
     collision.unknown24 = NONE;
@@ -3171,13 +3181,19 @@ void function_32ce0(long object_index, real opacity)
         matrix4x3_from_forward_and_up(&matrix, (vector3f const *)(object + 0x70),
             (vector3f const *)(object + 0x7c));
         point3f corners[4];
-        shadow_corner(&matrix, radius * -1.0f, radius * -1.0f, &collision.point, &corners[0]);
-        shadow_corner(&matrix, radius, radius * -1.0f, &collision.point, &corners[1]);
-        shadow_corner(&matrix, radius, radius, &collision.point, &corners[2]);
-        shadow_corner(&matrix, radius * -1.0f, radius, &collision.point, &corners[3]);
-        real fraction = *(real const *)(collision.unknown00 + 4);
-        real alpha = (1.0f - fraction) * opacity;
-        D3DDevice_Begin(D3DPT_QUADLIST);
+        point3f offset;
+        offset.x = radius * -1.0f;
+        offset.y = radius * -1.0f;
+        offset.z = 0.0f;
+        shadow_corner(&matrix, &offset, &collision.point, &corners[0]);
+        offset.x = radius;
+        shadow_corner(&matrix, &offset, &collision.point, &corners[1]);
+        offset.y = radius;
+        shadow_corner(&matrix, &offset, &collision.point, &corners[2]);
+        offset.x = radius * -1.0f;
+        shadow_corner(&matrix, &offset, &collision.point, &corners[3]);
+        real alpha = (1.0f - collision.t) * opacity;
+        D3DDevice::Begin(D3DPT_QUADLIST);
         D3DDevice_SetVertexData4f(9, 1.0f, 1.0f, 1.0f, alpha);
         D3DDevice_SetVertexData2f(3, 0.0f, 0.0f);
         D3DDevice_SetVertexData4f(D3DVSDE_VERTEX, corners[0].x, corners[0].y, corners[0].z, 1.0f);
@@ -3187,7 +3203,7 @@ void function_32ce0(long object_index, real opacity)
         D3DDevice_SetVertexData4f(D3DVSDE_VERTEX, corners[2].x, corners[2].y, corners[3].z, 1.0f);
         D3DDevice_SetVertexData2f(3, 1.0f, 0.0f);
         D3DDevice_SetVertexData4f(D3DVSDE_VERTEX, corners[3].x, corners[3].y, corners[3].z, 1.0f);
-        D3DDevice_End();
+        D3DDevice::End();
     }
 }
 
