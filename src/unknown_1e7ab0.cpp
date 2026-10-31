@@ -265,6 +265,8 @@ PRIVATE inline long request_weapon(s_player_request_view *player, long slot, byt
 // retain 559 differing rows through the last retail return. Original target, helper
 // definitions/declarations, native cases, pool observations, local qualifiers and all call values
 // restored. Base/state and player/unit homes remain.
+// DL209: Case-owned failure guards in reset/inventory/capability group subsets 1-7: 620 each; all
+// with ordinary player pointer 786. Original cases and qualifier restored.
 // @retail 0x1e7ab0
 bool function_1e7ab0(long local_index, long type)
 {

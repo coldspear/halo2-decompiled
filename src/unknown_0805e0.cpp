@@ -98,6 +98,12 @@ static inline bool player_configuration_is_excluded(s_recent_player const *playe
 // Round 443: Two-use admission flags in byte/char/word/short storage 44/44/43/43;
 // direct-success-return counterparts 52/52/51/51. All restored; early ESI, independent
 // successor, mask hoist and failure exit remain.
+// Round 45 (lane 16), `--fast`: struct assignment for the player copy 43; force-inline offline and
+// exclusion helpers 43; the 64-bit id in a two-use local 50 (its load moves above the flag tests);
+// the id test as an OR of its two dwords 83 (98 bytes); the result declared after the index 43.
+// Compile-only screens (one use of the mask never hoists it): a do-while with a named successor, a
+// `continue` filter, an admitted flag, the XUID view, and the null-identity test before or after the
+// guest test (both hoist the 3 into BL but keep both guest tests).
 // @retail 0x805e0
 bool player_configuration_cache_next_recent_player(s_recent_player *player, long *iterator)
 {
@@ -528,6 +534,10 @@ void function_1537f0(s_profile_record *record);
 // DL199: Signed high header bytes separately/pair, low pair and their three-group combinations all
 // 67; all four signed bytes plus a signed first word 67. Missing identity homes and frame 0x90
 // remain. Every real source type, initializer, initialized byte and all 350 visits restored.
+// Round 45 (lane 16): the source as the existing 4-aligned player properties type (0x90, no 64-bit
+// member), tail clear and sentinel removed 78 (238 bytes); with an XUID identity 78; with the tail
+// clear kept 67, plus an XUID identity 67 (identity still folded each time; retail's +0x1c source
+// needs that 4-aligned type); the entry pointer as the loop variable 98 (292 bytes).
 // Round 106: identity value-initialized 67; that without the tail clear and sentinel 78 (238 bytes); identity
 // declared and zeroed after the entry pointer 67; no tail clear with the links and flags stored before the
 // 0x7f8b0 call 81; the entry pointer passed as the view 67.
@@ -900,6 +910,12 @@ long __stdcall function_80330(const s_cached_player_identity *identity, long pos
 // with the flag cleared in the `>` arm and the count path 380, upper first there 380; plain entry
 // with that lower 368 (entry as retail but the EDX load, upper coalesced with the count in EAX);
 // plain entry with the three-way test 74, with round 119's mixed read 72.
+// Round 45 (lane 16), `--fast`: round 149's 71 form rebuilt (71); on it: one shift index for both
+// loops 71, bounds without zero initializers and the count arm as a plain else 398 (1155 bytes,
+// EBP pushed late), the insertion bounds as defaults replaced for a removal 395 (1155); the existing
+// 0x7f8b0 call for the new entry's fill (inlined; the aulldiv, identity and copy registers then match
+// retail) on the current body 98 (1174 bytes), on the 71 form 104 (the four head repairs swap EAX/ECX
+// and next_other is stored from AX), with the heads adjusted in place 104.
 // Round 106: round 149's plain entry rebuilt 71 (aligned 39); it without the flag initialization (each arm sets
 // the direction) 390; time stored through the dword member 66; time read through a zeroed FILETIME 66; the NONE
 // link stores as `(short)NONE` 66; g_4cf97c named once for the next_other store 66.

@@ -373,6 +373,9 @@ PRIVATE inline real shape_dot_reverse(vector3f const *a, vector3f const *b)
 // separation-first/direction-first/reverse projection helpers 4/4/4; shared final scaling 4;
 // normal-first plane product 6. The vector addition helper with a negative step 16 (435 bytes),
 // with normal-first plane product 18 (435). All restored; the projection still sums i,j,k.
+// Round 447: Existing difference helper first/second input copies and complete scalar publication,
+// seven subsets 140/171/186/4/140/171/186; native vector publication 184. Projection sum order remains.
+// Original executable source and all trial helper/interface changes restored.
 // @retail 0x2461a0
 bool function_2461a0(
 	s_sphere const *sphere,

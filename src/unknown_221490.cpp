@@ -151,43 +151,8 @@ void function_221490(
     function_221491(1, 0, buffer_reference);
 }
 
-// score 83 (was 83): Frame 0xdc agrees; list EAX/ECX, settings-side induction, seen/output-count registers and descriptor homes differ.
-// Earlier: the prologue and the loop's registers differ: retail pushes ebp, esi
-// and edi first and keeps the pair count in ebp and the pair pointer in ebx, ours loads the
-// pointer into ebx before the pushes and counts in ecx.
-// Round 81: retail strength-reduces &settings->pairs[i].lVolume into the pointer (esi) and
-// indexes the list's dwMixBin, which leaves the list in eax and the seen mask in ebp; ours
-// walks the list's pairs and indexes settings. Both compares reading both arrays 96; volume
-// read after the mixbin compare 136 (settings becomes the pointer, as retail); the mixbin
-// compare reading both arrays 115; an explicit settings pair pointer 103; volume before
-// mixbin 83; element pointer locals and declared parameter orders compile the same.
-// Round 276: Actual setting/previous/both pair values 104/96/108; native changed byte 83;
-// Round 276: the same pair values with byte state 104/96/108; complete graph with descriptor aggregate 108.
-// Round 276: Original scalars, array observations and descriptor restored; mirrored induction remains.
-// Round 20: the list arrives in ecx (retail eax): the all-stack first pass puts the shared zero
-// in eax. The index declared first 83; no count local 83; the entry tests combined 85; `changed`
-// initialised at its declaration 90 (retail's length, seen mask in ebp); that with the volume
-// read after the mixbin compare 135.
-// Round 216: SDK descriptor initializer 83; append-local count 87; later mask zeros 98;
-// direct SDK count 87; completed-result descriptor via aggregate/fields/DWORD count 88/88/88
-// (281 bytes, frame 0xd8); early descriptor initializer with DWORD count 83.
-// Original descriptor, scalar mirror, input observations and all output updates restored.
-// Round 20: the list arrives in ecx (retail eax): the all-stack first pass puts the shared zero
-// in eax. The index declared first 83; no count local 83; the entry tests combined 85; `changed`
-// initialised at its declaration 90 (retail's length, seen mask in ebp); that with the volume
-// read after the mixbin compare 135.
-// Round 439: native field/aggregate output-pair publication, each with four real cache/mask/count
-// completion orders, 95 each (286 bytes). Original complete append and input observations restored.
-// Round 92 (--fast, reproduces 83): on the `changed`-initialised form (90, 281 bytes, frame 0xd8; i in EBX,
-// out count in EAX, cursor on the list): `long i = 0` at its declaration 91; i declared first, reversed
-// compares, count stored from out_count, seen mask declared first 90 each; a loop-invariant
-// `current = list->pairs` 90, with the volume read after the mixbin compare 97 (the pointed-to array
-// takes the cursor, anchored at its volume, retail's anchor but on the list); settings-pairs pointer
-// 90/135; per-element settings pair pointer 97/90; list volume compared before settings' volume, settings
-// fields read at each use: mixbin local 113 (current) / 108, both at each use 106 (current) / 87 (settings
-// then arrives in EAX: convention change). Retail: settings cursor at +4, list mixbin [list+4 + i*8], list
-// volume through the difference, i in EDI as the shared zero. Both arrays through loop-invariant
-// pointers (either declaration order) with the late volume 97/97. All restored.
+/* updates a stream's mix bin volumes in place when only the volumes changed,
+   otherwise sets its mix bins afresh */
 // @retail 0x2215d0
 void function_2215d0(
 	s_mixbin_list *list,
@@ -197,14 +162,15 @@ void function_2215d0(
 	DSMIXBINS out_mixbins;
 	DSMIXBINVOLUMEPAIR out_pairs[8];
 	long values[32];
-	long out_count = 0;
-	dword changed_mask = 0;
-	dword seen_mask = 0;
+	dword changed_mask;
+	dword seen_mask;
 	bool changed;
 	long i;
 
 	out_mixbins.dwMixBinCount = 0;
 	out_mixbins.lpMixBinVolumePairs = out_pairs;
+	changed_mask = 0;
+	seen_mask = 0;
 
 	if (!list)
 		goto set_all;
@@ -212,41 +178,40 @@ void function_2215d0(
 		goto set_all;
 	{
 		long count = list->count;
+		DSMIXBINVOLUMEPAIR *list_pairs = list->pairs;
 		changed = false;
 
 		for (i = 0; i < count; i++)
 		{
 			long mixbin = settings->pairs[i].dwMixBin;
-			long volume = settings->pairs[i].lVolume;
 			dword bit;
 
-			if (list->pairs[i].dwMixBin != (dword)mixbin)
+			if (list_pairs[i].dwMixBin != (dword)mixbin)
 				goto set_all;
 
-			if (list->pairs[i].lVolume != volume)
+			long volume = settings->pairs[i].lVolume;
+			if (list_pairs[i].lVolume != volume)
 			{
 				bit = 1 << mixbin;
 				if (seen_mask & bit)
 				{
-					if (volume != values[i])
+					if (settings->pairs[i].lVolume != values[i])
 						goto set_all;
 					if (changed_mask & bit)
 						goto set_all;
 				}
 				changed_mask |= bit;
-				out_count = out_mixbins.dwMixBinCount;
 				changed = true;
 			}
 
 			bit = 1 << mixbin;
 			if (!(seen_mask & bit))
 			{
-				out_pairs[out_count].lVolume = volume;
+				out_pairs[out_mixbins.dwMixBinCount].lVolume = volume;
 				seen_mask |= bit;
-				out_pairs[out_count].dwMixBin = mixbin;
-				out_count++;
+				out_pairs[out_mixbins.dwMixBinCount].dwMixBin = mixbin;
 				values[mixbin] = volume;
-				out_mixbins.dwMixBinCount = out_count;
+				out_mixbins.dwMixBinCount++;
 			}
 		}
 
@@ -259,32 +224,7 @@ set_all:
 	IDirectSoundStream_SetMixBins(stream, &settings->mixbins);
 }
 
-// score 83 (was 83): the prologue and the loop's registers differ: retail pushes ebp, esi
-// and edi first and keeps the pair count in ebp and the pair pointer in ebx, ours loads the
-// pointer into ebx before the pushes and counts in ecx.
-// Round 81: written as 0x2215d0 is (the two entry tests as early exits to set_all, no
-// volatile on changed_mask) 83; the volatile removed from the if form alone 85; volume
-// read after the mixbin compare 136/145; volume before mixbin 83. Same pairing cause as
-// 0x2215d0.
-// Native desired-pair reference, alone/both element references and nested/combined
-// duplicate guards 102/102/96/96; complete pair snapshots 104/104/104/104.
-// Settings/list induction and mask/count homes remain; all executable forms restored.
-// Round 189: Complete volume/bin/both field observations 107/106/86; read-only input contracts
-// alone/volume/bin/both 83/107/106/86; both with native output-pair assignment 112. Both
-// observations recover length but shrink the frame and change cleanup to four bytes. Every body
-// and declaration restored.
-// Round 311: validated output/cache/scalar workspace subsets 1..7 83/83/83/91/75/91/75;
-// all with SDK append count 75; output/scalars with late volume 131, SDK count 75.
-// Scoped output/scalars gives 75 plain (291/281, frame 0xd8), but regresses an
-// unmatched caller by 56; original output/state lifetimes restored.
-// Round 92: the forms screened on 0x2215d0 (same body; see its note) 87..135, none below 83. Restored.
-// Round 47: retail walks the settings pairs (ESI) and indexes the list pairs from a spilled
-// list+4; every form below still walks the list. Index initialised at its declaration 83
-// (same code); list-pairs base pointer before the loop 95, with the volume read late 97, declared
-// before `changed` 95; mixbin test on both fields first 115, both tests on the fields 96; a
-// per-entry list-pair pointer with the volume read late 88 (281/281, frame 0xd8); a per-entry
-// settings-pair pointer read at each use 102. Compile-only screens: load order (24 orders), loop
-// bound from the settings, unsigned index and every parameter order keep the list walk.
+/* the same for a buffer */
 // @retail 0x2216f0
 void function_2216f0(
 	s_mixbin_list *list,
@@ -294,14 +234,15 @@ void function_2216f0(
 	DSMIXBINS out_mixbins;
 	DSMIXBINVOLUMEPAIR out_pairs[8];
 	long values[32];
-	long out_count = 0;
-	dword changed_mask = 0;
-	dword seen_mask = 0;
+	dword changed_mask;
+	dword seen_mask;
 	bool changed;
 	long i;
 
 	out_mixbins.dwMixBinCount = 0;
 	out_mixbins.lpMixBinVolumePairs = out_pairs;
+	changed_mask = 0;
+	seen_mask = 0;
 
 	if (!list)
 		goto set_all;
@@ -309,41 +250,40 @@ void function_2216f0(
 		goto set_all;
 	{
 		long count = list->count;
+		DSMIXBINVOLUMEPAIR *list_pairs = list->pairs;
 		changed = false;
 
 		for (i = 0; i < count; i++)
 		{
 			long mixbin = settings->pairs[i].dwMixBin;
-			long volume = settings->pairs[i].lVolume;
 			dword bit;
 
-			if (list->pairs[i].dwMixBin != (dword)mixbin)
+			if (list_pairs[i].dwMixBin != (dword)mixbin)
 				goto set_all;
 
-			if (list->pairs[i].lVolume != volume)
+			long volume = settings->pairs[i].lVolume;
+			if (list_pairs[i].lVolume != volume)
 			{
 				bit = 1 << mixbin;
 				if (seen_mask & bit)
 				{
-					if (volume != values[i])
+					if (settings->pairs[i].lVolume != values[i])
 						goto set_all;
 					if (changed_mask & bit)
 						goto set_all;
 				}
 				changed_mask |= bit;
-				out_count = out_mixbins.dwMixBinCount;
 				changed = true;
 			}
 
 			bit = 1 << mixbin;
 			if (!(seen_mask & bit))
 			{
-				out_pairs[out_count].lVolume = volume;
+				out_pairs[out_mixbins.dwMixBinCount].lVolume = volume;
 				seen_mask |= bit;
-				out_pairs[out_count].dwMixBin = mixbin;
-				out_count++;
+				out_pairs[out_mixbins.dwMixBinCount].dwMixBin = mixbin;
 				values[mixbin] = volume;
-				out_mixbins.dwMixBinCount = out_count;
+				out_mixbins.dwMixBinCount++;
 			}
 		}
 
@@ -545,7 +485,12 @@ bool sound_driver_voice_create_buffer(
 	return result;
 }
 
-// score 157 (was 183): Frame 0x80 and 618-byte length agree; early register saves and descriptor/count/flag scheduling remain.
+// score 79 (was 157): Frame 0x80, 618-byte length, the prologue (only ESI saved before the count test)
+// and the failure exit agree. Still differs: the 3D bool sits in a stack byte and the play bool in BL where
+// retail keeps the 3D bool in BL and the play bool in the stack byte; with that, the EAX/ECX roles for the
+// voice offset, the descriptor zero and the input mixbin are swapped, and the failure exit loads the globals
+// into EAX before its pops (retail ECX after them).
+// Earlier: Frame 0x80 and 618-byte length agree; early register saves and descriptor/count/flag scheduling remain.
 // Earlier: the second buffer's flags are now retail's play ? DSBCAPS_FXIN2 : DSBCAPS_FXIN
 // (0x100010 when play is set; the old body set 0x180010, a behaviour difference, fixed at review in lane 15
 // round 13). Every 98-105 form below carried the wrong flags; with the correct select see the 155-197 list.
@@ -587,6 +532,13 @@ bool sound_driver_voice_create_buffer(
 // Combined actual spatial/buffer flags at original/late producer with original/plain pair loop: 187/187/181/181.
 // Late-producer 142 and 181 forms lose the matched caller; restored. Keep only original-producer buffer flags used by both the descriptor and playback test, ordinary 157.
 // Original inherited storage, first six-bin statements, corrected SDK values and every call tuple remain.
+// Round 23: `bool play` declared before `three_d` with the select in the 3D branch and `if (play)` 100;
+// result assigned before the 3D branch and reset to NONE on failure, mixbins set pointer-first 79 (kept);
+// the voice reference before the two bools 78; three_d declared first 182; `voice_index = NONE` on failure
+// with the result assigned after the branch 91; a voice pointer local 79; the cached globals for the second
+// creation 127. LTCG harness screens: result on both success arms / `return voice_index` / long result move
+// flags to EAX (100/156/154); the 3D test on `flags & 1` 166 (EAX); bools at function scope 162/163;
+// the 3D test negated 127; bool spellings, byte types, names and count-store position no change.
 // @retail 0x220b90
 short sound_driver_voice_new(
 	dword flags,
@@ -598,8 +550,8 @@ short sound_driver_voice_new(
 
 	if (voice_index < 0x40)
 	{
+		bool play = (flags & 2) != 0;
 		bool three_d = flags & 1;
-		dword buffer_flags = (flags & 2) ? DSBCAPS_FXIN2 : DSBCAPS_FXIN;
 		s_sound_driver_voice &voice = globals->voices[voice_index];
 		struct
 		{
@@ -633,18 +585,19 @@ short sound_driver_voice_new(
 			pairs[4].lVolume = 0;
 			pairs[5].dwMixBin = 5;
 			pairs[5].lVolume = 0;
-			mixbins.dwMixBinCount = 6;
 			mixbins.lpMixBinVolumePairs = pairs;
+			mixbins.dwMixBinCount = 6;
 			IDirectSoundBuffer_SetMixBins(voice.submix, &mixbins);
 			IDirectSoundBuffer_Play(voice.submix, 0, 0, 0);
 		}
+		result = voice_index;
 		if (three_d)
 		{
 			DSBUFFERDESC &buffer_description = storage.second;
 			memset(&buffer_description, 0, sizeof(buffer_description));
 
 			buffer_description.dwSize = sizeof(buffer_description);
-			buffer_description.dwFlags = buffer_flags | DSBCAPS_CTRL3D;
+			buffer_description.dwFlags = (play ? DSBCAPS_FXIN2 : DSBCAPS_FXIN) | DSBCAPS_CTRL3D;
 			buffer_description.dwInputMixBin = input_mixbin;
 			if (SUCCEEDED(IDirectSound_CreateSoundBuffer(SOUND_DRIVER_GLOBALS->direct_sound, &buffer_description, &voice.buffer, NULL)))
 			{
@@ -661,26 +614,25 @@ short sound_driver_voice_new(
 				pairs[3].lVolume = 0;
 				pairs[4].dwMixBin = 10;
 				pairs[4].lVolume = 0;
-				mixbins.dwMixBinCount = 5;
 				mixbins.lpMixBinVolumePairs = pairs;
+				mixbins.dwMixBinCount = 5;
 				IDirectSoundBuffer_SetMixBins(voice.buffer, &mixbins);
 				voice.unknown00 = input_mixbin;
 				IDirectSoundBuffer_SetMaxDistance(voice.buffer, FLT_MAX, DS3D_DEFERRED);
 				IDirectSoundBuffer_SetMinDistance(voice.buffer, FLT_MAX, DS3D_DEFERRED);
-				if (buffer_flags & DSBCAPS_FXIN2)
+				if (play)
 					IDirectSoundBuffer_Play(voice.buffer, 0, 0, 0);
 			}
 			else
 			{
 				SOUND_DRIVER_GLOBALS->voice_count--;
-				return result;
+				result = NONE;
 			}
 		}
 		else
 		{
 			voice.buffer = NULL;
 		}
-		result = voice_index;
 	}
 	return result;
 }

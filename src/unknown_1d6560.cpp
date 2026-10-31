@@ -329,6 +329,10 @@ struct s_flag_word_bits
 // also 280 with word flags; directly declared existing word-bitfield type 261. Original body, flag
 // declaration, type location and includes restored. Masked-context diagnostics 275/297/300/294 in
 // both widths repeat the older allocation and are excluded from the fresh count.
+// Round 208: Recursive inline with first-body/availability/model masks 0..7:
+// 261/298/257/298/278/280/278/280; availability-first with later policy, complementary policy, both
+// and direct bounds: 274/296/297/318. Four-point 257 rejected; original method, class declaration
+// and clamp restored. Frame/status/group homes remain.
 // @retail 0x1d6630
 void s_physics_component_walk::function_1d6630(s_physics_model_owner *owner, char const *kinds,
     dword const *entry_mask, s_physics_body_groups *groups, void *context, long parent, long current,

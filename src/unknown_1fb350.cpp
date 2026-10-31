@@ -392,6 +392,8 @@ extern "C" void _ReadWriteBarrier(void);
 // DL199: Completion byte/word/short/long on ordinary three-field and four-field iterators: 152
 // each. Four-field frame reaches 0x10, still below retail 0x14; the second pool home remains
 // missing. All callback values and original body restored.
+// DL209: Absolute-index scan/element API pairs 318/278/318/278/201/167; salted-handle APIs 174/185;
+// single condition-step scan/element pairs 203/180/203/180. All restored.
 // @retail 0x1fb510
 void function_1fb510(void)
 {

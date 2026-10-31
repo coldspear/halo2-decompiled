@@ -471,12 +471,13 @@ bool function_270400(long actor_index, long mode, long set, point3f const *posit
     return result;
 }
 
-// score 278 (was 278): frame 0x40 and length agree; early root EBX retention, actor ownership and paired-edge float/vector scheduling remain.
+// score 278 (was 278): Frame 0x40 agrees; early root EBX/actor ownership and vector scheduling differ.
+// Earlier score 278 (was 278): frame 0x40 and length agree; early root EBX retention, actor ownership and paired-edge float/vector scheduling remain.
 // Earlier: Frame 0x40 agrees; early root EBX retention and float/vector scheduling remain.
 // Earlier 278 (was 278): frame 0x40 agrees; early pathfinding EBX ownership and float scheduling differ.
 // entry root retention and floating-point scheduling differ;
 // result first 299; surface first 299; vector names 299; vector helper 299;
-// score 278 (was 278): frame 0x40 and length agree. Retail loads actor_index into EAX at entry (case
+// Earlier score 278 (was 278): frame 0x40 and length agree. Retail loads actor_index into EAX at entry (case
 // 5 tests it first) and so moves pathfinding into EBX (pushed at entry); ours loads actor_index in
 // case 5 and keeps pathfinding in EAX, which re-colours every case; paired-edge float/vector
 // scheduling also differs. Tried: result first 299; surface first 299; vector names 299; vector helper 299;
@@ -519,6 +520,10 @@ bool function_270400(long actor_index, long mode, long set, point3f const *posit
 // Round 46: one vertices base for the case 1/6 corners 280; writable start-out parameter 279;
 // reversed entry declarations 278; case 5 fallback first 278; shared function-scope position 278.
 // Diagnostics: no actor in case 2 326, extra actor tests 360, actor declared first 278 (no entry load).
+// Round 448: Call-site interpolation constructors (t01-t08) rejected as helper expansion;
+// existing shared helper constructor with native origin/direction/output capture
+// (t09-t16) 268/368/362/389/372/385/383/396/268/436/436/436/416/436/436/436.
+// Original body and helpers restored; Frame 0x40 agrees; early root EBX/actor ownership and vector scheduling remain.
 // @retail 0x26f3f0
 bool function_26f3f0(s_pathfinding_data *pathfinding, long surface_index,
     s_type_c3b527 const *entry, long actor_index, s_type_f17a25 *state,

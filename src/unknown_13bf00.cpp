@@ -317,6 +317,9 @@ long player_slot_iterate_next(long index);
 // jump table after the code). Round 24: the flag read as `(g_54e8e0 + index)->`
 // 19, as a shifted dword 19; the getter's address as `g_54e8e0 + index` 19, as a
 // byte offset 19; a named subtitle setting 19 (short index 70 in a screen).
+// Slot declaration before the flag 19; slot/profile before the flag 19; null-initialized
+// slot 19; getter-based flag read 85; active && getter 67; force-inline getter 19;
+// unsigned getter index 19; unsigned loop index 19 (fast).
 // @retail 0x13cbf0
 bool function_13cbf0(void)
 {
