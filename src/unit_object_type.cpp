@@ -1430,7 +1430,14 @@ void function_d0d20(long unit_index)
    fails 0x101640 */
 // score 51 (was 51): retail's length now; the unit argument is in EDI (retail on the stack, kept in
 // EBP), the second weapon's lookup reuses the first's (retail reloads the pool's data) and the
-// weapon reads are if/else (retail default-first). Primary/secondary/both existing getters
+// weapon reads are if/else (retail default-first). Retail keeps the pool pointer (EDX) and the
+// masked index times 12 (ECX) for all three unit lookups and reloads the data field and the element
+// each time; our LTCG merges any two lookups on the same base where the first dominates.
+// Round 130: both 0xcbd50 calls with pool-local arguments 48 (stack argument in EBP and ret 4 as
+// retail; the inlined reads use the guard's lookup); both calls with UNIT_GET arguments 74 (one
+// lookup, held in EBX); guard through the pool local with UNIT_GET arguments 57 (second lookup
+// reloads, third merges); a block-scoped pool local per weapon read 71; a second pool local for the
+// second read 68 (both copies propagate back to the global: one lookup). Primary/secondary/both existing getters
 // 72/74/74; masked guard getter 68, with primary/secondary/both 72/74/74; both getters
 // with a shared guard receiver 70. One parameter address read at first guard/request 57/57,
 // with both getters at first guard/second getter 66/66 (exact-match-only; restored).
@@ -2555,6 +2562,19 @@ void function_cce00(long unit_index, short starting_profile_index, bool reset, b
 // Round 178: bits 26/27 as unit_action_active calls (as matched 0xcc170 now has them) 111: LTCG inlines just those
 // two and calls the rest, retail's own split, and the two tests re-read +0x346 as retail does, but the hand loop's
 // unit lookup still merges with the entry one (retail re-looks it up after the calls), 297 bytes.
+// Round 130: the two hand-written bit tests are 0xe6fe0's body: unit_action_active(unit_index, 26/27)
+// gives retail's per-test reloads (our LTCG inlines exactly those two calls, as retail; the later ones
+// are cold) and 0xcbd50 per hand with a UNIT_GET argument gives the slot cursor and counter: 79
+// (not kept: it raised the caller 0x186ab0 from 134 to 183 by changing what the call clobbers; body
+// restored). Retail also inlines 0xcbd50 in the loop: ours
+// does only when the loop's frequency estimate stays high: `if (...) result = false; if (result)
+// { loop }` inlines it and gives retail's layout (fail block after the tests) but 121 (no unit
+// re-lookup after the out-of-line 0xe6fe0 calls, so NONE stays in EBX). Other forms: the 26/27 calls
+// alone 111; with 0xcbd50 on the reloaded unit 107; if/else result arms 117, with 0xcbd50 101/101,
+// with the UNIT_GET argument 80; sequential `if (...) return false;` tests 96, as an else-if chain 97.
+// Retail re-looks-up the unit after the 0xe6fe0 calls (pool in EBX, index in ESI kept) while ours
+// keeps it: our link treats 0xe6fe0 as not writing memory but retail does not (neither re-looks the
+// unit up inside the loop after 0x100880).
 // Direct rejection 79 plain (kept); retained pool 98; masked getter 98; native slot 101;
 // hand cursor 84; pool/direct rejection/cursor 79; shared flag mask 135; failure-first result 119.
 // Round 167: retail re-looks-up the unit after the 0xe6fe0 calls, ours keeps it (our LTCG treats
@@ -3749,22 +3769,6 @@ void function_d03e0(long unit_index, long definition_index)
 
 /* applies the unit's melee damage to what it hit (a device of type 7 with
    bit 5 at +0x1cc is triggered first), then ends its state +0x2bc */
-// score 57 (was 57): the second object lookup (type 7, then bit 5 of +0x1cc) is merged into the first;
-// retail repeats it (the pool pointer shared in EDX, index and element reloaded), so all after it shifts.
-// Retail's NONE material store before 0xd6660 and the 0x184060 arguments as retail passes them (the
-// field at +8 as the index in EAX, the one at +4 as the bit) are kept; the tail is then retail's.
-// Round 175: default before initializer 56; existing masked-index helper at second/first/both
-// lookups 61/61/61, with early default 56/56; owner before flags 58; both orders 53
-// with or without the neutral helper.
-// Round 179: omit overwritten material default 125; node direction from completed direction 108;
-// marker scope 61; default/direction 126, default/scope 125, direction/scope 108; all 126;
-// all with owner before flags 126.
-// Round 12 (lane 15): owner before flags 54 (not kept); masked-index helper made __forceinline at
-// either/both lookups, no object local, nested ifs, a byte pointer to the machine, a named index,
-// dword-cast mask, dword flag word: lookup still merged; a word-cast index at the second lookup
-// gives retail's registers but movzx.
-// Round 230: complete target handle, native header table, both, header element, element/handle,
-// readonly table, readonly table/handle, readonly element: 117/55/117/58/115/55/117/58. Original body restored.
 // @retail 0xcfc90
 void __stdcall function_cfc90(long unit_index, long definition_index, s_unit_melee_hit const *hit)
 {
@@ -3775,8 +3779,8 @@ void __stdcall function_cfc90(long unit_index, long definition_index, s_unit_mel
 	damage.material_index = NONE;
 	function_d6660(&damage, definition_index);
 	damage.unknown84 = hit->unknown18;
-	damage.flags |= 1;
 	damage.unknown18 = unit_index;
+	damage.flags |= 1;
 	damage.unknown1c = unit->unknown028;
 	*(long *)&damage.unknown20 = unit->unknown02c;
 	object_get_damage_owner(unit_index, &damage.owner);
@@ -3789,11 +3793,14 @@ void __stdcall function_cfc90(long unit_index, long definition_index, s_unit_mel
 	damage.unknown54 = hit->unknown14;
 	if (hit->object_index != NONE)
 	{
-		s_unit *object = UNIT_GET(hit->object_index);
-
-		if (object->type == 7 && (*((byte *)UNIT_GET(hit->object_index) + 0x1cc) & 0x20))
+		if (UNIT_GET(hit->object_index)->type == 7)
 		{
-			function_107370(hit->object_index, 1.0f);
+			long device_index = hit->object_index;
+
+			if (*((byte *)UNIT_GET(device_index) + 0x1cc) & 0x20)
+			{
+				function_107370(device_index, 1.0f);
+			}
 		}
 		function_d7b80(&damage, hit->object_index, NONE, NONE, NONE, 0);
 	}
