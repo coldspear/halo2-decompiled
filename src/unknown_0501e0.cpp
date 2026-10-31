@@ -165,6 +165,9 @@ static __forceinline void world_vector_to_view(real arg_0, vector3f const *arg_1
 // Round 452: shared vector scale copied/in-place, branch-owned, copied/source and library-copy
 // inputs 309/327/330/309; with live forward coefficients 298/314/318/298. Native
 // scalar consolidation does not match; original scalar helper and body restored.
+// T47: Plain weighted-point blend loop on retained separate-offset/depth-limit graph,
+// long/dword/short/word counters: view cursor 222/222/271/271; indexed view output
+// 226/226/271/271. Original complete helper and body restored.
 // @retail 0x501e0
 void function_501e0(s_501e0 const *arg_0, bool arg_1, s_501e0 *arg_2)
 {
