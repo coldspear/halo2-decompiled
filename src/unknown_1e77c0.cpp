@@ -536,6 +536,11 @@ struct s_request_profile
 // +0xf -> +0x3b, but the IV starts at element 0 with the counter rebased to 3; retail: element 1,
 // counter 2); with that pointer the elements i..i+3 91, i-1..i+2 126, i-3..i 80 (the IV stays at
 // element 0, counter 3, whatever the spelling).
+// Round 133 (fast): an inner `j` loop over each group of four under a `i += 4` outer loop (retail's counter
+// fits a fully unrolled inner loop), `j = i; j < i + 4` / `j = 0; j < 4` 306/323 (both stay rolled, 399/380
+// bytes); all four elements state-first 136 (551 bytes: the IV at element 1's state and retail's EDX/EBX, but
+// counter 3 and each ticks store one element late), with each state from 0x1e7a60 `== 3` 139; the shared
+// local_player_next_inline for the outer loop (the file's next_request_player copies it) 96 (541 bytes).
 // @retail 0x1e73b0
 void function_1e73b0()
 {

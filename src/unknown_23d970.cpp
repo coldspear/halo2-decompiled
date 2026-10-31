@@ -628,6 +628,12 @@ PRIVATE inline s_player_state *local_player_state(long local_index)
 // branch 248 (1261 bytes), with the staged product 114 (1262); the else-branch forward pointer 55 again,
 // with the staged product 217; the distance in a named local stored at once 57 (identical). A compile-only
 // /FAs build reproduces our camera colouring but returns the distance on x87 (xmm0 stays free there).
+// Round 133 (fast): the direction through the existing scaled_difference3f with a 1.0f scale 223 (1266
+// bytes); the forward copy field by field 232 (1274 bytes), as memcpy 57 (identical); memcpy with
+// cross3f_staged for the second product 217 (1270 bytes), for both products 221 (1272). The 3 extra bytes are
+// the second product's three `movss x, [forward]; mulss x, right` pairs, where retail copies right's register
+// and multiplies forward from memory (one byte shorter each). A one-file harness with the callee files gives
+// 362 at 1246 bytes here (not exact).
 // @retail 0x23de50
 void __stdcall function_23de50(void *state, void *input, s_observer_command *output)
 {
