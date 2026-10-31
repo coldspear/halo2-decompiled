@@ -1150,6 +1150,14 @@ struct s_game_engine_globals_connections_view
 // word-compared, though its time column is retail's); quality declared in the connection block 73.
 // Same code as 73 (screened): name width assigned first or from the column flags, int/dword widths,
 // renamed width locals, a cast on the name+score partial sum.
+// Round 49 (lane 16, plain): the rest is the time and connection sums: ours folds the score width's
+// stack home into the 16-bit add (position + score, then name), retail adds the name width first and
+// the score width last from a register. A compile-only build gives retail's order, and ours as soon
+// as the score width's address escapes, so whole-program codegen treats it as a memory variable
+// where retail did not. Tried (whole-program build): time width assigned first 79 (prologue swaps);
+// time width, then name width from the score flag, then score width 79; the 0x2d before the widths
+// in both sums 73 (same code); the time column's left as score left + score width 73 (same code);
+// the connection entry passed directly 73 (same code).
 // @retail 0x1603f0
 void game_engine_player_row_build(short const *position, real alpha, long player_index, word const *name, long place,
 	long score, long seconds, bool hide_connection, bool show_icon, bool hide_place, color3f const *color, bool dim,
