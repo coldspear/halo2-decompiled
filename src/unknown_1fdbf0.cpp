@@ -393,6 +393,11 @@ vector3f *function_11d000(vector3f const *v, vector3f *out);
 // products before the i row 57; the projection defined after the cross terms 53; axis j/k read into
 // scalars after the projection, axis first 43 (same code); axis-first j/k products with the i and j
 // stores together 59 (776 bytes); projection term first in every row with `axis.i * local_0` 57.
+// Lane 16 r46: axis i/j/k read into scalars before `*direction = forward` 43 (same code); cross terms
+// read from forward, the dot from direction 74 (776 B); axis operands first in the dot and the crosses
+// 43; the j and k rows interleaved (both projections `axis * local_0`, then both cosine terms, then both
+// sine terms, then both stores) 57 (gives retail's cosine in a register and early d.j load, colours stay
+// ours: direction j/i take xmm1/xmm2 where retail gives them axis k/j); that with k first 57.
 // @retail 0x1fddd0
 bool function_1fddd0(long actor_index, point3f const *origin, vector3f *direction,
     long *out_index, real *arg_c9241c, long *out_object)

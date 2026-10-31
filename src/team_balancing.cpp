@@ -508,6 +508,12 @@ bool balance_teams_greedy(s_balance_problem *problem, long team_count, s_balance
 // `!(candidate.count_spread() >= reference->count_spread())` 67; the selection written `!improved ? &current :
 // &best` 70; the selection moved after the candidate copy (before the swaps) 151; `best = candidate;` before
 // `improved = true;` 71. No other function calls count_spread, total_spread or rank_spread out of line.
+// Lane 16 r46: the reference declared at the top 67; count_spread as a free function on a pointer 67; the
+// test in a forceinline (candidate, reference) helper 67; renamed trial/baseline 67; `candidate(current)`
+// 67. Compile-only (no /GL, extern methods): the call on the stack copy runs after the call through the
+// pointer in every operator, operand order, helper, free/__stdcall and naming form; with two stack copies
+// the right operand of `<`/`==` runs first. So retail's candidate-first order is not a reorder that only
+// LTCG's readonly knowledge makes.
 // @retail 0x91bd0
 void s_balance_optimizer::try_swap(long team_a, long team_b)
 {

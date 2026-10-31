@@ -864,6 +864,12 @@ real normalize2d(point2f *v);
 // return, folded false exit). Request result returned from its arm 182 (919 B); early false return after
 // the retry 135; retry admission and call joined by && 135; unit index local 135; validity block
 // flattened into an early false return 232. All restored.
+// Lane 16 r46: `return valid;` folds to `xor al, al` (VC propagates the branch value), so retail's
+// `mov al, bl` returns a value it cannot prove zero. `bool result = valid;` with one exit 236 (877 B,
+// result takes BL); `result = false; if (query) result = true;` 182; the facing fallback written into
+// `direction` 135 (same code); both speed lookups as calls to the existing 0x26f290 (same body) 316
+// (/Ob1 file, stays out of line even with a __forceinline redeclaration; a local inline copy 135, same
+// code); the result renamed reachable/arrived/success 135 each.
 // @retail 0x1f8160
 bool function_1f8160(long actor_index, signed char const *types, point3f const *target, bool force)
 {
