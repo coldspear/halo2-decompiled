@@ -3289,6 +3289,11 @@ static inline long voice_packet_clamp_count(byte count, long minimum, long maxim
 // size, packet size, cursor 162; shared two-call receive helper 192 (457 bytes); plain arm first 153; member at
 // function scope with split NONE/kind tests 164. Screened, no flip: 24 entry orders, 48 combinations of split
 // tests, members before the call, route at loop scope, (word) clear, `> 1`, `packet_size > size`.
+// Round 52: packet cursor beside the count (retail's EDI cursor, BX mask, ESI size; the member then
+// takes EBP and the channel stays in its stack slot) 164; with that, the NONE and kind tests split 164,
+// the mask tested as `(members >> member) & 1` 164, a per-iteration channel-index local 164; the
+// cursor at function scope before the stride 141. Screened: a channel pointer copy and the mask
+// declared before the member read change nothing.
 // @retail 0x55e10
 long __stdcall function_55e10(s_voice_channel *channel, byte *data, long size, bool relay)
 {

@@ -2693,6 +2693,11 @@ static inline bool player_datum_iterator_next(s_data_datum_iterator *iterator)
 // status block 91 (retail prologue); g_4e8c20's address taken 91 but 21 matches lost;
 // 0x16bc00 built without link-time code generation 90 but 98 lost; 0x6b380 through a
 // pointer 146; 0x6b380 as the record-pool step on its +4 fields 103.
+// Round 131 (lane 4): ours reloads the global into EDI after the second loop's 0x14f2e0/0x14e970
+// calls and carries it through the 0x6b380 calls to the final store; retail loads it at the store.
+// The status block in its own braces 103, the entry pointer through players_globals_14f2e0() 103,
+// the busy store through the entry local 103 (all the same code); last_unit = NONE declared at the
+// function's top 157 (612 bytes); `if (last_unit == NONE) return;` before the second loop 103.
 // @retail 0x14cdd0
 void function_14cdd0(void)
 {
