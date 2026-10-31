@@ -675,6 +675,10 @@ static inline bool session_set_machine_limit(c_class_58d20 *session, long value)
 // 0x5c5c0 0x6e910, which reproduces the plain 55): variant address named before the loop 52 (substituted
 // back); `continue` guards 55; `do { } while (++i < 16)` 221; `while (i < 16)` 221; the loops through
 // the membership getter 0x5a680 55; 0x6e910's team parameter as `long` (no `char` truncation) 55.
+// Round 21 (lane 14, fast with the inlined callees): the call's last argument through the existing
+// get_value_49c8() 142 (503 bytes: the live test comes back); the copy countdown declared before its
+// index 55 (same code); the result initialised from the state test 169 (507); the copy loop counting
+// member_count itself down 118; the machine-address pointer written at both uses 55 (same code).
 // @retail 0x6e720
 bool function_06e720(c_class_58d20 *session)
 {

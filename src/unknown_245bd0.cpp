@@ -368,6 +368,10 @@ PRIVATE inline real shape_dot_reverse(vector3f const *a, vector3f const *b)
 // separation-first/direction-first/reverse projection helpers 4/4/4; shared final scaling 4;
 // normal-first plane product 6. The vector addition helper with a negative step 16 (435 bytes),
 // with normal-first plane product 18 (435). All restored; the projection still sums i,j,k.
+// Round 21 (lane 14): the difference vector renamed 4 (same code); `(i + k) + j` with the j product's
+// operands swapped 11 (the j product still loads direction->j first); b computed right after c,
+// before the c test 61 (435 bytes); b computed before c 102 (428); the hit normal through
+// vector3d_from_points3d(&d, &scaled) 4 (same code).
 // @retail 0x2461a0
 bool function_2461a0(
 	s_sphere const *sphere,
