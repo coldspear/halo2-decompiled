@@ -308,6 +308,10 @@ void function_1fc660(s_tracked_point *tracked, s_tracking_state const *state, s_
 // i, j, k 47 (366 bytes, first 0x5d bytes as retail; the two tick products then run i, j where
 // retail runs j, i but still stores i first; the delta copies and the correction block differ).
 // Subtracting all three then scaling all three: worse in every order (compile-only screen).
+// Round 20 (lane 15, fast): the prediction chains written into their own `displacement` vector and `velocity`
+// first assigned by the tick products: conversion after the chains 64 (retail's first 0x5a bytes, but the ticks
+// stay the copied left operand), at the top 43 (same code as now), through local_scale3d 64, `(real)ticks` in
+// each product 64; `short ticks` 43; the squared length summed j, k, i (diagnostic) 43, identical code.
 // @retail 0x1fc4b0
 void function_1fc4b0(s_tracked_point *tracked, s_tracking_state const *state, s_tracking_output *output)
 {

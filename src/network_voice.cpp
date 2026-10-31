@@ -3091,6 +3091,9 @@ struct s_voice_route_choice
 // Round 86: a choice cursor declared first and stepped at the end of the body 392 (frame 0x48); a reference to
 // the listener mask 399; the headset test inverted 406; the distance comparison reversed 363 and the nearest
 // test nested 363 (same code).
+// Round 446: Unsigned nearest/player field plus ordinal/both, signed headset alone/with nearest/
+// with player/all three, and player field alone: all eight 363 on the byte-bitwise graph.
+// Unsigned mode field did not compile; original mode, records and full body restored.
 // @retail 0x57eb0
 void function_57eb0(s_voice_player_settings *settings, long talker,
 	const s_voice_route_choice *choices, long count)
@@ -3291,6 +3294,9 @@ static inline long voice_packet_clamp_count(byte count, long minimum, long maxim
 // Round 86: cursor with a channel-index local in the relay arm 158, with a dword member mask 190, with split
 // NONE/kind tests 164; index local, late stride and early counter 158; index local in the other arm 162;
 // a 245-form toggle search 139+.
+// Round 446: Direct count bounds disjunction/lower-first/upper-first 185/179/180;
+// byte admission with original clamp 139; byte/long direct bounds 185/182;
+// direct/byte bounds with independent cursor 177/177. Original complete body restored.
 // @retail 0x55e10
 long __stdcall function_55e10(s_voice_channel *channel, byte *data, long size, bool relay)
 {

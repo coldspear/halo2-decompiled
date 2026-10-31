@@ -7,6 +7,7 @@
 
 // @flags /O2 /arch:SSE /Gr
 #include "object_masks_storage.h"
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 struct s_object;
 s_object *function_badc0(long object_index, dword type_mask);
@@ -867,7 +868,7 @@ long function_baf40(long object_index);
 short __stdcall function_1c8df0(short target_cell, short source_cell, point3f const *target,
 	long object_index, void const *source, long mode, bool narrow, bool attached, bool alternate,
 	long *hit_object);
-short function_25c9d0(long actor_index, long prop_ref_index, bool player, long sight,
+short function_25c9d0(long actor_index, long prop_ref_index, bool player, short sight,
 	void *point, byte *sample, long reported);
 short function_25cb60(long actor_index, long object_index, short type, void *sample,
 	void *point, long location, long sight);
@@ -876,13 +877,20 @@ short function_263810(point3f const *origin, long actor_index, point3f const *po
 void function_26bfa0(long object_index, long *location_index, s_location_view *location);
 real function_296600(long actor_index, long prop_ref_index);
 
-// score 331 (was 331): the tracking view is cleared before the tracking test, so the
+// score 265 (was 319): actor EBX, prop ESI, squad and unit homes, the type-15 arm and the 0x25c9d0
+// call are retail's; left: the object and table registers (ours EAX/ECX, retail ECX/EAX) and time
+// scheduling before the branch, the suppression/current byte homes swapped ([esp+0x12]/[esp+0x13]),
+// and at the first 0x1c8df0 call retail spills the root into the squad's slot and keeps the hit
+// pointer in EDX where ours keeps the root in EAX and spills the hit pointer (so the root and the
+// priority swap homes and everything after shifts one instruction); 0x25cb60's sight is pushed after a
+// movsx (retail: as is), BLOCKED-BY 0x25cb60 (its sight parameter width). 1276 bytes against 1268.
+// Earlier (331): the tracking view is cleared before the tracking test, so the
 // pointer is zeroed where retail zeroes it instead of being assigned in an else
 // branch. Retail holds the actor in EBX and spills it at [esp+8] right after the
 // actor[9] test where ours holds it in ESI and spills it at [esp+0x14]; retail keeps
 // the squad pointer at [esp+0x10] where ours uses [esp+0xc]. The body is 1251 bytes
 // against retail's 1268.
-// score 319 (was 331): retail holds the actor in EBX (spilled at [esp+8]) and the prop in ESI where
+// Earlier (319): retail holds the actor in EBX (spilled at [esp+8]) and the prop in ESI where
 // ours swaps them, keeps the squad pointer at [esp+0x10] where ours uses [esp+0xc], acquires the
 // object, suppression, current flag and unit pointer before the actor-type branch, and after the
 // 0x1c8df0 call keeps a zero in EBX and the sight in ESI. The body is 1253 bytes against 1268.
@@ -965,11 +973,17 @@ real function_296600(long actor_index, long prop_ref_index);
 // ESI as retail; left: squad kept in EDX not at [esp+0x10], the stack zero for retail's cmovne, root/hit
 // pointer slots at the 0x1c8df0 call). Those restructured forms align far better and are the base to
 // continue from; renaming current/suppressed 0 change; typed prop record 358 (control 322).
+// Round 92 (plain): round 90's restructured body (no volatile saved actor, object/suppression/current/unit
+// before the actor-type branch, if/else on the found index, MAX twice) with the unit NULL-first and set
+// when the object type is 0: 338 at 1268 bytes (cmov, register zero); renaming current to sort after
+// suppressed 338 and declaring it first 338 (byte homes unchanged); with 0x25c9d0's sight short 294;
+// the unit's NULL defined before the suppression test 269 (squad spilled, the cmovne from the unit's
+// NULL home as retail); the existing prop record type, its +0x25 flag passed directly 265, kept;
+// on it, the game time read after the object lookup 268.
 // @retail 0x264b50
 void __stdcall function_264b50(long actor_index, long prop_ref_index, s_2641c0 *sample, s_2640c0 *motion)
 {
 	byte *actor = g_4f55f0->data + (actor_index & 0xffff) * 0x888;
-	byte *volatile saved_actor = actor;
 	if (!actor[9])
 		return;
 	byte *squad;
@@ -985,47 +999,57 @@ void __stdcall function_264b50(long actor_index, long prop_ref_index, s_2641c0 *
 		if (tracking)
 			view = &tracking->view;
 	}
-	byte *prop = (byte *)prop_get(reference->prop_index);
+	s_type_76cf92 *prop = prop_get(reference->prop_index);
 	long time = g_510c54->game_time;
+	byte *object = *(byte **)(g_4e0300->data + (reference->object_index & 0xffff) * 12 + 8);
+	byte *unit = NULL;
+	bool suppressed = (squad && (squad[2] & 1)) || *(short *)(actor + 0x84) == 1 || actor[0x228];
+	bool current = *(long *)(actor + 0x338) == prop_ref_index;
+	if (object[0xaa] == 0)
+		unit = object;
 	if (*(short *)(actor + 4) == 15 && *(long *)(actor + 0x26c) != NONE)
 	{
 		byte *parent = *(byte **)(g_4e0300->data + (*(long *)(actor + 0x26c) & 0xffff) * 12 + 8);
 		long other_unit = *(long *)(parent + 0x248);
-		s_type_f95cd3 *other_view = NULL;
-		bool copied = false;
+		long other_index = NONE;
 		if (other_unit != NONE && other_unit != *(long *)(actor + 0x18))
 		{
 			byte *other = *(byte **)(g_4e0300->data + (other_unit & 0xffff) * 12 + 8);
 			long other_actor = *(long *)(other + 0x12c);
 			if (other_actor != NONE)
+				other_index = function_25d810(reference->object_index, other_actor, false);
+		}
+		if (other_index != NONE)
+		{
+			s_prop_datum *other_reference = prop_ref_get(other_index);
+			s_type_f95cd3 *other_view = function_25d740((s_prop_node *)other_reference);
+			reference->unknown26 = other_reference->unknown26;
+			reference->unknown27 = other_reference->unknown27;
+			if (view)
 			{
-				long other_index = function_25d810(reference->object_index, other_actor, false);
-				if (other_index != NONE)
+				if (other_view)
 				{
-					s_prop_datum *other_reference = prop_ref_get(other_index);
-					other_view = function_25d740((s_prop_node *)other_reference);
-					reference->unknown26 = other_reference->unknown26;
-					reference->unknown27 = other_reference->unknown27;
-					copied = true;
+					view->unknown06 = other_view->unknown06;
+					*(short *)((byte *)view + 2) = *(short *)((byte *)other_view + 2);
+					*(short *)((byte *)view + 4) = *(short *)((byte *)other_view + 4);
+					view->unknown8a = other_view->unknown8a;
+					view->unknown8c = other_view->unknown8c;
+				}
+				else
+				{
+					view->unknown06 = 4;
+					view->unknown8c = 4;
+					*(short *)((byte *)view + 4) = 0;
+					*(short *)((byte *)view + 2) = 0;
+					view->unknown8a = 0;
 				}
 			}
 		}
-		if (!copied)
+		else
 		{
 			reference->unknown27 = 0;
 			reference->unknown26 = 0;
-		}
-		if (view)
-		{
-			if (other_view)
-			{
-				view->unknown06 = other_view->unknown06;
-				*(short *)((byte *)view + 2) = *(short *)((byte *)other_view + 2);
-				*(short *)((byte *)view + 4) = *(short *)((byte *)other_view + 4);
-				view->unknown8a = other_view->unknown8a;
-				view->unknown8c = other_view->unknown8c;
-			}
-			else
+			if (view)
 			{
 				view->unknown06 = 4;
 				view->unknown8c = 4;
@@ -1037,23 +1061,18 @@ void __stdcall function_264b50(long actor_index, long prop_ref_index, s_2641c0 *
 	}
 	else
 	{
-		byte *object = *(byte **)(g_4e0300->data + (reference->object_index & 0xffff) * 12 + 8);
-		bool suppressed = (squad && (squad[2] & 1)) || *(short *)(actor + 0x84) == 1 || actor[0x228];
-		bool current = *(long *)(actor + 0x338) == prop_ref_index;
-		bool is_unit = object[0xaa] == 0;
-		long root = function_baf40(is_unit && *(long *)(object + 0x14) != NONE ? *(long *)(object + 0x14) : reference->object_index);
+		long root = function_baf40(unit && *(long *)(unit + 0x14) != NONE ? *(long *)(unit + 0x14) : reference->object_index);
 		short sight = function_1c8df0(*(short *)((byte *)motion + 0x28), *(short *)((byte *)sample + 0x28),
-			&motion->field_0, root, sample, prop[0x25] && prop[0x23] ? 2 : 0, false, *(long *)(actor + 0x26c) != NONE, !current,
+			&motion->field_0, root, sample, prop->unknown25 && prop->unknown23 ? 2 : 0, false, *(long *)(actor + 0x26c) != NONE, !current,
 			current ? (long *)(actor + 0x348) : NULL);
-		actor = saved_actor;
-		if (*(long *)(actor + 0x7c) != NONE && prop[0x25] && 25.0f > reference->unknown28 &&
+		if (*(long *)(actor + 0x7c) != NONE && prop->unknown25 && 25.0f > reference->unknown28 &&
 			(sight == 0 || sight == 1))
 			function_268c60(*(long *)(actor + 0x7c));
 		if (view)
 			view->unknown06 = (short)sight;
-		if (!prop[0x26] && !suppressed)
+		if (!prop->unknown26[0] && !suppressed)
 		{
-			short priority = (short)function_25c9d0(actor_index, prop_ref_index, prop[0x25] != 0, sight,
+			short priority = (short)function_25c9d0(actor_index, prop_ref_index, prop->unknown25, sight,
 				sample, (byte *)motion, (long)&suppressed);
 			if (reference->state >= 3 && view)
 			{
@@ -1062,7 +1081,7 @@ void __stdcall function_264b50(long actor_index, long prop_ref_index, s_2641c0 *
 				{
 					short other_sight = function_1c8df0(*(short *)((byte *)state + 0x2c),
 						*(short *)((byte *)sample + 0x28), (point3f const *)((byte *)state + 0x30),
-						root, sample, prop[0x25] && prop[0x23] ? 2 : 0, false, *(long *)(actor + 0x26c) != NONE, !current,
+						root, sample, prop->unknown25 && prop->unknown23 ? 2 : 0, false, *(long *)(actor + 0x26c) != NONE, !current,
 						current ? (long *)(actor + 0x348) : NULL);
 					view->unknown8c = (short)other_sight;
 					view->unknown8a = function_263810((point3f const *)sample, actor_index, (point3f const *)((byte *)state + 0x30), NULL, 2, (short)other_sight, true, NULL);
@@ -1083,8 +1102,7 @@ void __stdcall function_264b50(long actor_index, long prop_ref_index, s_2641c0 *
 				*(short *)((byte *)view + 2) = (short)object_priority;
 				*(short *)((byte *)view + 4) = (short)extra_priority;
 			}
-			short combined = object_priority > extra_priority ? object_priority : extra_priority;
-			reference->unknown26 = (char)(priority > combined ? priority : combined);
+			reference->unknown26 = (char)MAX(priority, MAX(object_priority, extra_priority));
 			if (reference->unknown26 == 1 && reference->state >= 1)
 				reference->unknown26 = 2;
 		}

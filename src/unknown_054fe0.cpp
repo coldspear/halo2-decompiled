@@ -1873,6 +1873,15 @@ struct s_summary_player_sort_entry
 // Scalar type with member-index capture 393; with existing membership provider 353; provider/index
 // 393; provider/index with statistics/getter 380/369. Frames 0xaa0/0xaa4 still miss 0xaa8; all restored.
 // Round 46: Complete admission predicate returning bool/byte/short/long 505/576/576/576; nested state/type then range-result producers 380/442/442/441. Frames 0xa9c/0xaa0/0xaa4; original body and cursor restored.
+// Round 5 (lane 18): the 12-byte frame gap is three stack values ours lacks: &session->value18 (read
+// back for the type), the membership at +0x4c and the member index read before the flags are cleared;
+// name, identity, counts, mask and players all go through the membership pointer, as an inlined
+// membership query would give (retail's other /O2 callers 0x71480 and 0x83220 call 0x5a680). The id/key
+// copy is null-checked per destination, as network_session_get_key's body is (not yet tried).
+// Membership from 0x5a680 with both outputs 353 (called: this /Ob1 file keeps it out of line); with an
+// inline/forceinline declaration here 353/353 (still called); `inline` on 0x5a680's definition 353 (still
+// called here; 0x83220 and the 0x199ebc family lose); member index and the +0x4c pointer written as
+// 0x66050 does 353 (frame 0xaa0: the pointer folds into the session register). All restored.
 // @retail 0x64d70
 bool __stdcall function_64d70(s_session_browser_summary *output)
 {

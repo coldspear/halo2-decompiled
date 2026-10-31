@@ -1289,6 +1289,12 @@ bool function_0bfe60(dword const *flags, long bit);
 // pointer without volatile 42; a count local (`indices ? count : g_51f40c.count`) in place of
 // reassigning the parameter 47. Retail inlines
 // the SDK's begin-visibility-test body here, which our link keeps out of line.
+// Round 31 (lane 10): on the round-7 row form (38) the rest is one register permutation (retail
+// counter/total EBP, player EBX, slot fields and test index EDI, device EBX; ours EDI, EBP, EBX,
+// EDI). The total as short or word 125/125 (the clamp re-extends); the row named at the loop top 85;
+// round-7 form with a short total 135; with the mask tested before the player 135; with the slot
+// tests as a `continue` filter 38. A one-file harness with the D3D objects linked is not exact (60:
+// it cannot reproduce MakeRequestedSpace's register argument).
 // @retail 0x20bb0
 void __stdcall function_20bb0(long player, dword mask, long const *indices, long count, bool query, visibility_draw_callback draw)
 {

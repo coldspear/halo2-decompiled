@@ -198,6 +198,9 @@ PRIVATE __forceinline long function_214f83(char const *arg_0, s_file_handle *arg
 // array 55, as a union member 80. A compile-only screen of further shapes (status struct member,
 // byte flag from a long, const reference to the array element, int-returning inline test) forwards
 // the stored byte in every case: only a volatile flag gives retail's store and re-read.
+// Round 50: the handle read into a HANDLE local with the element passed to the write 44; success
+// declared before done 42; `INVALID_HANDLE_VALUE != handle` 42; `success = !!opened` 42; the
+// comparison cast to long 42. Original body restored.
 // @retail 0x214f80
 void game_state_cache_files_open(void)
 {

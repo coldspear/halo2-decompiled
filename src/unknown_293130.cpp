@@ -106,11 +106,13 @@ __forceinline void function_293133(real arg_0, vector3f const *arg_1, vector3f *
 	arg_2->k = projected_term_k - cross_term_k;
 }
 
-// score 43 (was 43): this round's sentinel store orders (the +0x18 word before the bytes, after the
+// score 43 (was 43): frame 0xd4, length and all range adds agree; rotation dot/register ranks and final sentinel scheduling remain.
+// This round's sentinel store orders (the +0x18 word before the bytes, after the
 // +0x1a word, the bytes swapped, the bytes written as numbers, the words cast to short) all compile
 // to the same 43, so the store order is the compiler's scheduling, not the source's.
-// Permuter round 43 (was 43): the source permuter over the body; the rotation's xmm ranking
+// This round ran the source permuter over the body; the rotation's xmm ranking
 // (retail's xmm1..xmm5 cycle against ours) and the final sentinel store order still differ.
+// Permuter round 43 (was 43): the source permuter over the body; the rotation's xmm ranking
 // Earlier 43 (was 43): frame 0xd4, length and all range adds agree; rotation dot/register ranks and final sentinel scheduling remain.
 // Earlier: y/z range-add order, rotation registers and final sentinel
 // three causes remain. The y/z point draws add the point component before the range
@@ -204,6 +206,21 @@ __forceinline void function_293133(real arg_0, vector3f const *arg_1, vector3f *
 // bytes; still k, j, i); +0x18 sentinel stored after +0x1a 43; the four flag/zero stores before
 // the NONE stores 43; the angle read after the vector copy 54; PRIVATE helper 43 (same code);
 // permuter 49 tries, best 43.
+// Round 31 (lane 10): the only structural rotation difference is the dot's sum order (retail
+// (a.i*v.i + a.k*v.k) + v.j*a.j, ours (a.k*v.k + a.j*v.j) + a.i*v.i); the xmm numbering follows from
+// it. Every dot spelling (12 term/operand orders, both dot3f orders, (1 - cos) first) and all 120
+// sine/cosine/projection/cross statement orders keep it (one-file LTCG harness and compile-only both
+// reproduce our block). It is a whole-function effect: compile-only, deleting the y and z draws,
+// the selection loops or the tail flips it (x draw alone gives retail's order), while declaration
+// orders, in-for indices, ++/+= forms, if/ternary/continue rewrites and draw spellings (point first,
+// named radius, copy then +=, inverted or ternary z) do not. Real trials: 0x194a10's helper body with
+// the copy between sine and cosine 53 (1409 bytes); v.i and v.j named in the helper 30 (only two of
+// three components: not keepable); all three named 43; a.i and v.j named 87; a.i and a.k named 149
+// (both give retail's dot order but keep a.i in a register); cross-file rotation helpers
+// (0x170d70's, rotate_direction, biped_rotate_about, 0x26db50's) keep our order (harness).
+// Compile-only, 300 random sets of 28 code-identical respellings (++/+=, a + i, != 0, -1 for NONE,
+// reversed compares, chained stores, g[0]) and seven tail forms (init order, random count inline,
+// else first) all keep it.
 // Round 10 (m3 lane 2): register-masked aligned difference 8: the dot's (i + k) + j schedule and
 // the +0x18 sentinel store with the argument reload, which ours schedules right after the last
 // NONE store where retail keeps source order. Member vector copied before the sentinels 91; the

@@ -279,6 +279,12 @@ bool camera_velocity_profile_new(s_camera_velocity_profile *profile, real total_
 // its original field/copied home 96/110/97/103; with complete conditional first count
 // 95/105/50/100. Original arrays, observations and six-term expression
 // restored; extra coefficient promotion and frame 0x10/0x1c remain.
+// Round 11 (lane 2), on PIN clamps with the last term as a separate += (one-file LTCG harness: retail's
+// integer code and single-exit tail, 92/92 instructions; only the coefficient homes differ, ours
+// spilling rates[2] alone): a, b, c declared at their conversions, all six += statements, the
+// result clamp as PIN: the same code; real: fills after the hold clamp 104 (268 bytes); fills after
+// the first conversion 99 (271 bytes); the sum in three statements 101 (270 bytes); all three
+// conversions after the clamps 87 (285 bytes); fills just before the sum 121 (253 bytes).
 // @retail 0x16be50
 real camera_velocity_profile_evaluate(s_camera_velocity_profile const *profile, long ticks)
 {
