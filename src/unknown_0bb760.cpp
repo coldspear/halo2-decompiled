@@ -740,6 +740,13 @@ color3f *function_131c20(color3f const *a, color3f const *b, dword flags, real t
 // Round 86: scalar component copy 139; blend-only count 169; scale-only count 170;
 // blend-only function array 173; scale-only function array 139; shared inner counter 105;
 // shared function pointer 91; advancing outer entry pointer 203. Original body restored.
+// Round 52: both value reads through the existing 0xbe8b0 91 (identical code, kept: it replaces that
+// helper's body written out twice); color scale and clamp as inline helpers 91 (identical); the
+// destination assigned first from the object 172 (575 bytes); one colour-array local split into
+// destination and source 182 (586 bytes); a plain `for (i = 0; i < count; i++)` with a per-iteration
+// destination pointer 186 (556 bytes). Screened: the destination declared before the source but
+// assigned after it identical; the source derived from the destination 164; indexed `current[i]`
+// accesses 135. The destination keeps EDI (the 0x131c20 result register) in every form.
 // @retail 0xbe8e0
 bool __stdcall function_be8e0(long object_index)
 {
@@ -763,9 +770,7 @@ bool __stdcall function_be8e0(long object_index)
                     s_colour_function_ab *function = &entry->functions[j];
                     if (function->blend_name)
                     {
-                        real value;
-                        if (!function_bab40(object_index, function->blend_name, &value)) value = 0.0f;
-                        function_131c20(&function->lower, &function->upper, function->flags, value, &*current);
+                        function_131c20(&function->lower, &function->upper, function->flags, function_be8b0(object_index, function->blend_name), &*current);
                     }
                 }
                 for (long j = 0; j < entry->function_count; ++j)
@@ -773,8 +778,7 @@ bool __stdcall function_be8e0(long object_index)
                     s_colour_function_ab *function = &entry->functions[j];
                     if (function->scale_name)
                     {
-                        real value;
-                        if (!function_bab40(object_index, function->scale_name, &value)) value = 0.0f;
+                        real value = function_be8b0(object_index, function->scale_name);
                         current->red = value * current->red;
                         current->green *= value;
                         current->blue *= value;
