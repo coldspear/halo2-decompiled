@@ -109,6 +109,10 @@ void function_16e2c0(long arg_0);
 // Round 35 (lane 10, fast): saved index as long 83 (462 bytes), current index as word 123 (464) / long 101
 // (457); the BSP-globals store as a ternary 50 (same code); the unload argument written in the call 50 (same
 // code, kept: it drops a one-use element pointer).
+// Round 110 (fast): the range test through a forceinline validity helper taking the index 50; the BSP
+// count read into a local at entry 50; the range test before the NONE test in the disjunction 50 (the
+// same code); the structure-globals pointer as a ternary 50; the loaded BSP's list index read once into a
+// named local for the call and the table 89 (461 bytes).
 // @retail 0x11c1b0 standard
 bool __stdcall function_11c1b0(short arg_0, bool arg_1)
 {
