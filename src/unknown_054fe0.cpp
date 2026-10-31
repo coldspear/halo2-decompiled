@@ -1171,6 +1171,13 @@ static inline bool session_member_get_qos(s_network_observer *observer, c_class_
 // helper's session read once through its address (re-reads in a compile-only build, not under LTCG); the
 // same in the outer qos helper; helpers with external linkage. A store through latency ahead of the check
 // also removes the reuse (compile-only), so retail's check sees member_count as possibly changed.
+// Round 54 (lane 12, fast with 0x658c0/0x65770): an `include` flag set from the QoS query in place of
+// `continue` 126 (351 bytes); the channel lookup and the observer QoS test as two statements 67 (same code);
+// both on the (session, latency) order with the host read after the observer 108/86 (callers 140/19);
+// `s_qos_result qos = { 0 };` 67. Compile-only (keeps the CSE): the loop as a while with the increment at
+// the end, qos at the loop top, the lookup as a member function of the session class or the whole function
+// as one, a memset of qos; clearing qos inside the QoS helper re-reads but puts the helper out of line;
+// the lookup in another object is a call under LTCG (/Ob1).
 // @retail 0x64480
 void network_session_get_member_latency(s_session_member_latency *latency, c_class_58d20 *session)
 {
