@@ -3273,6 +3273,11 @@ static inline long voice_packet_clamp_count(byte count, long minimum, long maxim
 // Round 446: Direct count bounds disjunction/lower-first/upper-first 185/179/180;
 // byte admission with original clamp 139; byte/long direct bounds 185/182;
 // direct/byte bounds with independent cursor 177/177. Original complete body restored.
+// Round 52: packet cursor beside the count (retail's EDI cursor, BX mask, ESI size; the member then
+// takes EBP and the channel stays in its stack slot) 164; with that, the NONE and kind tests split 164,
+// the mask tested as `(members >> member) & 1` 164, a per-iteration channel-index local 164; the
+// cursor at function scope before the stride 141. Screened: a channel pointer copy and the mask
+// declared before the member read change nothing.
 // @retail 0x55e10
 long __stdcall function_55e10(s_voice_channel *channel, byte *data, long size, bool relay)
 {

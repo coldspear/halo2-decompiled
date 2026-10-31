@@ -851,7 +851,7 @@ PRIVATE __forceinline void copy_light_sample(s_light_sample const *sample, byte 
     *direction = sample->direction;
 }
 
-// score 604 (was 627): Frame 0x18/0x2c, input/selection homes, override layout and fraction retention differ.
+// score 589 (was 604): Frame 0x18/0x2c, input/selection homes, override layout and fraction retention differ.
 // Native point-difference producer subsets nearest/anchor/both/opposite/nearest+opposite/
 // anchor+opposite/all: 626/627/626/685/668/685/668; all plus shared dot 668 (exact-only).
 // The one-point nearest gains are ineligible; original scalar producers and arithmetic restored.
@@ -863,6 +863,9 @@ PRIVATE __forceinline void copy_light_sample(s_light_sample const *sample, byte 
 // actual pointer-end traversal alone/both 696/629/798; nearest ordinal/opposite pointer
 // 604 (kept, plain; 2138/2122 bytes), inverse 618. Frame shrinks to 0x18; the position
 // input arrives in EAX rather than EDX; search/fraction homes remain.
+// Round 450: one sample-table observation on cursor/end traversal 594; complete query
+// value 729; both 727; live count 604, with table/query/both 594/729/727; entry delta 604.
+// Singleton/multi-record shared table scope 589 (kept, plain; 2127/2122 bytes).
 // @retail 0x22cf0
 void __stdcall function_22cf0(s_light_sample_source const *source, real *red, real *green, real *blue, byte order,
     vector3f *direction, point3f const *position)
@@ -877,14 +880,15 @@ void __stdcall function_22cf0(s_light_sample_source const *source, real *red, re
             memcpy(blue, g_4b8988, sizeof(g_4b8988));
             return;
         }
+        s_light_sample const *samples = source->entries;
         if (count == 1)
         {
-            copy_light_sample(source->entries, order, red, green, blue, direction);
+            copy_light_sample(samples, order, red, green, blue, direction);
             return;
         }
         long nearest = 0;
         real closest_distance = 1048576.0f;
-        s_light_sample const *nearest_sample = source->entries;
+        s_light_sample const *nearest_sample = samples;
         for (long i = 0; i < count; ++i)
         {
             real x = position->x - nearest_sample->position.x;
@@ -898,15 +902,15 @@ void __stdcall function_22cf0(s_light_sample_source const *source, real *red, re
             }
             ++nearest_sample;
         }
-        s_light_sample const *first = source->entries + nearest;
+        s_light_sample const *first = samples + nearest;
         vector3f delta;
         delta.i = position->x - first->position.x;
         delta.j = position->y - first->position.y;
         delta.k = position->z - first->position.z;
         long opposite = NONE;
         real other_distance = 1048576.0f;
-        for (s_light_sample const *opposite_sample = source->entries;
-             opposite_sample < source->entries + count; ++opposite_sample)
+        for (s_light_sample const *opposite_sample = samples;
+             opposite_sample < samples + count; ++opposite_sample)
         {
             if (opposite_sample != first)
             {
@@ -920,18 +924,18 @@ void __stdcall function_22cf0(s_light_sample_source const *source, real *red, re
                     if (distance < other_distance)
                     {
                         other_distance = distance;
-                        opposite = opposite_sample - source->entries;
+                        opposite = opposite_sample - samples;
                     }
                 }
             }
         }
         real fraction = opposite != NONE
-            ? function_022c30(&first->position, position, &source->entries[opposite].position) : 0.0f;
+            ? function_022c30(&first->position, position, &samples[opposite].position) : 0.0f;
         if (fraction <= 0.0f || opposite == NONE)
             copy_light_sample(first, order, red, green, blue, direction);
         else
         {
-            s_light_sample const *second = source->entries + opposite;
+            s_light_sample const *second = samples + opposite;
             if (fraction >= 1.0f)
                 copy_light_sample(second, order, red, green, blue, direction);
             else
