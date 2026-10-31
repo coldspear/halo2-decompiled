@@ -383,6 +383,10 @@ short *function_e70b0(long unit_index, short *value);
 // first 97 instructions are retail's (index EDX, actor data ECX), so the swap follows the inlined
 // action-state read. At the call: its result in a pointer local 110 (437 bytes); called alone and the
 // local compared 49; `7 !=` 49; the unit index in a local 49; `state->unknown34 != 0` 49.
+// Round 110 (fast): the final block as a guard return 49; the action query's out value tested in place of
+// the returned pointer 49; `7 != ...` 49; `0 < state->timer` 49 (the same code each time). Diagnostic, not
+// kept: the actor address written offset first (`(index & 0xffff) * size + data`) 49, so the operand order
+// of the address expression does not decide the ECX/EDX tie either.
 // @retail 0x1afb30
 void __stdcall function_1afb30(long actor_index, s_slot *slot)
 {

@@ -293,6 +293,12 @@ short function_239e50(short count, point2f const *points, short *indices);
 // the scales as written or `*=` j first and the dot taking (normal, point) or (point, normal): 42 each
 // (24 forms); the normalizer scaling through a 2-D scale helper (normalize3d's shape) 42; dividing by
 // the length 42; the length's sum j first 42; the normal built in a local vector and assigned 71.
+// Round 110: a block-local point pointer in case 0 (fast) 42. One-file LTCG harness (aligned 35, positional
+// 42 as the build): normalize2d with the zero length set in an if arm and the scale in its else 42; j read
+// into a scalar after the reciprocal 42; the vector copied into a local first 72 (positional); the
+// reciprocal written at both scales 42; a single result set in the scale arm 42. Matched 0xde080's
+// normalizer keeps `movss xmm4,[v->i]; mulss xmm4,xmm0` (no commute), while ours commutes `v->j * inv`
+// into the reciprocal's register here: retail's reciprocal looks live past both scales.
 // @retail 0x239b80
 short function_239b80(short count, point2f const *points)
 {

@@ -648,6 +648,9 @@ PRIVATE __forceinline real function_255741(vector3f const *arg_0, vector3f const
 // the projection test 139 (call sunk into the block). The round-72 form (radius used twice through the
 // repeated sum, default in an else arm) rebuilt 95: it keeps the call in place; the first difference is
 // then the 0x110ab0 argument register (ECX; retail EAX) and the rotation after it.
+// Round 450: live target identity 141; target object resolution 239; both 240; actor
+// resolution alone/with identity/with object/all 277/277/308/313 (record expansions exact-only);
+// all lateral projection products named 143. Original observations and body restored.
 // @retail 0x255740
 short __stdcall function_255740(long arg_0, s_slot *arg_1)
 {
