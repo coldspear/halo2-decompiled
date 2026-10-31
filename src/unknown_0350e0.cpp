@@ -1159,7 +1159,8 @@ real g_485a30;
 real g_4e69c0[4];
 real g_4c19b0, g_4c19b4;
 
-// score 89 (was 153): the first colour is copied and the second added to it.
+// score 88 (was 89, 153): the first colour is copied and the second added to it, green first (the other five
+// orders of the three `+=` score 88 to 167, the six orders of the copies 89 to 166).
 // What still differs: retail adds each second component straight from memory
 // (`addss xmm0, [eax + 0x38]`); ours loads both into registers first and adds
 // them there. Retail also shares only the `0 > value` exit with case 16,
@@ -1167,7 +1168,10 @@ real g_4c19b0, g_4c19b4;
 // which shifts the code after it. Summing in one expression, via vector or
 // struct fields, through references, with a compiler barrier, if/return or
 // assignment forms of the clamp, an inline clamp and reordered cases score
-// 89 to 271. Also tried: a struct overlay for the two colours with the sums as
+// 89 to 271. Tried 2026-10-31: the sums as three plain locals in any channel order and either operand order,
+// or inside the weighted expression (all 147: the second operand then is a memory operand as in retail, but the
+// loads and the muls are scheduled differently); if/return, nested ?: and `1.0f < value` spellings of the clamps
+// (all 89: still the jump into case 16's compare). Also tried: a struct overlay for the two colours with the sums as
 // one expression, as three reals or as a field-wise copy (146 to 147: the
 // sums come out in the wrong order and the clamp still shares case 16's compare).
 // @retail 0x336f0
@@ -1188,8 +1192,8 @@ real function_336f0(long selector)
             summed.red = values[4];
             summed.green = values[5];
             summed.blue = values[6];
-            summed.red += values[12];
             summed.green += values[13];
+            summed.red += values[12];
             summed.blue += values[14];
             real value = summed.blue * 0.114f + summed.green * 0.587f + summed.red * 0.299f;
             return 0.0f > value ? 0.0f : value > 1.0f ? 1.0f : value;
@@ -1661,6 +1665,10 @@ PRIVATE inline void direction_perpendicular_to_up(vector3f const *direction, vec
 // returns early on each path and reuses the scale slot for the x87 result (frame 0x14).
 // Tried: case 0 and default as break with y and x pre-zeroed (194; the switch then loses its
 // case 0 table entry), y = 0 in those cases (193).
+// Also tried 2026-10-31 (all 193, `result` is promoted to xmm0 every time): an inline helper that writes
+// the angle through a `real *`, `real *angle = &result`, a dead `&result` pointer, the atan2 in a double
+// local, `return` inside the `if` (275); `volatile real result` gives retail's frame and entry store (187) but
+// zeroes xmm6 instead of xmm0 and so is not kept.
 // @retail 0x2f2d0
 real function_2f2d0(vector3f const *direction, point3f const *position, long mode, real scale)
 {
@@ -3710,6 +3718,12 @@ PRIVATE inline short key_list_find_index(byte const *list, long key)
 // never read in the loop, and compares the count against that register (`cmp edx, ecx`) where
 // ours folds to `test`. Tried: the index declared before the loop, an explicit running group
 // index (`++group_index` in the loop header), an extra counter bumped with `rendered` (all 182).
+// Also tried 2026-10-31 (all 182): a second counter `j` bumped with `i` and used in the second call, a dead
+// local assigned in the loop, `if (g_4ba134 > i)` around the loop with `i` declared first, a cached count; the
+// optimizer drops every unused counter, so the slot is not an ordinary dead local. Retail's two other
+// differences are in the inlined last pass (also seen in 0x31170): a dead `mov eax, [g_485898]` before
+// `xor eax, eax; call 0x15680` and a `mov byte [esp+0x13], 1` after that call; five spellings of the
+// `normal_cull && (g_485898 ...)` argument fold them away (182).
 // @retail 0x30ed0
 void function_30ed0()
 {
