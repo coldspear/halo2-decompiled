@@ -37,7 +37,7 @@ bool function_22acb4(long);
 void function_1396c7(long, point2f *);
 void function_2d140(long, real const *, long, long, s_filter_vector const *);
 
-// score 6 (was 64): only the schedule of two bound conversions differs: retail converts the
+// score 6 (was 6): only the schedule of two bound conversions differs: retail converts the
 // bottom bound after the first two right-bound stores and the top bound after the first left-bound
 // store; ours converts each before them. Round 18 (lane 14): the bitmap tag read through the
 // sequence/sprite structs 0x22ae21 uses, with the index declared in each count branch (zero tests
@@ -80,6 +80,12 @@ void function_2d140(long, real const *, long, long, s_filter_vector const *);
 // on them the point/result/x,y declarations moved or default first 157 each (identical), the result
 // initialised to NONE at its declaration 172 (alone 134); the bounds converted in retail's dd2, dd6,
 // dd4, dd0 order 123, with the reciprocals first 143, with the per-case sums too 159.
+// Round 211: plain grid x-row/y-column/both/x-columns loops
+// 108/108/128/218.
+// Three horizontal spans lose matched caller 0x13a532; rejected.
+// parallel span/distance/both/weight/span+weight/distance+weight/all/all+integer-bound producers
+// 6/6/6/6/6/6/6/188.
+// All source forms restored; bottom/top conversion scheduling remains.
 // @retail 0x22b8e2
 void function_22b8e2(s_22b8e2 const *arg_0, long arg_1, color4f const *arg_2)
 {
