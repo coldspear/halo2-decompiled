@@ -539,6 +539,12 @@ bool sound_driver_voice_create_buffer(
 // creation 127. LTCG harness screens: result on both success arms / `return voice_index` / long result move
 // flags to EAX (100/156/154); the 3D test on `flags & 1` 166 (EAX); bools at function scope 162/163;
 // the 3D test negated 127; bool spellings, byte types, names and count-store position no change.
+// Round 52: on the 3D failure `result = NONE;` before the count decrement 72 (retail's exit: globals in
+// ECX after the pops; a gain of 7, not kept), with the count stored before the descriptor clear 72, with
+// a voice pointer 72; three_d defined just before the first creation 73; play defined after the first
+// creation 176 (606 bytes). Screened: whenever three_d is assigned before play, voice_index takes EBP
+// and both bools spill (205-218); a copy of play in the 3D branch or `(void)&play` change nothing;
+// play/three_d as dword 155/75; tests on `flags & 1`/`flags & 2` 202-203; play stays in BL in every form.
 // @retail 0x220b90
 short sound_driver_voice_new(
 	dword flags,
