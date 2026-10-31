@@ -521,6 +521,13 @@ struct s_request_profile
 // but the record goes through the stack); ticks/state interleaving t,s,s,t,s,t,t,s 100. Harness only: all
 // 70 ticks/state interleavings (best aligned 6, positional 74); the t,s,s,t,t,s,t,s order with seven loop
 // spellings 37-101; a one-store body (state only) unrolls with counter 2 and pointer at element 0.
+// Round 47 (lane 16, fast with 0x137e40/0x1e7a10/0x1e7a60): one group pointer to elements i-2..i+1
+// 91; each state from the existing 0x1e7a60 `== 3` 110; a dword counter 96 (rebased to 1); a short
+// counter 239 (599 bytes); a pointer local to the transition array before the loop 87 (the prologue
+// and outer loop then take retail's registers, EDI table and EDX local index, first difference
+// +0xf -> +0x3b, but the IV starts at element 0 with the counter rebased to 3; retail: element 1,
+// counter 2); with that pointer the elements i..i+3 91, i-1..i+2 126, i-3..i 80 (the IV stays at
+// element 0, counter 3, whatever the spelling).
 // @retail 0x1e73b0
 void function_1e73b0()
 {

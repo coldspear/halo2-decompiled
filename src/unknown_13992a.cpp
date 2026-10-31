@@ -135,6 +135,17 @@ long function_14de70(long arg_1);
 // is read before the parent and the parent is held in EAX), that local also passed to 0x22bff0 392 (1827 bytes);
 // the seat assigned inside the condition 48; the parent test nested with the seat local inside it 48; the 0x48
 // flag store first in the block (diagnostic) 520.
+// Round 47 (lane 16; fast is faithful, 48, only with 0x15fef0/0x15eb20/0x15f3a0 listed): a 600 s
+// permuter run, 47 tries, none better; the unit as a typed view struct (every field by name) 48
+// (same code); the seat tested before the parent 46 (the parent then loads into the unit's
+// register as retail's reload does); the condition inverted with an empty arm 48; the parent read
+// into a block local for the lookup 48; the lookup reading the parent through the unit fetched again
+// from the player 399 (1841 bytes, but the test block is then exactly retail's: store first, unit
+// reloaded into EAX, parent compared in memory). Diagnostics: the parent read through a typed field
+// view, the test through a pointer to local_3, a force-inline getter taking `long const &`: 48 each.
+// A scan of matched retail finds this compare-in-memory-then-reload of one field only after an
+// intervening store, or (0x114ec0) when an earlier test of the field sits on one path only; 0xd1080
+// (todo) shows the same split.
 // @retail 0x13992a
 void function_13992a(byte *arg_1, long arg_2)
 {
