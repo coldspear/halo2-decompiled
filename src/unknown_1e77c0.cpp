@@ -513,6 +513,14 @@ struct s_request_profile
 // aligned 36: retail's flag reloads and select), with this body's i-2..i+1 elements 154; natural query body without
 // the transition pointers, ticks first 195, state first 139 (aligned 28), pointers with state first 142; state first
 // with 0x1e7a10's pair taken from the state record 139. Retail reads the pair through the memcpy destination register.
+// Round 177: a plain 32-entry loop storing a record local (`transition.state = query ? 5 : 0; transition.ticks
+// = 0; transitions[i] = transition;`) is unrolled by VC itself with retail's counter (esi = 2, i-2..i+1, exit on
+// esi-2 < 32) but builds the record on the stack and copies dwords: 196 (565 bytes); ticks set first, aggregate
+// initializer, record hoisted out of the loop 196 each; a ticks loop then a state loop 170 (the ticks loop stays
+// rolled, no fusion). Hand-unrolled spellings: elements i-1..i+2 87; i-3..i (counter `i - 3 < 32`) 86 (541 bytes:
+// retail's esi = 2 counter, aligned 89 -> 43, but the pointer still starts at element 1's ticks, +6, and the
+// local index stays in EBX); i-3..i state first 132; `i < 35` 96; i-4..i-1 63 (aligned 58); i-2..i+1 with
+// `i < 34` 96; per-element pointer blocks with the i-2/i-3/i-4 spellings 135/133/133.
 // @retail 0x1e73b0
 void function_1e73b0()
 {

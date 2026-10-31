@@ -258,7 +258,14 @@ __forceinline real function_29cc7e(vector3f *arg_0)
 // three other operand orders 300 each; direction.i/direction.j operands reordered 300-322 (canonical);
 // the side test as the full 2-D dot with the left vector 328; the left vector through vector3f_assign
 // 321; declared in the steering block 377; the avoidance vector at function scope 322; a separate
-// velocity temporary for the early vehicle block 415.
+// velocity temporary for the early vehicle block 415. Round 177: behavioural names for the left
+// and avoidance vectors (the avoidance name sorting first) 300 (same code: names do not break this
+// slot tie); the velocity dot grouped i + (k + j) 300 (our terms j, k, then i; retail k, j, then i);
+// the velocity dot through the existing dot3f either way 300 (j, k, then i); the 3x direction store
+// through the existing vector3f_scale 386 (retail's flag-store order exactly, aligned 101 -> 95, but
+// the steering rotation's XMM registers move and the body ends 10 bytes short), on it the rotation
+// terms swapped in either or both sums 386 (canonical), the dot3f forms 386; a no-op `* 1.f` on the
+// speed 300 (folded) and `* 1.0001f` 390 as reassociation diagnostics (no sum order moved).
 // @retail 0x29cbb0
 void function_29cbb0(long arg_0, long arg_1, vector3f const *arg_2, vector3f *arg_3,
 	short *arg_4, vector3f *arg_5, bool *arg_6, bool *arg_7, short arg_8)
