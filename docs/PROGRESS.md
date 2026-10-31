@@ -2,6 +2,16 @@
 
 The newest entry comes first.
 
+## 2026-10-31: 10174 functions match
+
+```
+matched 10174 of 11326 game functions (1763628 of 2786206 bytes, 63.30%)
+matched 1267 of 1436 Havok functions (174339 of 290362 bytes, 60.04%)
+```
+
+1 new matches, none lost:
+- @coldspear's #963: `0x3f970` match.
+
 ## 2026-10-31: 10173 functions match
 
 ```
