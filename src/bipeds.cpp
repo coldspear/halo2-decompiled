@@ -475,6 +475,9 @@ void function_e5930(long unit_index);
 /* resets the biped's state: its flags, landing and melee timers, its ground
    contact and its physics mode */
 // score 118 (was 118): flag-store scheduling and the final helper's unwanted expansion remain; BLOCKED-BY 0xe5930.
+// Logic walk (2026-10-31): every store of 0xde4c0-0xde608 agrees with this source (offsets, sizes, the NONE/0/0x7f values,
+// the 0xb9dd0 call with &+0x368, the 0x1f0 bit 1 choosing flags_348 |= 8 / &= ~8, +0x3d8/+0x3e0/+0x3dc/+0x3e4/+0x3e8, the
+// final 0xe5930 call with the unit index); no behaviour difference. Only the inlined 0xe5930 body and the flag test differ.
 // Boolean predicate 121; native word flags 114; reset zero/NONE/both chains 118;
 // chains with Boolean predicate 121; counter/index/initial block library clear or fill
 // 129/138/127; second receiver scope 118; native tag dword or bit member 121;
@@ -3349,6 +3352,8 @@ void function_e4300(long arg_159e6d)
 // Round 49: BLOCKED-BY 0xe5930 (src/unknown_0e57e0.cpp, contributor): our link inlines it here and
 // into 0xde4c0 but not into 0xe2d80; retail never does. The known fix (round 89) is a noinline
 // declaration beside its definition, which new rules forbid.
+// Logic walk (2026-10-31): 0xe4bd0-0xe4c0c agrees with this source: object read before the calls, 0xe18d0(unit, 1),
+// 0xe5930(unit), then byte +0xc0 bit 6 (flags_c0 bit 6) clear -> 0xb8890(unit); no behaviour difference.
 // @retail 0xe4bd0
 void function_e4bd0(long arg_159e6d)
 {
@@ -3710,7 +3715,12 @@ real magnitude3d(vector3f const *v);
 /* an actor riding a fast vehicle that is about to leave the ground (no
    ground under it, or none along its flight) says so, at most once every
    half second: falling (0x54), flipping over (0x56) or a jump (0x55) */
-// score 19 (was 19): Frame 0x84 agrees; the actor index for 0x1fb7e0 stays in ECX across the
+// score 19 (was 19): Logic walk (2026-10-31) against retail 0xe3380-0xe36fd: callees (0xb9dd0, 0xddf60 + 0x1697c0 = the
+// inlined 0xdf880 with offset 0.4 (0x45dd30) and length 8.0 (0x45dc18) at 0xe347a-0xe352f, 0x24590, 0x30bf0, 0x1fb7e0 with
+// eax type/ecx actor/edx NULL and two pushed NONEs at 0xe36e4-0xe36ec), offsets (0xbc bit 6, 0x12c, 0x12a, 0x7c, 0x244, 0x34c byte,
+// 0x38c, 0x88-0x90, 0x84, 0x94), constants (0.5, 2.0, 0.0, 0.3, 0.6, 1.5707964), the sum < time test (comiss/jbe 0xe3459),
+// the normal copy over the direction slot (0xe366f-0xe3694) and the 0x54/0x55/0x56 selection all agree; no behaviour
+// difference. Frame 0x84 agrees; the actor index for 0x1fb7e0 stays in ECX across the
 // 0x24590 call (retail moves it to EDI and back: its callers do not trust 0x24590 to keep ECX), and
 // that 2-byte tail difference shifts six jumps to the exit. Round 35: both probes through 0xdf880
 // (as 0xe30c0 does) 28 at retail length; the vehicle's 0x34c byte 27; the time comparison written
@@ -3810,6 +3820,11 @@ void __stdcall function_e3380(long arg_159e6d)
 // result set in the 0x34b block 151/105; state flag through a fresh state read 118; single exit through
 // goto for block 2 and/or the 0x34b block 187/195/176/186; result declared first/second/third 34/34/33;
 // state declared before the definition 33; `return unknown34b == 1 || result;` 91.
+// Logic walk (2026-10-31): every block agrees with retail 0xe3c90-0xe3ef6 (callees and argument order, 0x7000101/
+// 0xd000042/0xc000043/0x6000087/0x400000c, the 0x3e88b439 blend, +0xc1 bit 0, +0x11 mask 0xa, +0x6c bit 0, +0x10a bit 2, +0x39d
+// unsigned > 0, the 0x1e5af0 order: output in eax, physics in edx, +0x7c in ecx, +0x70 pushed); no behaviour difference.
+// Retail returns the result byte at [esp+0x13] reloaded at the 0xe3dc2 tail shared by the block-2 return and the
+// 0x34b != 1 return; an address-taken `bool const *result_reference = &result;` local changes nothing (31).
 // @retail 0xe3c90
 bool __stdcall function_e3c90(long arg_159e6d, long *names, s_biped_physics_output *output)
 {
@@ -4280,7 +4295,24 @@ void function_188180(point3f const *point, vector3f const *forward, long tag_ind
 
 /* a walking biped's footstep effect: at its foot marker (or its origin),
    with the material it stands on */
-// score 168 (was 168): frame 0xec versus 0x94; material homes, model-count test and effect-call transport remain.
+// score 154 (was 168): frame 0xec versus 0x94; material homes, model-count test and effect-call transport remain.
+// Logic walk (2026-10-31) against retail 0xe4d90-0xe503b: every callee, argument order (188180 pushes at
+// 0xe4eb2-0xe4ee5 and 0xe4ff1-0xe5021, point in eax at 0xe5028 and forward in ecx at 0xe4edf/0xe5022), field offset (0x3dc, 0x58,
+// 0x2f8/0x2fc, 0xc0 bit 6, 0x44c, 0x450, 0x28, 0x14, 0x38, 0x78/0x7c/0x5c, 0x1a), constant (0.0328 at 0x47f05c, 0.1
+// at 0x45dc68, tag 0x60005ba, query flags 0x84000d), condition direction and the 3-stack-arg/edx-marker callers
+// (0xe51c3-0xe5209, 0xe4d6d) agrees with ours; no behaviour difference. Only fix this round: collision.unknown24 = NONE
+// before the model scan (retail stores it at 0xe4f43 before the loop test) 168 -> 154. Callers 0xe4450/0xe45e0/0xe4c50/0xe5040 stay MATCH,
+// 0xe4770 stays 210.
+// BLOCKED-BY 0x188180 (evidence): its 5th stack parameter (+0x6c on entry, 0x1881c0) is pushed unchanged as a dword to 0x1883e0
+// (0x1881ed), whose short-index class parameters are already known; here retail writes the material as a WORD (0xe4e70,
+// 0xe4eaa, 0xe4f43 and 0x1697c0's +0x24) and pushes a DWORD read of that slot (0xe4ebc, 0xe4ffe), i.e. the parameter is the
+// c_type_47f957 class (include/impacts.h), not long. Fast-image test (bipeds.cpp only, the 0x188180 call then unresolved, so
+// its register setup is not retail's): material as c_type_47f957 and its prototype changed 686 bytes = retail, score 137;
+// with the marker in its own block, the collision NONE early and `down` assigned componentwise after the point offset
+// (movss like retail) 121 at frame 0x94; only the unresolved call setup and register homes remain. Applying it needs the
+// 188180 definition (unknown_187ec0.cpp) and the declarations in items.cpp, unit_object_type.cpp and unknown_0a76b0.cpp
+// changed together (mangled names differ), with 0x1883e0's callers: not done here. In the long form: marker scope 177
+// (A), componentwise down 162 (C), B+C 167, A+C 171, A+B+C 175, down struct-copied after the offset with B 179, A+B 173.
 // Marker scope/direct location/full-width material combinations 190/168/177/183/189/169/178;
 // early collision initialization with all three 169. Query-branch location pointer 168 plain;
 // with marker scope/full-width material/both 177/169/178. Keep only query-branch location ownership.
@@ -4341,6 +4373,7 @@ void __stdcall function_e4d90(long arg_159e6d, long type, real scale, long marke
 				long i;
 
 				point = function_b8bd0(arg_159e6d, 0)->position;
+				collision.unknown24 = NONE;
 				for (i = 0; i < count; i++)
 				{
 					if (*(long *)(*(byte **)(model + 0x7c) + i * 0x5c) == 0x60005ba)
@@ -4348,7 +4381,6 @@ void __stdcall function_e4d90(long arg_159e6d, long type, real scale, long marke
 						break;
 					}
 				}
-				collision.unknown24 = NONE;
 				point.x += g_4687b0->i * 0.1f;
 				point.y += g_4687b0->j * 0.1f;
 				point.z += g_4687b0->k * 0.1f;
