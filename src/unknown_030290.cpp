@@ -317,6 +317,9 @@ __inline void transform_point(s_camera const *camera, point3f const *p, point3f 
 // Round 446: Existing vector scale/rotation stage with direct/native point publication 222/295;
 // with translation copy 264/690; aggregate vector input gives the same four scores.
 // Original point helper restored; simplest frame 0x1c, combined value form outlines.
+// Round 451: Signed depth intervals at reversed/origin/displaced test subsets 1/2/1+2/3/1+3/2+3/all,
+// then all upper-first: 227/216/248/250/242/244/245/214. Original absolute tests and helper
+// restored.
 // @retail 0x30830
 long function_30830(point3f const *a, s_camera const *camera, vector3f const *d, point2f const *scale, bool perspective, bool negate, point2f *out)
 {
