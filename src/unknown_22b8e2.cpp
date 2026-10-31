@@ -80,6 +80,12 @@ void function_2d140(long, real const *, long, long, s_filter_vector const *);
 // on them the point/result/x,y declarations moved or default first 157 each (identical), the result
 // initialised to NONE at its declaration 172 (alone 134); the bounds converted in retail's dd2, dd6,
 // dd4, dd0 order 123, with the reciprocals first 143, with the per-case sums too 159.
+// Round 211: plain grid x-row/y-column/both/x-columns loops
+// 108/108/128/218.
+// Three horizontal spans lose matched caller 0x13a532; rejected.
+// parallel span/distance/both/weight/span+weight/distance+weight/all/all+integer-bound producers
+// 6/6/6/6/6/6/6/188.
+// All source forms restored; bottom/top conversion scheduling remains.
 // Round 12 (m3 lane 2; exact one-link harness: this file with 0x13a532's, 0x1396c7's, 0x22acb4's and
 // 0x2d140's files): grid as 18 separate statements 6; grid as a vertex struct {x, y, u, v} 6; bounds as
 // two real_bounds 6; bounds as an s_float_rect 6; each bound converted just before its first grid row 7.

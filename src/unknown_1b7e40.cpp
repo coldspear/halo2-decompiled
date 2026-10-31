@@ -308,6 +308,16 @@ evaluate:
 // lookup 88, with the view tested in its own nested if 88; diagnostics (not kept): the file built /Ob1 changes
 // nothing (109, 0x1b7e40 unchanged), a second velocity query 108 and the view call before the near test 93 stay
 // inlined. So neither the caller file's /Ob1, the call's position nor the caller's size moves LTCG's decision here.
+// Round 110 (fast): 0x25d740 through the existing tracking_get with &tracking->view 73 (its code unchanged, still
+// inlined here); `node->unknown28 < 0.8f` 73; `!(node->unknown28 >= 0.8f)` 73; `!(state->unknown20 <= 0)` 73.
+// One-file LTCG harness (this file and src/unknown_25d690.cpp, reproduces the inlining): the site is on the edge of
+// the inliner's frequency test: one more dominating test (an `if (!active) return` diagnostic) keeps the call out of
+// line, while single exit, guard returns, the call in the 0.8 test's then-arm, `&&`-joined tests, slot field read
+// first, `>= 1`, `<`, `!(>=)`, an inverted prop compare and deeper inline lookups all stay inlined, and so do the
+// direct call and caller-size padding. In 0x25d740 a named index, tracking_get, a tracking_get early exit and an
+// `&&` lookup keep it inlined; an early return, a ternary result, if/else results and an else that clears the
+// result keep it out of line but change 0x25d740's own code (no leading xor, or a second NULL path), so retail's
+// extra coldness comes from the call site, not from the callee.
 // Round 13 (fast): the slot's data block typed through `slot->unknownc` (the slot-data-block form) 73 (same
 // code: retail reads both fields off the slot pointer); 0x25d740's body through the existing prop_ref_view 73
 // (still inlined here, its other callers unchanged), with the single-exit form 88; the single-exit form 88
