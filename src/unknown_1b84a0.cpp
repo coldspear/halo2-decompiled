@@ -282,7 +282,7 @@ bool function_1f4a20(s_1f4a20_entry const *entries, long actor_index, s_referenc
     bool alternate, s_type_c3b527 *point, vector3f *facing,
     signed char *type, bool *available);
 
-// score 193 (was 193): frame 0x162c agrees since round 91; the actor offset (retail ESI), slot
+// score 172 (was 193): frame 0x162c agrees since round 91; the actor offset (retail ESI), slot
 // (retail rematerialized into EBX) and scratch (retail in node's slot) homes remain.
 // Earlier: aligned frame 0x1634 versus 0x162c and actor/slot/scratch homes remain.
 // Round 16: retail takes the actor index from its first stack argument into EBX, keeps the
@@ -339,6 +339,15 @@ bool function_1f4a20(s_1f4a20_entry const *entries, long actor_index, s_referenc
 // of a plain bool result kept in memory (matched 0x1bcd00 shows it for a result assigned false on one
 // path); a plain result assigned false for the missing prop (single exit, body nested in the ready
 // test) folds to constants 293; the result's address taken as a no-op 287 (folded too).
+// Round 109 (lane 6): 0x1f4a20's fourth argument is the marker list (0x70-byte records, NULL-tested;
+// retail passes the slot holding `has_markers ? markers : NULL`), not the scratch buffer: a named
+// marker-list local for the request field and that call 225 (1068 bytes = retail's length); kept
+// with the actor's +0x418 reference read once into a local for its compare and its store (retail
+// loads it once) 172. On 172: the movement limit read at each use 169; `limit < distance ? limit :
+// distance` 170; has_markers cleared after the state resets (retail's store order) 273; `return true`
+// at the not-ready exit 282 (1069 bytes); the state as `(s_slot_23 *)slot` 172 (same code). Retail
+// still keeps the scaled actor index in ESI from entry and reloads `slot` into EBX late; ours keeps
+// `slot` in ESI from the 0x1e4be0 call and spills the index.
 // @retail 0x1b85a0
 bool __stdcall function_1b85a0(long actor_index, s_slot *slot)
 {
@@ -408,14 +417,18 @@ bool __stdcall function_1b85a0(long actor_index, s_slot *slot)
     *(real *)((byte *)&request + 0x4c) = (real)minimum;
     *((bool *)&request + 0x50) = true;
     *((bool *)&request + 0x59) = character && (*character & 1);
-    *(s_object_marker **)((byte *)&request + 0x64) = has_markers ? markers : NULL;
+    s_object_marker *marker_list = has_markers ? markers : NULL;
+    *(s_object_marker **)((byte *)&request + 0x64) = marker_list;
     if (state->unknown04 != 0.0f)
         *(real *)((byte *)&request + 0x1c) = state->unknown04;
-    if (actor->unknown50c && actor_get(actor_index)->unknown504 != 2 &&
-        !REFERENCE_EQUAL(actor->unknown418, g_470fa0))
+    if (actor->unknown50c && actor_get(actor_index)->unknown504 != 2)
     {
-        *((bool *)&request + 0x692) = true;
-        *(s_reference *)((byte *)&request + 0x694) = actor->unknown418;
+        s_reference actor_reference = actor->unknown418;
+        if (!REFERENCE_EQUAL(actor_reference, g_470fa0))
+        {
+            *((bool *)&request + 0x692) = true;
+            *(s_reference *)((byte *)&request + 0x694) = actor_reference;
+        }
     }
 
     byte *scratch = ai_scratch_buffer_get();
@@ -440,7 +453,7 @@ bool __stdcall function_1b85a0(long actor_index, s_slot *slot)
             *(long *)((byte *)location + 0x14) != 0xffff)
         {
             success = function_1f4a20((s_1f4a20_entry const *)&entry, actor_index, reference,
-                (s_1f4a20_source const *)scratch, true, &state->point, &state->facing,
+                (s_1f4a20_source const *)marker_list, true, &state->point, &state->facing,
                 (signed char *)&state->unknown11, &available);
             if (success)
             {
