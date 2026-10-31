@@ -1384,6 +1384,10 @@ struct s_1ba091
 // the element 242, an assigned-if `same` 245, the negative decline test 230; element or iterator
 // declared earlier 240/240; the original loop with the new tail 244. The al-56 form (all of the
 // above but the byte local) leaves the loop's entry in memory and the prologue order.
+// Round 109 (lane 6, fast): the matched 0x1bead0's loop (a plain slot-entry iterator and a for loop over
+// the returned entry) 202; the joint index declared first 198 (same); the slot/selection pointers before
+// the actor 201; the radii through the selection 239 (861 bytes, frame 0x10), with that loop 239, plus
+// `byte specified = flags & 0x20` (retail's masked byte, spilled to F+3) 238.
 // @retail 0x1ba090
 long __stdcall function_1ba090(long actor_index, s_slot *slot)
 {

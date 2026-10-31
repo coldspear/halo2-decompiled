@@ -495,6 +495,9 @@ static __forceinline void point_add_scaled_c35a0(point3f const *point, vector3f 
 // 34-37; the BSP index read at its use with the BSP pointer declared first 37 (word load, in BX); the BSP
 // pointer a local with the index and structure read at use 36 (DI); BSP pointer and index locals with the
 // structure at use 36 (index back to a dword load).
+// Round 32 (lane 10, fast counts): normalize3d with the BSP index read at its use 80; the difference
+// through vector3f_assign with normalize3d 79; the direction declared first with normalize3d 79; a
+// `short const` BSP index 34 (same code); `break` for the found exit 34 (same code).
 // @retail 0xc0840
 bool function_c0840(point3f const *start, point3f const *end, point3f *out, real *distance)
 {
@@ -1265,7 +1268,10 @@ bool __stdcall function_16a8e0(long flags, point3f const *point, real radius, lo
 void function_11bed0(s_location *location, point3f const *point);
 point3f *transform4x3f_apply_point(transform4x3f const *matrix, point3f const *point, point3f *out);
 
-// score 38 (was 40): only the node-matrix arm's rotations differ (231 when first written; at 40 the
+// score 38 (was 38): only the node-matrix arm's rotations differ (231 before earlier rounds; one round
+// reached score 40 (was 38) when the else arm also reloaded ebx before ebp after the marker call, where retail reloads
+// ebp first). Ours folds the forward.i load into
+// only the node-matrix arm's rotations differ (231 when first written; at 40 the
 // else arm also reloaded ebx before ebp after the marker call where retail reloads ebp first). Ours
 // folds the forward.i load into
 // the i product of both (`movaps; mulss [m + 4]`, a byte shorter each, which shifts every later jump and
@@ -1380,6 +1386,10 @@ point3f *transform4x3f_apply_point(transform4x3f const *matrix, point3f const *p
 // light parameter passed directly to 0xc28b0 154; the far point added before the second rotation
 // 220; a `word flags` local for the entry tests 40; a rotation helper taking the vector by value 235
 // or returning it 268.
+// Round 32 (lane 10, fast counts): a file-local copy of the rotation helper 38 (same code), with its
+// component locals renamed (x/y/z, a/b/c, z/y/x, c/b/a, vi/vj/vk) 38 each (names do not move the
+// order), with const component locals 38, with a `vector3f v = *vector` copy 235 (1077 bytes); the
+// node matrix as a `transform4x3f *const` local 38.
 // Round 175 (one-file LTCG harness, 38 for the unchanged source; plain where marked): the location
 // pointer dropped (a cast at each use) 40; the marker name declared at the function top 38; the
 // distance declared at the function top 38; the rotations through the matrix's rotation member 38;
@@ -1648,6 +1658,12 @@ extern s_object_list *g_4de2f4;
 // the 0xbab40 call 79; the copied view point typed point3f 50; the first blend's fraction named
 // after 0xbad50 50; `object` declared before `object_index` 52; the object through `object_get`
 // 50; the alphas chained 52; a trivial 0xbab40 body (diagnostic) 393.
+// Round 32 (lane 10, fast counts; aligned 8: the colour-copy schedule and `[ebx]` only): the fraction
+// pointer renamed (value / blend_value / zfraction / a_fraction) 49 each; the else arm's colour copy as
+// a plain struct assignment 49 (same code); the pointer declared at function scope and assigned in the
+// arm 49; the light as an `s_light_dynamic *const` 49; the first arm's blend read from the field at each
+// use 324 (aligned 16); `&light->fraction` passed directly again 214 (1616 bytes, aligned 13: also
+// turns the pair fade products).
 // Round 175: the four colours as aggregate initialisers (alpha first) 414 (plain); the name read into
 // a local before 0xbab40 50; the object index chosen by one ternary 428; the function arm's blend read
 // from the field at each use 325; the pair colours copied before the other two (tint first) 58

@@ -455,6 +455,12 @@ PRIVATE inline void contact_cross(vector3f const *a, vector3f const *b, vector3f
 // cross3f_staged arms gives the same counts (154/176/327/246/251/359/196/169). Declarations
 // lowest/selected/component 120 (two points, not kept); component first 122; component, lowest,
 // selected 120; `support` before `a`/`b` 122; with the 0x1201a0 tail lowest first 122, component first 124.
+// Round 94: the arms' missing tail merge (28 bytes) shifts every later line, so later fixes do not show
+// in the count: the average summed i, j, k with `if (dot_a < dot_average)` gives retail's average stores
+// and dot_average and computes dot_a first (122, same count; dot_a's terms stay j, i, k whatever their
+// written order, and the i row's operands swap); plus `*out = *a` / `*out = average` copies 199 (1005
+// bytes; that path is then byte-identical to retail); plus contact_cross arms 177 (999 bytes); plus
+// lowest before selected 120; 0x1f087b storing k, j, i 153 (retail's first-cross registers, arms reordered).
 // Round 48 (lane 9): in a compile-only screen all 64 operand orders of the first cross's six products give the
 // same XMM0/1/2 colouring; retail's XMM1/2/0 appears only when the selected arms write a stack vector (`support`,
 // then `*out = support`) or the normal is copied by value. Built: one `entries` base for a/b/normal 212; averaging
