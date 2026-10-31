@@ -2630,27 +2630,42 @@ PRIVATE inline void biped_rotate(vector3f *v, vector3f const *axis, real sine, r
 /* turns the biped toward its desired facing: flying ones by their flight
    controls, walking ones at the definition's turn rate (or by a turning
    animation when they stand), and a grabbing one toward its target */
-// score 654 (was 679): Frame 0x80 versus 0x78; entry/result and spatial-rotation scheduling remain.
-// Entry result 682; complete shared cross products 678; unified planar workspace 674; both 672;
-// workspace role names 682; one result exit 682; consistent definition reads 667; full-width predicates 720;
-// definition reads with complete projections/planar workspace 670, with planar workspace alone 658 fast / 654 plain (kept).
+// score 604 (was 654): the logic now follows retail (see below); frame is 0x78 like retail. Still differs: the
+// `special` flag (retail stores 0 before the 0x6000084 test and 1 under the 0x7000039 test; the plain compare gives
+// sete, and the flag-set-inside-a-test form scores 571 but is the form review rejects), register assignment and the
+// scheduling of the wall-turn vector maths, `or byte ptr [edi+0x348], 0x20` (ours loads al first).
+// Behaviour fixed against retail: returns true for physics_mode 6 without a target (0xe0228 stores 1 before the
+// mode-6 test); `left` is retail's (sine = up . (facing x forward) > 0, 0xe03e3-0xe0441 and 0xe04c7-0xe04ef) so the 0xa00000f/0x900000e
+// choices at 0xe0500-0xe05a7 are no longer swapped, with the turn rotating by -/+sin (0xe05e9-0xe0602, 0xe077b-0xe07ab) and the
+// overshoot signs of 0xe0727-0xe0779 and 0xe07c5; the wall turn is a full axis rotation with the (up . forward)(1 - cos) term
+// (0xe0654-0xe0708) not just forward*cos + up x forward*sin; the animation rotation is built from
+// (turned, forward) (ecx = turned, edx = forward at 0xe0952-0xe0958) and the node count read after it (0xe096a);
+// the planar clamp sets turned.k to 0 (0xe08f3), not facing.k.
+// Tried: reading the definition at each use (654), split definition reads (667), wall products reordered (no
+// change), unsigned `>> 5` for the node count (658-660), `changed = mode != 3` as an initialiser (663), shared
+// cross products / unified workspaces / one exit (earlier rounds, 672-720). Retail's `shr eax, 5` on the movsx'd
+// short at 0xe097f is not reproduced (ours is sar).
 // @retail 0xe01d0
 bool __stdcall function_e01d0(long arg_159e6d, long *names)
 {
 	s_biped *biped = BIPED_GET(arg_159e6d);
+	byte *definition = BIPED_DEFINITION_GET(biped);
 	byte *state = (byte *)biped + *(short *)((byte *)biped + 0x12a);
 	bool changed = false;
 
-	if (biped->physics_mode != 3 && biped->physics_mode != 6)
+	if (biped->physics_mode != 3)
 	{
 		changed = true;
+	}
+	if (biped->physics_mode != 3 && biped->physics_mode != 6)
+	{
 		if (biped->physics_mode == 2)
 		{
 			if (*(long *)((byte *)biped + 0x3ec) <= 0)
 			{
-				real rate = (biped->control_flags & 8) ? 0.99f : *(real *)(BIPED_DEFINITION_GET(biped) + 0x24c);
+				real rate = (biped->control_flags & 8) ? 0.99f : *(real *)(definition + 0x24c);
 
-				function_1faf80(&biped->facing_goal, arg_159e6d, BIPED_DEFINITION_GET(biped) + 0x2cc, &biped->control, rate,
+				function_1faf80(&biped->facing_goal, arg_159e6d, definition + 0x2cc, &biped->control, rate,
 					&biped->unknown3a0);
 			}
 			else
@@ -2661,7 +2676,7 @@ bool __stdcall function_e01d0(long arg_159e6d, long *names)
 		else if (biped->physics_mode != 5 && *(long *)(state + 0x70) != 0x6000084)
 		{
 			bool special = *(long *)(state + 0x70) == 0x7000039;
-			bool wall = TEST_FIELD_BIT((*(dword *)(BIPED_DEFINITION_GET(biped) + 0x264) >> 3) & 1);
+			bool wall = TEST_FIELD_BIT((*(dword *)(definition + 0x264) >> 3) & 1);
 			vector3f facing;
 			real sine;
 			real cosine;
@@ -2681,22 +2696,20 @@ bool __stdcall function_e01d0(long arg_159e6d, long *names)
 				{
 					facing = biped->forward;
 				}
-				sine = (biped->forward.j * facing.k - biped->forward.k * facing.j) * biped->up.i +
-					(biped->forward.k * facing.i - biped->forward.i * facing.k) * biped->up.j +
-					(biped->forward.i * facing.j - biped->forward.j * facing.i) * biped->up.k;
+				sine = (facing.j * biped->forward.k - facing.k * biped->forward.j) * biped->up.i +
+					(biped->forward.i * facing.k - facing.i * biped->forward.k) * biped->up.j +
+					(facing.i * biped->forward.j - biped->forward.i * facing.j) * biped->up.k;
 				cosine = biped->forward.j * facing.j + biped->forward.k * facing.k + biped->forward.i * facing.i;
 			}
 			else
 			{
-				facing.i = biped->facing_goal.i;
-				facing.j = biped->facing_goal.j;
+				facing = biped->facing_goal;
 				facing.k = 0.0f;
 				if (normalize2d((point2f *)&facing) == 0.0f)
 				{
-					facing.i = biped->forward.i;
-					facing.j = biped->forward.j;
+					facing = biped->forward;
 				}
-				sine = biped->forward.i * facing.j - biped->forward.j * facing.i;
+				sine = biped->forward.j * facing.i - biped->forward.i * facing.j;
 				cosine = biped->forward.j * facing.j + biped->forward.i * facing.i;
 			}
 			left = sine > 0.0f;
@@ -2711,12 +2724,12 @@ bool __stdcall function_e01d0(long arg_159e6d, long *names)
 					left = false;
 				}
 			}
-			if (biped->unknown34a == 1 || (*(dword *)(BIPED_DEFINITION_GET(biped) + 0x1f0) & 1))
+			if (biped->unknown34a == 1 || (*(dword *)(definition + 0x1f0) & 1))
 			{
-				real angle = g_510c54->rate * *(real *)(BIPED_DEFINITION_GET(biped) + 0x1ec);
+				real angle = g_510c54->rate * *(real *)(definition + 0x1ec);
 				real turn_cosine = (real)cos(angle);
 				real turn_sine = (real)sin(angle);
-				vector3f turned;
+				vector3f turned = biped->forward;
 				real overshoot;
 
 				if (left)
@@ -2725,18 +2738,29 @@ bool __stdcall function_e01d0(long arg_159e6d, long *names)
 				}
 				if (wall)
 				{
-					turned = biped->forward;
-					biped_rotate(&turned, &biped->up, 0.0f - turn_sine, turn_cosine);
-					overshoot = (turned.j * facing.k - turned.k * facing.j) * biped->up.i +
-						(turned.k * facing.i - turned.i * facing.k) * biped->up.j +
-						(turned.i * facing.j - turned.j * facing.i) * biped->up.k;
+					real along = (turned.j * biped->up.j + turned.k * biped->up.k + turned.i * biped->up.i) *
+						(1.0f - turn_cosine);
+					real rotated_i = turned.i * turn_cosine + biped->up.i * along -
+						(turned.j * biped->up.k - turned.k * biped->up.j) * turn_sine;
+					real rotated_j = turned.j * turn_cosine + biped->up.j * along -
+						(biped->up.i * turned.k - turned.i * biped->up.k) * turn_sine;
+					real rotated_k = turned.k * turn_cosine + biped->up.k * along -
+						(turned.i * biped->up.j - biped->up.i * turned.j) * turn_sine;
+
+					turned.i = rotated_i;
+					turned.j = rotated_j;
+					turned.k = rotated_k;
+					overshoot = (turned.j * facing.i - turned.i * facing.j) * biped->up.k +
+						(turned.i * facing.k - turned.k * facing.i) * biped->up.j +
+						(turned.k * facing.j - turned.j * facing.k) * biped->up.i;
 				}
 				else
 				{
-					turned.i = biped->forward.i * turn_cosine + biped->forward.j * turn_sine;
-					turned.j = biped->forward.j * turn_cosine - biped->forward.i * turn_sine;
-					turned.k = biped->forward.k;
-					overshoot = turned.i * facing.j - turned.j * facing.i;
+					real turned_i = turned.i * turn_cosine - turned.j * turn_sine;
+
+					turned.j = turned.j * turn_cosine + turned.i * turn_sine;
+					turned.i = turned_i;
+					overshoot = turned.j * facing.i - turned.i * facing.j;
 				}
 				if (left ? 0.0f > overshoot : overshoot > 0.0f)
 				{
@@ -2757,7 +2781,9 @@ bool __stdcall function_e01d0(long arg_159e6d, long *names)
 					else
 					{
 						biped->up = *g_4687b0;
-						turned = facing;
+						turned.i = facing.i;
+						turned.j = facing.j;
+						turned.k = 0.0f;
 					}
 					function_30bf0(&turned);
 				}
@@ -2766,11 +2792,10 @@ bool __stdcall function_e01d0(long arg_159e6d, long *names)
 				{
 					transform4x3f rotation;
 					byte orientation[0x20];
-					long count = *(short *)((byte *)biped + 0x10c) >> 5;
 
-					matrix4x3_rotation_between_vectors(&rotation, &biped->forward, &turned);
+					matrix4x3_rotation_between_vectors(&rotation, &turned, &biped->forward);
 					orientation_from_matrix4x3(&rotation, (rigid_transform_scaled *)orientation);
-					if (count > 0)
+					if (*(short *)((byte *)biped + 0x10c) >> 5 > 0)
 					{
 						real_quaternion_transform *a = (real_quaternion_transform *)((byte *)biped +
 							*(short *)((byte *)biped + 0x112));
@@ -2785,9 +2810,9 @@ bool __stdcall function_e01d0(long arg_159e6d, long *names)
 			}
 			else if (!biped->unknown34a && !special && !(TEST_FIELD_BIT((biped->flags_134 >> 11) & 1)))
 			{
-				real limit = (biped->control_flags & 8) ? 0.99f : *(real *)(BIPED_DEFINITION_GET(biped) + 0x24c) + 0.0001f;
+				real limit = (biped->control_flags & 8) ? 0.99f : *(real *)(definition + 0x24c) + 0.0001f;
 
-				if (limit >= cosine && !(TEST_FIELD_BIT((*(dword *)(BIPED_DEFINITION_GET(biped) + 0xbc) >> 20) & 1)))
+				if (limit >= cosine && !(TEST_FIELD_BIT((*(dword *)(definition + 0xbc) >> 20) & 1)))
 				{
 					names[1] = left ? 0xa00000f : 0x900000e;
 				}
