@@ -2363,14 +2363,22 @@ static void clamp_cached_input(s_cached_input_entry *entry)
 	entry->initial = entry->initial < 0.0f ? 0.0f : entry->initial > *maximum ? *maximum : entry->initial;
 }
 
-// score 405 (was 424): everything up to the first call to function_4b160 agrees except register homes (retail keeps
-// first in edx and the state in ebp, here the other way round). The decay loop is unrolled four times in both, but
-// the induction pointer here is biased one entry lower (retail: [eax-0x15] for the flag of the first copy, here
-// [eax+0xf]), which shifts every compare after it. Source order affects only some operands: "last > i" /
-// "last >= i" reproduce retail's cmp operand order in the first loop (the whole prefix then matches); "limit <= i"
-// stops the unrolling (802); a pointer loop (398); the flag tested after "initial > 0.0f" (389, wrong order);
-// entry->elapsed written through a local or as "initial += elapsed" (390-392, no change); register-order
-// permutations of first/last/requested/found/i (406-413). Without the "last >= i" forms 390.
+// score 317 (was 405, 424 originally): the logic was walked against retail block by block (0x4ac30-0x4b159) and
+// agrees: the four passes (pairs to the front, first flagged entry, drop of just-created flagged entries, duplicate
+// key removal), both sorts (modes 1 and 2), the decay loop, the growth loop and the output copy. What is left is
+// register allocation. Retail keeps `first` in edx and the state in ebp for the first three loops and reloads `first`
+// from [esp+0x10] into ebp as loop 3's counter (0x4ad43); here `first` stays in ebp, the state is in edx and the
+// counter lives in memory, which adds a few instructions and shifts everything after it. The decay loop's unrolled
+// body is rotated one entry (base entry-0xc, first copy at +0x24) where retail's base is the first copy's `initial`
+// field; its copies 2-4 match retail. Gains this round: the last (growth) loop is a counted do/while (retail ends
+// it with dec ecx/jne, not a pointer compare), and the decay loop declares a pointer to `initial` before the
+// entry pointer (377 -> 317 with the same bytes length as retail). Earlier: `initial` is a real, compare operand
+// order, one-expression clamp. Tried: index loop `i < limit` for the growth loop (715, unrolled), pointer
+// compare for the decay loop (367, divides by 36), decay loop as `--i >= limit`, `i = count; i > limit` with
+// entries[i - 1] (349), a second pointer decremented alongside i (375), entry derived from `initial` (369),
+// declaration order of first/last/requested/found/i (317-319), per-loop `long i` (317), an `entries` alias (317),
+// a copy of `first` for the later calls (370), found set before/after the swap (360/318). Without the
+// "last >= i" forms 390; "limit <= i" stops the unrolling (802).
 // @retail 0x4ac30
 long __stdcall function_4ac30(s_cached_input_list *state, s_cached_input *output, long limit, real step)
 {
@@ -2433,11 +2441,12 @@ long __stdcall function_4ac30(s_cached_input_list *state, s_cached_input *output
 		{
 			for (i = state->count - 1; i >= limit; --i)
 			{
+				real *initial = &state->entries[i].initial;
 				s_cached_input_entry *entry = &state->entries[i];
-				if (!((byte *)&entry->input.data[0])[3] && entry->initial > 0.0f)
+				if (!((byte *)&entry->input.data[0])[3] && *initial > 0.0f)
 				{
 					entry->elapsed -= step;
-					entry->initial = entry->elapsed + entry->initial;
+					*initial = entry->elapsed + *initial;
 					clamp_cached_input(entry);
 				}
 				else entry->elapsed = 0.0f;
@@ -2445,8 +2454,9 @@ long __stdcall function_4ac30(s_cached_input_list *state, s_cached_input *output
 		}
 		if (limit > 0)
 		{
-			s_cached_input_entry *end = state->entries + limit;
-			for (s_cached_input_entry *entry = state->entries; entry != end; ++entry)
+			s_cached_input_entry *entry = state->entries;
+			long remaining = limit;
+			do
 			{
 				if (*(real *)&entry->input.data[3] > entry->initial)
 				{
@@ -2455,7 +2465,8 @@ long __stdcall function_4ac30(s_cached_input_list *state, s_cached_input *output
 					clamp_cached_input(entry);
 				}
 				else entry->elapsed = 0.0f;
-			}
+				++entry;
+			} while (--remaining);
 		}
 	}
 	for (long i = 0; i < state->count; ++i)
