@@ -1463,6 +1463,12 @@ void function_d0d20(long unit_index)
 // reload inside their tests), UNIT_GET arguments 63, mixed 48/36; guard as two pool lookups with
 // pool-then-UNIT_GET arguments 34, other mixes 43-50; guard as two UNIT_GET lookups with mixed arguments
 // 46-66. A `long [2]` result array 63-74, the two reads as a two-slot loop 84 (186 bytes).
+// Round 96: both 0xcbd50 calls (retail's stack argument in EBP, ret 4 and default-first results) with the
+// first argument through a block-scoped pool local 48, through a pool-local unit pointer 48; the existing
+// inlined current-weapon getter (unknown_1e1f20.h) for the first weapon with a pool-local second
+// argument 48 (load order changes, the second weapon read reuses the guard's unit); the guard through
+// the pool local with UNIT_GET arguments 57 (141 bytes, unit in EDI); first argument pool-local, second
+// UNIT_GET 74. With 0xcbd50 the inlined lookups always merge with a UNIT_GET guard or argument.
 // @retail 0xd1540
 void __stdcall function_d1540(long unit_index)
 {
@@ -2305,6 +2311,11 @@ bool function_c7750(s_unit_motion const *motion, real position, real velocity, r
 
 /* once: sets the unit's flag 21 and a random angle at +0x2d8 around its
    actor's direction (or its own facing) */
+// score 2 (was 5): the angle's temporary now sits in the vector's first component, as in retail, so only the
+// frame differs (0xc against retail's 0x10: retail gives the vector the twelve bytes the actor writes, ours
+// eight, so its frame is four bytes longer). Tried: a twelve-byte vector (vector3f, real[3], a plain
+// three-real struct) 8 (frame 0x14, the vector at esp+0xc); the twelve-byte vector in an inner scope 8; the
+// angle in a separate local 5; a sixteen-byte vector 8.
 // score 5 (was 5): only frame 0xc versus retail 0x10 and the angle temporary home remain; x87 adds now agree.
 // Earlier at 20: Frame 0xc versus 0x10 (retail keeps the atan2 temp in the query buffer's first dword,
 // ours with range) and the last two x87 adds (retail adds the bound before the angle) differ; the query
@@ -2326,24 +2337,25 @@ void function_cfec0(long unit_index)
 
 	if (!TEST_FIELD_BIT((unit->flags_134 >> 21) & 1))
 	{
+		real actor_vector[2];
 		real range;
-		byte unknown[8];
 
 		bit_vector_set(&unit->flags_134, 21, true);
-		if (unit->actor_index != NONE && function_1e3370(unit->actor_index, unknown))
+		if (unit->actor_index != NONE && function_1e3370(unit->actor_index, actor_vector))
 		{
 			unit->unknown2d8 = 0.0f;
 			range = 0.43633232f;
 		}
 		else
 		{
-			real angle = (real)atan2(unit->forward.j, unit->forward.i);
+			/* the angle keeps the vector's first component, as in retail */
+			actor_vector[0] = (real)atan2(unit->forward.j, unit->forward.i);
 
-			if (angle > 3.1415927f)
+			if (actor_vector[0] > 3.1415927f)
 			{
-				angle -= 6.2831855f;
+				actor_vector[0] -= 6.2831855f;
 			}
-			unit->unknown2d8 = angle;
+			unit->unknown2d8 = actor_vector[0];
 			range = 1.7453293f;
 		}
 		unit->unknown2d8 += function_259d0(&g_4e7408->unknown0, 0, 0, -range, range);
