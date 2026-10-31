@@ -50,45 +50,21 @@ extern short const g_44aee8[20] =
 	3, 7, 3, 3, 3, 3, 1, 2, 2, 4, 4, 4, 5, 5, -1, 3, 7, 7, 7, 4
 };
 
-// score 72 (was 90): First +0x30 uses the second-bit word mask; native bit merge, NONE/array carriers and later registers differ.
-// Earlier at 90: the five handles are now filled by memset (retail's NONE in EDX, LEA ECX
-// base and five stores); aligned on retail the body differs in 6 instructions (49 before),
-// but the second flag bit's load is hoisted above the branch and its store merged after it
-// (retail ORs/ANDs the byte in memory in each arm), which shifts the positional listing by one,
-// and the first bit is masked with AND EAX where retail has AND AX. Round 87 on the memset:
-// second bit as the record's bitfield 94 (the word's value is forwarded); SET_FLAG ternary 90;
-// byte or dword bitfield containers in the header 90/94 (cost 0x275a50); both bits as bitfields
-// 94; word truncation before the mask 90; masking bitfield insert for the first bit 90; dword
-// second-bit access 94; signed first-bit store with bitfield second bit 94.
-// Earlier at 82: real flag word/byte views 82; word-only flags 105; multi-use source flags 86;
-// real handle array index/library/pointer fills 82/90/101; flag aliases with indexed/library
-// fills 82/90; late next-link/word/long sentinel subsets 82 (seven orders); native-short
-// five-handle counter 99; Boolean first/second/both bits 107/88/112; conditional second bit 88;
-// library clear with first/both bits 124/127; counted pointer fill 82, with Boolean bits 112.
-// DH round 257: Typed 0x74 input record with native source bits and first/second output bitfields, eight
-// combinations 90/90/90/90/94/94/94/94. All record, interface, caller and body changes restored; flag
-// mask/store gaps remain.
-// Round 200: shared byte/word second-bit setters 92/92; word first bit with original/byte/word
-// second bit 103/107/103; byte first bit with original/byte/word second bit 106/106/106.
-// Shared setters do not recover the word mask or per-arm memory stores; original body restored.
-// Round 207: native word/dword complete commits, original/reversed bit order, 102/103/104/103;
-// reversed direct bit stores 95; reversed native Boolean fields 72 plain, kept;
-// adjacent-bit word extraction 105; first-bit conditional arms 90. The original word clear
-// remains before both native bit writes; subsequent initialization and all game calls are unchanged.
-// On native reversed fields: shared source word 75; shifted first bit 72; both 75;
-// byte second bit 102, with shared source/shifted first/both 101/102/101;
-// directly assigned extracted bits 95. Native fields at 72 retained.
+// Allocates a squad record and initialises it from its definition.
 // @retail 0x200c20
 void function_200c20(byte const *definition)
 {
 	long index = record_pool_allocate(g_51e9d8);
 	s_squad_datum *squad = squad_get(index);
 	*(word *)((byte *)squad + 2) = 0;
+	if (*(dword const *)(definition + 0x20) & 0x100)
+		squad->flag0 = true;
+	else
+		squad->flag0 = false;
 	if (*(dword const *)(definition + 0x20) & 0x200)
 		squad->flag1 = true;
 	else
 		squad->flag1 = false;
-	squad->flag0 = (*(dword const *)(definition + 0x20) & 0x100) != 0;
 	squad->first_actor_index = NONE;
 	squad->first_vehicle_index = NONE;
 	*(long *)((byte *)squad + 0x78) = NONE;
@@ -1841,7 +1817,14 @@ PRIVATE __forceinline void squad_area_consider(byte *squad, byte const *definiti
     }
 }
 
-// score 224 (was 224): Frame 0x3c agrees; count/definition/best/point homes, entry loads and packed reference tests remain.
+// score 224 (was 224): main's body (m3 review of lane 10 r33). The r33 form below reached 7 (4 with the
+// ternary negated), but all of it rests on squad_area_consider taking its two indices as `short const &`
+// so the inlined code re-reads entry+4/+6 after the distance call: with plain shorts the same form is 336.
+// Like a volatile read, that reference only steers re-reads, so it is kept only with a byte match.
+// Lane 10 r33 form at 7: loop 1's table choice falls through to the +0x60 arm (retail to +0x58), and loop
+// 1's best-candidate stores differ: retail loads and stores the area index before the palette index
+// there (loop 2 stores the palette index first, as ours does).
+// Earlier at 224: Frame 0x3c agrees; count/definition/best/point homes, entry loads and packed reference tests remain.
 // Packed comparisons 393; shared actor walk 344; split point scopes 344; early target 365;
 // native reference indices 350; entry fields at use 344; inline distance call 678.
 // Native player iterator 305; native entry cursor 316; word validation 305; matching-area
@@ -1904,6 +1887,21 @@ PRIVATE __forceinline void squad_area_consider(byte *squad, byte const *definiti
 // Round 207: promoted repeated entry indices 253; fallback palette 253; both 273;
 // retained absolute squad ordinal 347, with entry/fallback/both indices 335/329/305;
 // ordinal with complete reach expression 347. Original carriers and helper body restored.
+// Round 33 (lane 10): both reference compares through REFERENCE_EQUAL (retail compares each as one
+// dword) 265 (1250 bytes); with loop 1's per-pass table choice, entry fields read at each use and
+// the range tests nested in the loop (retail has no area null test, so the lookup helper went) 316;
+// the area helper taking the two indices as `short const &` (retail re-reads entry+4/+6 and
+// record+0x38 after the distance call and keeps loop 2's index in memory) 267 (aligned 41); the
+// entry address formed in each arm of the table ternary 86 at 1266 bytes; the ternary's condition
+// negated (retail falls through to +0x58) 83; the actor reference's element index in a long local
+// 16; the player walk on the 16-byte datum iterator (retail's player index at 0x48, its datum slot
+// at 0x3c) 4; with the ternary's condition back to `squad[0x60] ?` 7 (kept: the negation alone is a
+// 3-point gain). On the way: area index stored first in the helper 84 (fixes loop 1, breaks
+// loop 2); point declared per block 86, with the player iterator at function scope 86; on the 4
+// form, the entry pair through an `s_reference const &` 4, nearest stored after the best fields 8,
+// the helper's index parameters swapped 4 (identical), the nearest test written `*nearest > distance`
+// 4, the area index through a pointer to its entry field 4; a 600 s permuter run, 58 tries, none
+// below 4.
 // @retail 0x204450
 void function_204450(long definition_index, long squad_index)
 {
