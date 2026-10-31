@@ -1168,6 +1168,12 @@ static inline bool session_member_get_qos(s_network_observer *observer, c_class_
 // helper's session read once through its address (re-reads in a compile-only build, not under LTCG); the
 // same in the outer qos helper; helpers with external linkage. A store through latency ahead of the check
 // also removes the reuse (compile-only), so retail's check sees member_count as possibly changed.
+// Round 23 (lane 15): the recipe without the re-read is 86 and in the current tree also costs 0x658c0
+// (430 bytes, 140) and 0x65770 (19), plain; LTCG then passes latency in EBX and session on the stack.
+// No out-of-line member-channel, channel-QoS or observer getter exists in retail to call instead. On the
+// recipe (fast): helper session const 86; channel helper bound and flag tests as early returns 86; loop
+// condition `session->member_count > i` 86; all three helpers __forceinline 86; the channel helper alone
+// __forceinline 86.
 // @retail 0x64480
 void network_session_get_member_latency(s_session_member_latency *latency, c_class_58d20 *session)
 {
