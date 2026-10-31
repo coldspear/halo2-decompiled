@@ -544,6 +544,12 @@ bool sound_driver_voice_create_buffer(
 // the first creation 78; both after the voice reference 78; three_d declared first at either position
 // 181-182 (both bools in stack bytes, frame 0x7c); play declared just before the 3D test 173-174 (605 bytes);
 // the count stored before the clear no change. No form gives three_d BL (retail's `mov bl, cl`).
+// Round 52: on the 3D failure `result = NONE;` before the count decrement 72 (retail's exit: globals in
+// ECX after the pops; a gain of 7, not kept), with the count stored before the descriptor clear 72, with
+// a voice pointer 72; three_d defined just before the first creation 73; play defined after the first
+// creation 176 (606 bytes). Screened: whenever three_d is assigned before play, voice_index takes EBP
+// and both bools spill (205-218); a copy of play in the 3D branch or `(void)&play` change nothing;
+// play/three_d as dword 155/75; tests on `flags & 1`/`flags & 2` 202-203; play stays in BL in every form.
 // @retail 0x220b90
 short sound_driver_voice_new(
 	dword flags,
