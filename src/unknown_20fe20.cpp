@@ -1134,6 +1134,8 @@ void function_2118c0(void)
 // as b * 8 + x 150; a [3][8][8] table 150; a row += 8 loop, a row induction
 // variable, inline row accessors, w's computed in the loops 150-180 (all rows
 // become pointer IVs); previous at the k level 22; tb before ta 20.
+// Round 55: a local 3D table pointer/reference 150/150; function-scope/split wrapped
+// indices 14/14; split float declarations 14; early band reset 14; sample/function-scope row 14/14.
 // @retail 0x211cc0
 void function_211cc0(void)
 {

@@ -109,7 +109,7 @@ __forceinline void function_293133(real arg_0, vector3f const *arg_1, vector3f *
 	arg_2->k = projected_term_k - cross_term_k;
 }
 
-// score 30 (was 43): frame 0xd4, length and range adds agree; the rotation's dot sums the j and k
+// score 30 (was 30): frame 0xd4, length and range adds agree; the rotation's dot sums the j and k
 // products before i (retail i and k, then j) with v.j/v.k in each other's registers, and the +0x18
 // sentinel store with the argument reload is scheduled early.
 // Earlier at 43: frame 0xd4, length and all range adds agree; rotation dot/register ranks and final sentinel scheduling remain.
@@ -251,6 +251,9 @@ __forceinline void function_293133(real arg_0, vector3f const *arg_1, vector3f *
 // mask read once into a short for the gate and the three selection loops 406 (1368 B); the two
 // creation-record stores swapped 32; `random_fraction * total_weight` 30 (same code); the angle
 // passed straight after the vector copy 41. Permuter skipped (full-image build over 15 minutes).
+// Round 33 (m3 lane 11), fast: the rotation rows written k, j, i 52 and j, i, k 54; the cross
+// components computed 5, 4, 3 41 and 4, 5, 3 30 (same code); the cross components written inside
+// the rows (no local_3/4/5) 92 (1407 bytes). All restored.
 // @retail 0x293130
 long __stdcall function_293130(long arg_0)
 {
