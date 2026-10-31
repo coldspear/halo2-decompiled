@@ -1014,7 +1014,7 @@ bool function_869a0(c_simulation_view *view, void *block)
 
 bool function_68670(byte *source, long size, void *block);
 
-// score 72 (was 97): retail treats the read header as reachable through the ring buffer: it reloads
+// score 72 (was 72): retail treats the read header as reachable through the ring buffer: it reloads
 // the start after each read call and reloads the header size after the start/used stores. The
 // header's value sent directly (its address escapes) gives that; retail still sends a copy at
 // esp+0x14 (header at esp+0xc, ours at esp+0x10), interleaves the message's zero and value stores
@@ -1035,7 +1035,7 @@ bool function_68670(byte *source, long size, void *block);
 // Round 222: connection-ready bool/byte/short/long on original entry, each 97; each with named
 // occupied span 135. Original body restored; reader visibility, cursor reloads and count updates
 // remain.
-// score 97 (was 97): retail behaves as if the read call could write any memory: it reloads the
+// Earlier: retail behaves as if the read call could write any memory: it reloads the
 // buffer start after each read, updates the used count in memory (`add [ebx+0xc], -8`) and loads
 // the header size only after the start/used stores; ours keeps the start in ESI across the first
 // read and hoists the header size. Retail also subtracts the span from 0x200 into EAX (ours adds
@@ -1063,6 +1063,9 @@ bool function_68670(byte *source, long size, void *block);
 // On the 72 form: short size local 72 (identical); size declared at function scope 72 (identical);
 // header and payload declared in the loop 118; without the view address line 168; message size
 // assigned before its offset 73.
+// DL209: Case/function-scope sequence copies by memcpy/memmove 137/137/153/153; complete
+// native/memcpy/memmove/field header copies 147/147/155/142. Separate-copy home returns but reload
+// knowledge is lost; all copies restored.
 // @retail 0x865d0
 void __stdcall function_865d0(c_simulation_view *view)
 {
