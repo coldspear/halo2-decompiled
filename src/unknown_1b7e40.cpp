@@ -141,6 +141,9 @@ bool function_25d9b0(long prop_index);
 // participant reads, with or without the index local, 148/148 (aligned 78: the pointer is kept in EDI
 // where retail recomputes the index); the loop's new prop stored in prop_index 86 (same code); the gate
 // as `return priority` / `return 0` 105 (priority spilled, state in ESI, `xor ax, ax`).
+// Round 451: Native iterator aggregate/entry scope/entry-result role-name subsets
+// 1/2/1+2/4/1+4/2+4/all, then late entry aggregate: 88/86/155/86/88/86/155/151, with faithful
+// callback/callee controls. Original descriptor and body restored.
 // @retail 0x1b7e40
 short __stdcall function_1b7e40(long actor_index)
 {

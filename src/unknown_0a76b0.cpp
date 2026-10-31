@@ -56,7 +56,7 @@ struct s_unit_actions
 	short unknown36;
 	short surprise_ticks;
 	short surprise_value;
-	word surprise_type;
+	short surprise_type;
 	short flinch_ticks;
 	bool weapon_planted;
 };
@@ -4301,33 +4301,10 @@ bool __stdcall function_ed680(long unit_index, s_unit_request *request)
 	return result;
 }
 
-void function_201520(short value, long type, long a, long b, long c);
+void function_201520(short value, long type, short a, bool b, bool c);
 
 /* a surprise: waiting out a paused animation, then its time, then what
    follows it */
-// score 20 (was 74): frame 8 and output homes agree; unit/animation registers, channel tests,
-// true-exit sharing and final call inputs remain. Action receiver first/pointer names 87/87; native
-// channel flags/combined channel test/unit Boolean 87/87/87; uniform countdown 75; natural guard 87;
-// names/flags/countdown 75; chained clearing 87, with unit Boolean 87, countdown 75, both 75;
-// countdown at its original first read, alone/with clearing and Boolean 99/99.
-// Round 34: the 0x201520 call given retail's arguments (1, value, type, 1, 0; retail passes the
-// first in EAX) 74, kept; the state tests without the goto 74 (same code), kept; the 0x10a flag
-// as TEST_FIELD_BIT 69 (retail's shr/test, a gain below 8); the ticks read from the field at each
-// use (retail's `cmp word [edi+0x38], 0` and reload) 83 at 220 bytes; with chained NONE stores 83;
-// the channel bits as bool conversions 83; as bitfields of the channel's +0x11 byte 83 (still
-// merged into `test 9`). What remains: our build keeps the constant 1 in EAX (test masks, the
-// true return, the call argument), so the state name moves to ECX; retail loads the channel's
-// +0x11 byte into BL and tests 1 and 8 apart.
-// Round 50: the constant 1 is kept in a register whenever a `return true` reaches the exit with
-// the call result (a compile-only screen: two returns of true are enough). The failure test written
-// as one `||` chain around the rest, with `bool result = true;` and one exit, 74 -> 26 (retail's
-// entry registers, BL byte tests and true block); single exit with `return true` after the block 87;
-// the 0x10a flag through TEST_FIELD_BIT on that 22; actions declared before the animation state 20
-// (retail's add order), kept. Chained NONE stores 22; the type field as short 23/21 (retail's
-// `or eax, -1` stores, but a movsx read). What remains is the 0x201520 call: retail loads the type
-// with `xor ecx, ecx; mov cx` and stores both NONEs from AX, which a compile-only screen gives only
-// with a 16-bit third parameter of 0x201520 and a short type field: BLOCKED-BY 0x201520 (its
-// definition is in another lane's file).
 // @retail 0xed710
 bool __stdcall function_ed710(long unit_index, long type)
 {

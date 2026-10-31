@@ -364,6 +364,11 @@ PRIVATE inline s_save_entry_2164c0 *new_save_entry_2164c0(s_save_list_2164c0 *li
 // unknown_216b60.cpp so LTCG inlines it 32 (plain, same code); a count local post-incremented
 // in the copy and stored back after it 33; `entry.type` passed to 0x216e50 32; `entry.type`
 // set inside the type loop before leaving it 32.
+// Round 37 (lane 1): a nested inline index helper returning `list->count++` 51; an index local with a
+// NONE default 51; the index read through a second table pointer with the new count stored first 51;
+// the copy through an inline two-pointer copy helper 32; the list and entry typed as the shared
+// s_saved_game_location_table / s_saved_game_file_location (callers 0x12b450 and 0x215790 with it) 32
+// (same code); the permuter on the original body, 69 variants, best 32.
 // Round 177 (fast, append helper): the result declared `bool const` 32, as `char` 32, as `!(count ==
 // 4096)` 32 (all same code); the room test `4096 - list->count != 0` 51 (mov/sub before the setne);
 // `if (!result) return result;` before the copy 32 (same code).
