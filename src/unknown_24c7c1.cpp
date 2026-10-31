@@ -584,6 +584,12 @@ void function_24ce9d(word const *text, long left, long top, short_rectangle2d *b
 // 118); top/left declared at their first assignment 114 (the reduced image's control, same code);
 // ticks read from the field at each use 115 (same code); scripted flag computed first 205; text_bounds
 // declared before bounds 114 (control, same code).
+// Round 51: retail keeps the three message flags as bytes at -0xf/-0xe/-0xd and `left` as a word memory
+// local at -0x3c; the flags are spill slots (renaming them and split_screen in four sort orders: no
+// change). Bool timer 191 (1888 bytes; structurally closer: flags -0xe/-0xd, scripted still at -2
+// beside split_screen). On the bool timer (LTCG env link, aligned counts against 123 for the base):
+// tutorial colour as if/else 131, tutorial ternary inverted 121, `height` declared before the flags
+// 126 (1901 bytes), scripted tested first 235; long timer with the tutorial if/else 133.
 // @retail 0x24cf66
 void function_24cf66(long local_player_index)
 {

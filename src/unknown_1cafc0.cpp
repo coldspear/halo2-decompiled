@@ -604,6 +604,8 @@ PRIVATE __forceinline void graph_weapon_types_request(s_graph_tag *graph, long m
 // 445/445 with two losses. All rejected. Original Boolean method contract, class declaration, byte
 // status, both native hidden query publications and existing request helpers restored. Frame eight
 // versus twelve remains; retail ends ret 0x18.
+// DL209: Returned graph reference with whole input/found/result record-view subsets 0-7: 399 each.
+// Original receiver and all records restored.
 // @retail 0x1cc3f0
 bool s_animation_state::animation_lookup(s_animation_names *names, s_animation_names *found, long mode, long weapon_class,
 	long weapon_type, long set, long lookup_flags, c_type_709360 *result)
