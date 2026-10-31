@@ -1070,6 +1070,16 @@ bool function_68670(byte *source, long size, void *block);
 // DL209: Case/function-scope sequence copies by memcpy/memmove 137/137/153/153; complete
 // native/memcpy/memmove/field header copies 147/147/155/142. Separate-copy home returns but reload
 // knowledge is lost; all copies restored.
+// Round 23 (72): case 1's offset and size each cleared by its own memset 97; case 0 sending a
+// `long message` copy (header then at esp+0xc as retail, but the start stays in ESI across the
+// first read and the used count is not updated in memory) 137; payload declared before the header
+// 72; the header alone declared in the loop 118 (553 bytes, the size in DX as retail but the view in
+// ESI); the payload alone declared in the loop 118 (553 bytes: case 1's interleaved zero/value
+// stores exactly as retail; the view/size ESI/EDI swap, the header at +0x10 and the first update's
+// register form remain); that with case 0's `long message` copy 146. On the loop-scoped payload
+// form: the buffer pointer declared first in the loop 95 (543 bytes); the occupied span written in
+// the window test 146; the header also in the loop after the payload 118; the view address line
+// after the header declaration 118.
 // @retail 0x865d0
 void __stdcall function_865d0(c_simulation_view *view)
 {

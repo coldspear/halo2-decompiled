@@ -1150,6 +1150,12 @@ struct s_game_engine_globals_connections_view
 // word-compared, though its time column is retail's); quality declared in the connection block 73.
 // Same code as 73 (screened): name width assigned first or from the column flags, int/dword widths,
 // renamed width locals, a cast on the name+score partial sum.
+// Round 23 (plain checks; the reduced image scores the unchanged body 265): short name width with
+// its casts dropped 111 (retail's name column adds the width as a dword `lea`, so it is a long);
+// only the score/time widths cast in the time/connection sums 73 (same code); `(short)(position[0]
+// + name_width)` and `(short)(position[0] + time_width + name_width)` partial sums 73 (same code);
+// score width declared last 73 (same code); a named score-column offset (`name_width + 0x2d`) in
+// the three later sums 267.
 // @retail 0x1603f0
 void game_engine_player_row_build(short const *position, real alpha, long player_index, word const *name, long place,
 	long score, long seconds, bool hide_connection, bool show_icon, bool hide_place, color3f const *color, bool dim,
